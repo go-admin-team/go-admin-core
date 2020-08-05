@@ -18,34 +18,6 @@ type Redis struct {
 	mutex           *redislock.Client
 }
 
-type RedisMessage struct {
-	redisqueue.Message
-}
-
-func (m *RedisMessage) GetID() string {
-	return m.ID
-}
-
-func (m *RedisMessage) GetStream() string {
-	return m.Stream
-}
-
-func (m *RedisMessage) GetValues() map[string]interface{} {
-	return m.Values
-}
-
-func (m *RedisMessage) SetID(id string) {
-	m.ID = id
-}
-
-func (m *RedisMessage) SetStream(stream string) {
-	m.Stream = stream
-}
-
-func (m *RedisMessage) SetValues(values map[string]interface{}) {
-	m.Values = values
-}
-
 // Setup connection
 func (r *Redis) Connect() error {
 	var err error
@@ -55,11 +27,11 @@ func (r *Redis) Connect() error {
 		return err
 	}
 	r.mutex = redislock.New(r.client)
-	r.producer, err = r.newProducer()
+	r.producer, err = r.newProducer(r.client)
 	if err != nil {
 		return err
 	}
-	r.consumer, err = r.newConsumer()
+	r.consumer, err = r.newConsumer(r.client)
 	return err
 }
 
@@ -118,11 +90,19 @@ func (r *Redis) GetQueue(name string, f func(message Message) error) {
 	})
 }
 
-func (r *Redis) newConsumer() (*redisqueue.Consumer, error) {
+func (r *Redis) newConsumer(client *redis.Client) (*redisqueue.Consumer, error) {
+	if r.ConsumerOptions == nil {
+		r.ConsumerOptions = &redisqueue.ConsumerOptions{}
+	}
+	r.ConsumerOptions.RedisClient = client
 	return redisqueue.NewConsumerWithOptions(r.ConsumerOptions)
 }
 
-func (r *Redis) newProducer() (*redisqueue.Producer, error) {
+func (r *Redis) newProducer(client *redis.Client) (*redisqueue.Producer, error) {
+	if r.ProducerOptions == nil {
+		r.ProducerOptions = &redisqueue.ProducerOptions{}
+	}
+	r.ProducerOptions.RedisClient = client
 	return redisqueue.NewProducerWithOptions(r.ProducerOptions)
 }
 
@@ -131,4 +111,32 @@ func (r *Redis) Lock(key string, ttl int64, options *redislock.Options) (*redisl
 		r.mutex = redislock.New(r.client)
 	}
 	return r.mutex.Obtain(key, time.Duration(ttl)*time.Second, options)
+}
+
+type RedisMessage struct {
+	redisqueue.Message
+}
+
+func (m *RedisMessage) GetID() string {
+	return m.ID
+}
+
+func (m *RedisMessage) GetStream() string {
+	return m.Stream
+}
+
+func (m *RedisMessage) GetValues() map[string]interface{} {
+	return m.Values
+}
+
+func (m *RedisMessage) SetID(id string) {
+	m.ID = id
+}
+
+func (m *RedisMessage) SetStream(stream string) {
+	m.Stream = stream
+}
+
+func (m *RedisMessage) SetValues(values map[string]interface{}) {
+	m.Values = values
 }
