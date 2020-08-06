@@ -2,6 +2,7 @@ package cache
 
 import (
 	"fmt"
+	"github.com/matchstalk/redisqueue"
 	"log"
 	"sync"
 	"testing"
@@ -30,13 +31,13 @@ func TestMemory_Append(t *testing.T) {
 			fields{},
 			args{
 				name: "test",
-				message: &MemoryMessage{
+				message: &MemoryMessage{redisqueue.Message{
 					ID:     "",
 					Stream: "test",
 					Values: map[string]interface{}{
 						"key": "value",
 					},
-				},
+				}},
 			},
 			false,
 		},
@@ -102,13 +103,13 @@ func TestMemory_Register(t *testing.T) {
 				return
 			}
 			m.Register(tt.name, tt.args.f)
-			if err := m.Append(tt.name, &MemoryMessage{
+			if err := m.Append(tt.name, &MemoryMessage{redisqueue.Message{
 				ID:     "",
 				Stream: "test",
 				Values: map[string]interface{}{
 					"key": "value",
 				},
-			}); err != nil {
+			}}); err != nil {
 				t.Error(err)
 				return
 			}

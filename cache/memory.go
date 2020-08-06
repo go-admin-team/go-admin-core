@@ -2,6 +2,7 @@ package cache
 
 import (
 	"fmt"
+	"github.com/matchstalk/redisqueue"
 	"strconv"
 	"sync"
 	"time"
@@ -219,9 +220,7 @@ func (m *Memory) Shutdown() {
 }
 
 type MemoryMessage struct {
-	ID     string
-	Stream string
-	Values map[string]interface{}
+	redisqueue.Message
 }
 
 func (m *MemoryMessage) GetID() string {
