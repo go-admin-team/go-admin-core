@@ -12,9 +12,16 @@ type Adapter interface {
 	HashGet(hk, key string) (string, error)
 	HashDel(hk, key string) error
 	Increase(key string) error
+	Decrease(key string) error
 	Expire(key string, dur time.Duration) error
-	SetQueue(name string, message Message) error
-	GetQueue(name string, f func(message Message) error)
+	AdapterQueue
+}
+
+type AdapterQueue interface {
+	Append(name string, message Message) error
+	Register(name string, f ConsumerFunc)
+	Run()
+	Shutdown()
 }
 
 type Message interface {
@@ -25,3 +32,5 @@ type Message interface {
 	GetStream() string
 	GetValues() map[string]interface{}
 }
+
+type ConsumerFunc func(Message) error

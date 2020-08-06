@@ -1,10 +1,11 @@
 package cache
 
 import (
+	"time"
+
 	"github.com/bsm/redislock"
 	"github.com/go-redis/redis/v7"
 	"github.com/matchstalk/redisqueue"
-	"time"
 )
 
 // Redis cache implement
@@ -65,12 +66,16 @@ func (r *Redis) Increase(key string) error {
 	return r.client.Incr(key).Err()
 }
 
+func (r *Redis) Decrease(key string) error {
+	return r.client.Decr(key).Err()
+}
+
 // Set ttl
 func (r *Redis) Expire(key string, dur time.Duration) error {
 	return r.client.Expire(key, dur).Err()
 }
 
-func (r *Redis) SetQueue(name string, message Message) error {
+func (r *Redis) Append(name string, message Message) error {
 	err := r.producer.Enqueue(&redisqueue.Message{
 		ID:     message.GetID(),
 		Stream: name,
@@ -79,15 +84,22 @@ func (r *Redis) SetQueue(name string, message Message) error {
 	return err
 }
 
-func (r *Redis) GetQueue(name string, f func(message Message) error) {
-	r.consumer.Register(name, func(m *redisqueue.Message) error {
-		message := &RedisMessage{redisqueue.Message{
-			ID:     m.ID,
-			Stream: m.Stream,
-			Values: m.Values,
-		}}
-		return f(message)
+func (r *Redis) Register(name string, f ConsumerFunc) {
+	r.consumer.Register(name, func(message *redisqueue.Message) error {
+		m := new(RedisMessage)
+		m.SetValues(message.Values)
+		m.SetStream(message.Stream)
+		m.SetID(message.ID)
+		return f(m)
 	})
+}
+
+func (r *Redis) Run() {
+	r.consumer.Run()
+}
+
+func (r *Redis) Shutdown() {
+	r.consumer.Shutdown()
 }
 
 func (r *Redis) newConsumer(client *redis.Client) (*redisqueue.Consumer, error) {
