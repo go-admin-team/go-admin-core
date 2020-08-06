@@ -8,5 +8,4 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/matchstalk/redisqueue v1.0.3
 	github.com/spf13/cast v1.3.1
-	gopkg.in/ffmt.v1 v1.5.6
 )
