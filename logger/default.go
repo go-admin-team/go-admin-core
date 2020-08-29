@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	dlog "github.com/matchstalk/go-admin-utils/debug/log"
+	dlog "github.com/matchstalk/go-admin-core/debug/log"
 )
 
 func init() {
