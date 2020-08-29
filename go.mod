@@ -1,4 +1,4 @@
-module github.com/matchstalk/utils
+module github.com/matchstalk/go-admin-utils
 
 go 1.14
 
