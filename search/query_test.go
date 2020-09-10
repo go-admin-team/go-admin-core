@@ -8,18 +8,19 @@ import (
 )
 
 type ApplicationQuery struct {
-	Id       string    `search:"type:icontains;column:id;table:receipt" uri:"id"`
-	Domain   string    `search:"type:icontains;column:domain;table:receipt" uri:"domain"`
-	Version  string    `search:"type:exact;column:version;table:receipt" uri:"version"`
-	Status   []int     `search:"type:in;column:status;table:receipt" uri:"status"`
-	Start    time.Time `search:"type:gte;column:created_at;table:receipt" uri:"start"`
-	End      time.Time `search:"type:lte;column:created_at;table:receipt" uri:"end"`
+	Id       string    `search:"type:icontains;column:id;table:receipt" form:"id"`
+	Domain   string    `search:"type:icontains;column:domain;table:receipt" form:"domain"`
+	Version  string    `search:"type:exact;column:version;table:receipt" form:"version"`
+	Status   []int     `search:"type:in;column:status;table:receipt" form:"status"`
+	Start    time.Time `search:"type:gte;column:created_at;table:receipt" form:"start"`
+	End      time.Time `search:"type:lte;column:created_at;table:receipt" form:"end"`
 	TestJoin `search:"type:left;on:id:receipt_id;table:receipt_goods;join:receipts"`
+	NotNeed  string `search:"-"`
 	ApplicationOrder
 }
 
 type ApplicationOrder struct {
-	IdOrder string `search:"type:order;column:id;table:receipt" uri:"id_order"`
+	IdOrder string `search:"type:order;column:id;table:receipt" form:"id_order"`
 }
 
 type TestJoin struct {
