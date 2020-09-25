@@ -19,7 +19,7 @@ type Redis struct {
 	mutex           *redislock.Client
 }
 
-// Setup connection
+// Connect Setup
 func (r *Redis) Connect() error {
 	var err error
 	r.client = redis.NewClient(r.ConnectOption)
@@ -123,6 +123,11 @@ func (r *Redis) Lock(key string, ttl int64, options *redislock.Options) (*redisl
 		r.mutex = redislock.New(r.client)
 	}
 	return r.mutex.Obtain(key, time.Duration(ttl)*time.Second, options)
+}
+
+// GetClient 暴露原生client
+func (r *Redis) GetClient() *redis.Client {
+	return r.client
 }
 
 type RedisMessage struct {
