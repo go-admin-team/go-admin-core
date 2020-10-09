@@ -1,10 +1,11 @@
 package search
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
-	"gopkg.in/ffmt.v1"
+	"fmt"
 	"testing"
 	"time"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 type ApplicationQuery struct {
@@ -45,6 +46,6 @@ func TestResolveSearchQuery(t *testing.T) {
 			Join:       make([]*GormJoin, 0),
 		}
 		ResolveSearchQuery("mysql", d, condition)
-		_, _ = ffmt.P(condition)
+		fmt.Println(condition)
 	})
 }

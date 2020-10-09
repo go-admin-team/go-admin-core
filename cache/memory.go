@@ -2,12 +2,12 @@ package cache
 
 import (
 	"fmt"
-	"github.com/matchstalk/redisqueue"
 	"strconv"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/matchstalk/redisqueue"
 	"github.com/spf13/cast"
 )
 

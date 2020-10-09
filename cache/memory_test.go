@@ -2,11 +2,12 @@ package cache
 
 import (
 	"fmt"
-	"github.com/matchstalk/redisqueue"
 	"log"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/matchstalk/redisqueue"
 )
 
 func TestMemory_Append(t *testing.T) {
