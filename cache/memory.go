@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/matchstalk/redisqueue"
+	"github.com/robinjoseph08/redisqueue/v2"
 	"github.com/spf13/cast"
 )
 

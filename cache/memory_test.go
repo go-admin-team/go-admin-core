@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/matchstalk/redisqueue"
+	"github.com/robinjoseph08/redisqueue/v2"
 )
 
 func TestMemory_Append(t *testing.T) {

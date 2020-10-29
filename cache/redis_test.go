@@ -7,7 +7,7 @@ import (
 
 	"github.com/bsm/redislock"
 	"github.com/go-redis/redis/v7"
-	"github.com/matchstalk/redisqueue"
+	"github.com/robinjoseph08/redisqueue/v2"
 )
 
 func TestRedis_Append(t *testing.T) {
@@ -30,7 +30,6 @@ func TestRedis_Append(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{
 			"test01",
 			fields{

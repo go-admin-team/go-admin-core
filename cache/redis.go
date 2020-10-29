@@ -5,7 +5,7 @@ import (
 
 	"github.com/bsm/redislock"
 	"github.com/go-redis/redis/v7"
-	"github.com/matchstalk/redisqueue"
+	"github.com/robinjoseph08/redisqueue/v2"
 )
 
 // Redis cache implement
