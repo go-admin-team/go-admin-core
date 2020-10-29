@@ -16,7 +16,7 @@ type FileWriter struct {
 	suffix string
 }
 
-// NewFileWriter 示例化FileWriter
+// NewFileWriter 实例化FileWriter
 func NewFileWriter(path, suffix string) *FileWriter {
 	return &FileWriter{
 		path:   path,
