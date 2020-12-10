@@ -48,15 +48,15 @@ func TestEnvvar_Prefixes(t *testing.T) {
 	os.Setenv("APP_DATABASE_HOST", "localhost")
 	os.Setenv("APP_DATABASE_PASSWORD", "password")
 	os.Setenv("VAULT_ADDR", "vault:1337")
-	os.Setenv("MICRO_REGISTRY", "mdns")
+	os.Setenv("GO_ADMIN_CORE_REGISTRY", "mdns")
 
 	var prefixtests = []struct {
 		prefixOpts   []source.Option
 		expectedKeys []string
 	}{
-		{[]source.Option{WithPrefix("APP", "MICRO")}, []string{"app", "micro"}},
-		{[]source.Option{WithPrefix("MICRO"), WithStrippedPrefix("APP")}, []string{"database", "micro"}},
-		{[]source.Option{WithPrefix("MICRO"), WithStrippedPrefix("APP")}, []string{"database", "micro"}},
+		{[]source.Option{WithPrefix("APP", "GO_ADMIN_CORE")}, []string{"app", "go_admin_core"}},
+		{[]source.Option{WithPrefix("GO_ADMIN_CORE"), WithStrippedPrefix("APP")}, []string{"database", "go_admin_core"}},
+		{[]source.Option{WithPrefix("GO_ADMIN_CORE"), WithStrippedPrefix("APP")}, []string{"database", "go_admin_core"}},
 	}
 
 	for _, pt := range prefixtests {
@@ -86,7 +86,7 @@ func TestEnvvar_Prefixes(t *testing.T) {
 }
 
 func TestEnvvar_WatchNextNoOpsUntilStop(t *testing.T) {
-	src := NewSource(WithStrippedPrefix("GOMICRO_"))
+	src := NewSource(WithStrippedPrefix("GO_ADMIN_CORE_"))
 	w, err := src.Watch()
 	if err != nil {
 		t.Error(err)

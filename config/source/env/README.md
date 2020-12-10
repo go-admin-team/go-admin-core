@@ -79,7 +79,7 @@ Specify source with data
 ```go
 src := env.NewSource(
 	// optionally specify prefix
-	env.WithPrefix("MICRO"),
+	env.WithPrefix("GO_ADMIN"),
 )
 ```
 
