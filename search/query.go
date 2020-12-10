@@ -7,9 +7,12 @@ import (
 )
 
 const (
+	// FromQueryTag tag标记
 	FromQueryTag = "search"
-	Mysql        = "mysql"    //mysql数据库标识
-	Postgres     = "postgres" //postgres数据库标识
+	// Mysql 数据库标识
+	Mysql = "mysql"
+	// Postgres 数据库标识
+	Postgres = "postgres"
 )
 
 /**
@@ -23,12 +26,13 @@ const (
  *	isnull
  *  order 排序		e.g. order[key]=desc     order[key]=asc
  */
+// ResolveSearchQuery 解析
 func ResolveSearchQuery(driver string, q interface{}, condition Condition) {
 	qType := reflect.TypeOf(q)
 	qValue := reflect.ValueOf(q)
 	var tag string
 	var ok bool
-	var t resolveSearchTag
+	var t *resolveSearchTag
 	for i := 0; i < qType.NumField(); i++ {
 		tag, ok = "", false
 		tag, ok = qType.Field(i).Tag.Lookup(FromQueryTag)
@@ -41,7 +45,7 @@ func ResolveSearchQuery(driver string, q interface{}, condition Condition) {
 		case "-":
 			continue
 		}
-		t = resolveTagValue(tag)
+		t = makeTag(tag)
 		if qValue.Field(i).IsZero() {
 			continue
 		}
@@ -61,7 +65,7 @@ func ResolveSearchQuery(driver string, q interface{}, condition Condition) {
 		case "exact", "iexact":
 			condition.SetWhere(fmt.Sprintf("`%s`.`%s` = ?", t.Table, t.Column), []interface{}{qValue.Field(i).Interface()})
 		case "contains", "icontains":
-			//注意:mysql不支持ilike
+			//fixme mysql不支持ilike
 			if driver == Postgres && t.Type == "icontains" {
 				condition.SetWhere(fmt.Sprintf("`%s`.`%s` ilike ?", t.Table, t.Column), []interface{}{"%" + qValue.Field(i).String() + "%"})
 			} else {
@@ -100,5 +104,4 @@ func ResolveSearchQuery(driver string, q interface{}, condition Condition) {
 			}
 		}
 	}
-	//return condition, order
 }

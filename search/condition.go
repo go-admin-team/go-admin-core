@@ -72,11 +72,9 @@ type resolveSearchTag struct {
 	Join   string
 }
 
-/**
- * 解析search的tag标签
- */
-func resolveTagValue(tag string) resolveSearchTag {
-	var r resolveSearchTag
+// makeTag 解析search的tag标签
+func makeTag(tag string) *resolveSearchTag {
+	r := &resolveSearchTag{}
 	tags := strings.Split(tag, ";")
 	var ts []string
 	for _, t := range tags {
