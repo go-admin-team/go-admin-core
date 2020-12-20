@@ -15,13 +15,14 @@ var FileNameTimeFormat = "2006-01-02"
 type FileWriter struct {
 	path   string
 	file   *os.File
-	size   int64 //todo 后期加入大文件写入分割
-	suffix string
+	size   int64  //todo 后期加入大文件写入分割
+	suffix string //文件扩展名
+	prefix string //文件前缀
 }
 
 // NewFileWriter 实例化FileWriter
-func NewFileWriter(path, suffix string) (*FileWriter, error) {
-	filename := filepath.Join(path, fmt.Sprintf("%s.%s", time.Now().Format(FileNameTimeFormat), suffix))
+func NewFileWriter(path, prefix, suffix string) (*FileWriter, error) {
+	filename := filepath.Join(path, fmt.Sprintf("%s%s.%s", prefix, time.Now().Format(FileNameTimeFormat), suffix))
 	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_APPEND|os.O_CREATE|os.O_SYNC, 0600)
 	if err != nil {
 		return nil, err
@@ -30,6 +31,7 @@ func NewFileWriter(path, suffix string) (*FileWriter, error) {
 		path:   path,
 		suffix: suffix,
 		file:   file,
+		prefix: prefix,
 	}, nil
 }
 
@@ -44,7 +46,7 @@ func (p *FileWriter) Write(data []byte) (n int, err error) {
 	n, e := p.file.Write(data)
 	p.size += int64(n)
 	//每天一个文件
-	filename := filepath.Join(p.path, fmt.Sprintf("%s.%s", time.Now().Format(FileNameTimeFormat), p.suffix))
+	filename := filepath.Join(p.path, fmt.Sprintf("%s%s.%s", p.prefix, time.Now().Format(FileNameTimeFormat), p.suffix))
 	if p.file.Name() != filename {
 		_ = p.file.Close()
 		p.file, _ = os.OpenFile(filename, os.O_WRONLY|os.O_APPEND|os.O_CREATE|os.O_SYNC, 0600)
