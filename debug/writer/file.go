@@ -17,16 +17,14 @@ type FileWriter struct {
 	file         *os.File
 	size         int64  //todo 后期加入大文件写入分割
 	suffix       string //文件扩展名
-	prefix       []byte //文件前缀
 	FilenameFunc func(*FileWriter) string
 }
 
 // NewFileWriter 实例化FileWriter
-func NewFileWriter(path, prefix, suffix string) (*FileWriter, error) {
+func NewFileWriter(path, suffix string) (*FileWriter, error) {
 	p := &FileWriter{
 		path:   path,
 		suffix: suffix,
-		prefix: []byte(prefix),
 	}
 	filename := p.getFilenameAccordingToTimestamp()
 	var err error
@@ -45,7 +43,7 @@ func (p *FileWriter) Write(data []byte) (n int, err error) {
 	if p.file == nil {
 		return 0, errors.New("file not opened")
 	}
-	n, e := p.file.Write(append(p.prefix, data...))
+	n, e := p.file.Write(data)
 	p.size += int64(n)
 	//每天一个文件
 	filename := p.getFilenameAccordingToTimestamp()
