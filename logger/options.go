@@ -18,6 +18,8 @@ type Options struct {
 	CallerSkipCount int
 	// Alternative options
 	Context context.Context
+	// Name logger name
+	Name string
 }
 
 // WithFields set default fields for the logger
@@ -45,6 +47,13 @@ func WithOutput(out io.Writer) Option {
 func WithCallerSkipCount(c int) Option {
 	return func(args *Options) {
 		args.CallerSkipCount = c
+	}
+}
+
+// WithName set name for logger
+func WithName(name string) Option {
+	return func(args *Options) {
+		args.Name = name
 	}
 }
 

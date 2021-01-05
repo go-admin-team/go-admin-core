@@ -80,6 +80,14 @@ func logCallerfilePath(loggingFilePath string) string {
 }
 
 func (l *defaultLogger) Log(level Level, v ...interface{}) {
+	l.logf(level, "", v...)
+}
+
+func (l *defaultLogger) Logf(level Level, format string, v ...interface{}) {
+	l.logf(level, format, v...)
+}
+
+func (l *defaultLogger) logf(level Level, format string, v ...interface{}) {
 	// TODO decide does we need to write message if log level not used?
 	if !l.opts.Level.Enabled(level) {
 		return
@@ -97,8 +105,12 @@ func (l *defaultLogger) Log(level Level, v ...interface{}) {
 
 	rec := dlog.Record{
 		Timestamp: time.Now(),
-		Message:   fmt.Sprint(v...),
 		Metadata:  make(map[string]string, len(fields)),
+	}
+	if format == "" {
+		rec.Message = fmt.Sprint(v...)
+	} else {
+		rec.Message = fmt.Sprintf(format, v...)
 	}
 
 	keys := make([]string, 0, len(fields))
@@ -114,52 +126,13 @@ func (l *defaultLogger) Log(level Level, v ...interface{}) {
 		metadata += fmt.Sprintf(" %s=%v", k, fields[k])
 	}
 
-	t := rec.Timestamp.Format("2006-01-02 15:04:05")
-	_, err := l.opts.Out.Write([]byte(fmt.Sprintf("%s %s %v\n", t, metadata, rec.Message)))
-	if err != nil {
-		log.Printf("log [Log] write error: %s \n", err.Error())
+	var name string
+	if l.opts.Name != "" {
+		name = "[" + l.opts.Name + "]"
 	}
-	//fmt.Printf("%s %s %v\n", t, metadata, rec.Message)
-}
-
-func (l *defaultLogger) Logf(level Level, format string, v ...interface{}) {
-	//	 TODO decide does we need to write message if log level not used?
-	if level < l.opts.Level {
-		return
-	}
-
-	l.RLock()
-	fields := copyFields(l.opts.Fields)
-	l.RUnlock()
-
-	fields["level"] = level.String()
-
-	if _, file, line, ok := runtime.Caller(l.opts.CallerSkipCount); ok {
-		fields["file"] = fmt.Sprintf("%s:%d", logCallerfilePath(file), line)
-	}
-
-	rec := dlog.Record{
-		Timestamp: time.Now(),
-		Message:   fmt.Sprintf(format, v...),
-		Metadata:  make(map[string]string, len(fields)),
-	}
-
-	keys := make([]string, 0, len(fields))
-	for k, v := range fields {
-		keys = append(keys, k)
-		rec.Metadata[k] = fmt.Sprintf("%v", v)
-	}
-
-	sort.Strings(keys)
-	metadata := ""
-
-	for _, k := range keys {
-		metadata += fmt.Sprintf(" %s=%v", k, fields[k])
-	}
-
 	t := rec.Timestamp.Format("2006-01-02 15:04:05")
 	//fmt.Printf("%s %s %v\n", t, metadata, rec.Message)
-	_, err := l.opts.Out.Write([]byte(fmt.Sprintf("%s %s %v\n", t, metadata, rec.Message)))
+	_, err := l.opts.Out.Write([]byte(fmt.Sprintf("%s %s %s %v\n", name, t, metadata, rec.Message)))
 	if err != nil {
 		log.Printf("log [Logf] write error: %s \n", err.Error())
 	}
@@ -181,8 +154,9 @@ func NewLogger(opts ...Option) Logger {
 		Level:           InfoLevel,
 		Fields:          make(map[string]interface{}),
 		Out:             os.Stderr,
-		CallerSkipCount: 2,
+		CallerSkipCount: 3,
 		Context:         context.Background(),
+		Name:            "",
 	}
 
 	l := &defaultLogger{opts: options}
