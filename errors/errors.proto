@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package errors;
+
+option go_package = "github.com/go-admin-team/go-admin-core/errors";
+
+message Error {
+  string requestId = 1;
+  int32 code = 2;
+  string msg = 3;
+  string status = 4;
+};
