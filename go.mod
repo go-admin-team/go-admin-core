@@ -24,4 +24,7 @@ require (
 	golang.org/x/image v0.0.0-20201208152932-35266b937fa6 // indirect
 	golang.org/x/tools v0.0.0-20210115202250-e0d201561e39 // indirect
 	google.golang.org/protobuf v1.25.0
+	gorm.io/driver/mysql v1.0.3
+	gorm.io/gorm v1.20.12
+	gorm.io/plugin/dbresolver v1.1.0
 )
