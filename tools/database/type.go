@@ -14,5 +14,5 @@ type Configure interface {
 }
 
 type ResolverConfigure interface {
-	Init(*dbresolver.DBResolver, func(string) gorm.Dialector)
+	Init(*dbresolver.DBResolver, func(string) gorm.Dialector) *dbresolver.DBResolver
 }

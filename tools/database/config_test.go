@@ -6,6 +6,10 @@ import (
 	"testing"
 )
 
+var dsn0 = "dsn0"
+var dsn1 = "dsn1"
+var tables = []interface{}{"sys_user", "sys_role"}
+
 func TestDBConfig_Init(t *testing.T) {
 	type fields struct {
 		dsn             string
@@ -19,13 +23,25 @@ func TestDBConfig_Init(t *testing.T) {
 		config *gorm.Config
 		open   func(string) gorm.Dialector
 	}
-	registers := make([]ResolverConfigure, 1)
-	registers[0] = &DBResolverConfig{
-		sources:  []string{"dsn1"},
-		replicas: []string{"dsn2"},
+	registers := make([]ResolverConfigure, 0)
+	registers = append(registers, &DBResolverConfig{
+		sources:  []string{dsn0},
+		replicas: []string{dsn1},
 		policy:   "random",
-		tables:   []interface{}{"sys_user"},
-	}
+		tables:   tables,
+	})
+	registers = append(registers, &DBResolverConfig{
+		sources:  []string{dsn0},
+		replicas: []string{dsn1},
+		policy:   "random",
+		tables:   tables,
+	})
+	registers = append(registers, &DBResolverConfig{
+		sources:  []string{dsn0},
+		replicas: []string{dsn1},
+		policy:   "random",
+		//tables:   tables,
+	})
 	tests := []struct {
 		name    string
 		fields  fields
@@ -35,11 +51,22 @@ func TestDBConfig_Init(t *testing.T) {
 		{
 			"test0",
 			fields{
-				dsn:             "dsn0",
-				connMaxIdleTime: 0,
-				connMaxLifetime: 0,
-				maxIdleConns:    0,
-				maxOpenConns:    0,
+				dsn: dsn0,
+			},
+			args{
+				config: &gorm.Config{},
+				open:   mysql.Open,
+			},
+			false,
+		},
+		{
+			"test1",
+			fields{
+				dsn:             dsn0,
+				connMaxIdleTime: 600,
+				connMaxLifetime: 60,
+				maxIdleConns:    200,
+				maxOpenConns:    100,
 				registers:       registers,
 			},
 			args{
