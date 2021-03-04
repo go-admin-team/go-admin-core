@@ -42,3 +42,13 @@ func TestSetLevel(t *testing.T) {
 	logger.Init(logger.WithLevel(logger.InfoLevel))
 	l.Logf(logger.DebugLevel, "test non-show debug: %s", "debug msg")
 }
+
+func TestWithReportCaller(t *testing.T) {
+	var err error
+	logger.DefaultLogger, err = NewLogger(WithCallerSkip(0))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	logger.Logf(logger.InfoLevel, "testing: %s", "WithReportCaller")
+}

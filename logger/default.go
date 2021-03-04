@@ -123,7 +123,7 @@ func (l *defaultLogger) logf(level Level, format string, v ...interface{}) {
 	metadata := ""
 
 	for _, k := range keys {
-		metadata += fmt.Sprintf(" %s=%v", k, fields[k])
+		metadata += fmt.Sprintf(" %s: %v", k, fields[k])
 	}
 
 	var name string
