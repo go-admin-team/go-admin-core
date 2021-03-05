@@ -94,7 +94,7 @@ func (l *zaplog) Fields(fields map[string]interface{}) logger.Logger {
 
 	zl := &zaplog{
 		cfg:    l.cfg,
-		zap:    l.zap.With(data...),
+		zap:    l.zap,
 		opts:   l.opts,
 		fields: nfields,
 	}

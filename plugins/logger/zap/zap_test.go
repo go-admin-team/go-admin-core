@@ -52,3 +52,14 @@ func TestWithReportCaller(t *testing.T) {
 
 	logger.Logf(logger.InfoLevel, "testing: %s", "WithReportCaller")
 }
+
+func TestFields(t *testing.T) {
+	l, err := NewLogger()
+	if err != nil {
+		t.Fatal(err)
+	}
+	logger.DefaultLogger = l.Fields(map[string]interface{}{
+		"x-request-id": "123456abc",
+	})
+	logger.DefaultLogger.Log(logger.InfoLevel, "hello")
+}
