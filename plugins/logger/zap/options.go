@@ -1,6 +1,8 @@
 package zap
 
 import (
+	"io"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -35,4 +37,10 @@ type namespaceKey struct{}
 
 func WithNamespace(namespace string) logger.Option {
 	return logger.SetOption(namespaceKey{}, namespace)
+}
+
+type writerKey struct{}
+
+func WithOutput(out io.Writer) logger.Option {
+	return logger.SetOption(writerKey{}, out)
 }

@@ -16,3 +16,5 @@
 
 # idea
 /.idea
+
+/plugins/logger/zap/testdata/*

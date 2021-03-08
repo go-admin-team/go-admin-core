@@ -3,6 +3,7 @@ package zap
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"sync"
 
@@ -21,7 +22,7 @@ type zaplog struct {
 }
 
 func (l *zaplog) Init(opts ...logger.Option) error {
-	var err error
+	//var err error
 
 	for _, o := range opts {
 		o(&l.opts)
@@ -34,7 +35,11 @@ func (l *zaplog) Init(opts ...logger.Option) error {
 
 	if zcconfig, ok := l.opts.Context.Value(encoderConfigKey{}).(zapcore.EncoderConfig); ok {
 		zapConfig.EncoderConfig = zcconfig
+	}
 
+	writer, ok := l.opts.Context.Value(writerKey{}).(io.Writer)
+	if !ok {
+		writer = os.Stdout
 	}
 
 	skip, ok := l.opts.Context.Value(callerSkipKey{}).(int)
@@ -48,10 +53,16 @@ func (l *zaplog) Init(opts ...logger.Option) error {
 		zapConfig.Level.SetLevel(loggerToZapLevel(l.opts.Level))
 	}
 
-	log, err := zapConfig.Build(zap.AddCallerSkip(skip))
-	if err != nil {
-		return err
-	}
+	logCore := zapcore.NewCore(
+		zapcore.NewConsoleEncoder(zapConfig.EncoderConfig),
+		zapcore.NewMultiWriteSyncer(zapcore.AddSync(writer)),
+		zapConfig.Level)
+
+	log := zap.New(logCore, zap.AddCaller(), zap.AddCallerSkip(skip), zap.AddStacktrace(zap.DPanicLevel))
+	//log, err := zapConfig.Build(zap.AddCallerSkip(skip))
+	//if err != nil {
+	//	return err
+	//}
 
 	// Adding seed fields if exist
 	if l.opts.Fields != nil {

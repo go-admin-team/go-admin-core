@@ -1,6 +1,8 @@
 package zap
 
 import (
+	"fmt"
+	"github.com/go-admin-team/go-admin-core/debug/writer"
 	"testing"
 
 	"github.com/go-admin-team/go-admin-core/logger"
@@ -61,5 +63,22 @@ func TestFields(t *testing.T) {
 	logger.DefaultLogger = l.Fields(map[string]interface{}{
 		"x-request-id": "123456abc",
 	})
+	logger.DefaultLogger.Log(logger.InfoLevel, "hello")
+}
+
+func TestFile(t *testing.T) {
+	output, err := writer.NewFileWriter("testdata", "log")
+	if err != nil {
+		t.Errorf("logger setup error: %s", err.Error())
+	}
+	//var err error
+	logger.DefaultLogger, err = NewLogger(logger.WithLevel(logger.TraceLevel), WithOutput(output))
+	if err != nil {
+		t.Errorf("logger setup error: %s", err.Error())
+	}
+	logger.DefaultLogger = logger.DefaultLogger.Fields(map[string]interface{}{
+		"x-request-id": "123456abc",
+	})
+	fmt.Println(logger.DefaultLogger)
 	logger.DefaultLogger.Log(logger.InfoLevel, "hello")
 }
