@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/casbin/casbin/v2 v2.25.1
-	github.com/casbin/gorm-adapter/v3 v3.2.0
+	github.com/casbin/gorm-adapter/v3 v3.0.2
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-admin-team/go-admin-core v1.2.3-0.20210225031955-e373f5bcdf3f
