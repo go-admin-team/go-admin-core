@@ -4,7 +4,7 @@ import (
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/log"
 	"github.com/casbin/casbin/v2/model"
-	gormAdapter "github.com/casbin/gorm-adapter/v3"
+	gormAdapter "github.com/go-admin-team/gorm-adapter/v3"
 	"gorm.io/gorm"
 )
 
@@ -23,8 +23,8 @@ e = some(where (p.eft == allow))
 m = r.sub == p.sub && (keyMatch2(r.obj, p.obj) || keyMatch(r.obj, p.obj)) && (r.act == p.act || p.act == "*")
 `
 
-func Setup(db *gorm.DB, prefix string) *casbin.SyncedEnforcer {
-	Apter, err := gormAdapter.NewAdapterByDBUsePrefix(db, prefix)
+func Setup(db *gorm.DB, _ string) *casbin.SyncedEnforcer {
+	Apter, err := gormAdapter.NewAdapterByDB(db)
 	if err != nil {
 		panic(err)
 	}
