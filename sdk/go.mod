@@ -7,7 +7,7 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-admin-team/go-admin-core v1.3.0
-	github.com/go-admin-team/go-admin-core/plugins/logger/zap v1.3.0
+	github.com/go-admin-team/go-admin-core/plugins/logger/zap v1.3.0-rc.1
 	github.com/go-admin-team/gorm-adapter/v3 v3.2.1-0.20210310135230-1608cc35b95b
 	github.com/go-redis/redis/v7 v7.4.0
 	github.com/google/uuid v1.2.0
