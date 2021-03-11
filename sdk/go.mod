@@ -20,5 +20,3 @@ require (
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
 	gorm.io/gorm v1.21.3
 )
-
-replace github.com/go-admin-team/go-admin-core => ../
