@@ -52,6 +52,7 @@ func (l *zaplog) Init(opts ...logger.Option) error {
 	if l.opts.Level != logger.InfoLevel {
 		zapConfig.Level.SetLevel(loggerToZapLevel(l.opts.Level))
 	}
+	zapConfig.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 
 	logCore := zapcore.NewCore(
 		zapcore.NewConsoleEncoder(zapConfig.EncoderConfig),

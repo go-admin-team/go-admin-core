@@ -3,11 +3,11 @@ module github.com/go-admin-team/go-admin-core/sdk
 go 1.16
 
 require (
-	github.com/casbin/casbin/v2 v2.21.0
+	github.com/casbin/casbin/v2 v2.24.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-gonic/gin v1.6.3
-	github.com/go-admin-team/go-admin-core v1.2.3-0.20210225031955-e373f5bcdf3f
-	github.com/go-admin-team/go-admin-core/plugins/logger/zap v0.0.0-20210308142402-1af6382872c0
+	github.com/go-admin-team/go-admin-core v1.3.0
+	github.com/go-admin-team/go-admin-core/plugins/logger/zap v1.3.0
 	github.com/go-admin-team/gorm-adapter/v3 v3.2.1-0.20210310135230-1608cc35b95b
 	github.com/go-redis/redis/v7 v7.4.0
 	github.com/google/uuid v1.2.0
