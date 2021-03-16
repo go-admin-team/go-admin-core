@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"github.com/go-admin-team/go-admin-core/cache"
 	"net/http"
 
 	"github.com/casbin/casbin/v2"
@@ -36,4 +37,8 @@ type Runtime interface {
 	SetMiddleware(string, interface{})
 	GetMiddleware() map[string]interface{}
 	GetMiddlewareKey(key string) interface{}
+
+	//cache
+	SetCacheAdapter(cache.Adapter)
+	GetCacheAdapter() cache.Adapter
 }

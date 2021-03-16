@@ -2,9 +2,10 @@ package config
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/go-admin-team/go-admin-core/config"
 	"github.com/go-admin-team/go-admin-core/config/source"
-	"log"
 )
 
 var (

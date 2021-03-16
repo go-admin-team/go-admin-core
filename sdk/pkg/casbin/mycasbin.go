@@ -4,8 +4,9 @@ import (
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/log"
 	"github.com/casbin/casbin/v2/model"
-	gormAdapter "github.com/go-admin-team/gorm-adapter/v3"
 	"gorm.io/gorm"
+
+	gormAdapter "github.com/go-admin-team/gorm-adapter/v3"
 )
 
 // Initialize the model from a string.

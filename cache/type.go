@@ -2,9 +2,12 @@ package cache
 
 import (
 	"time"
+
+	"github.com/bsm/redislock"
 )
 
 type Adapter interface {
+	SetPrefix(string)
 	Connect() error
 	Get(key string) (string, error)
 	Set(key string, val interface{}, expire int) error
@@ -15,6 +18,7 @@ type Adapter interface {
 	Decrease(key string) error
 	Expire(key string, dur time.Duration) error
 	AdapterQueue
+	AdapterLocker
 }
 
 type AdapterQueue interface {
@@ -34,3 +38,7 @@ type Message interface {
 }
 
 type ConsumerFunc func(Message) error
+
+type AdapterLocker interface {
+	Lock(key string, ttl int64, options *redislock.Options) (*redislock.Lock, error)
+}

@@ -1,11 +1,13 @@
 package cache
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"sync"
 	"time"
 
+	"github.com/bsm/redislock"
 	"github.com/google/uuid"
 	"github.com/robinjoseph08/redisqueue/v2"
 	"github.com/spf13/cast"
@@ -208,6 +210,11 @@ func (m *Memory) Register(name string, f ConsumerFunc) {
 			}
 		}
 	}(q, f)
+}
+
+// Lock 不支持memory的lock
+func (m *Memory) Lock(_ string, _ int64, _ *redislock.Options) (*redislock.Lock, error) {
+	return nil, errors.New("memory not support lock")
 }
 
 func (m *Memory) Run() {

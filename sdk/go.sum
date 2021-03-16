@@ -15,6 +15,11 @@ github.com/casbin/casbin/v2 v2.21.0/go.mod h1:wUgota0cQbTXE6Vd+KWpg41726jFRi7upx
 github.com/casbin/casbin/v2 v2.24.0 h1:peiFTw+PNpAMSz7hDDz768nEwzUsBMMZNV4yFGCayI8=
 github.com/casbin/casbin/v2 v2.24.0/go.mod h1:wUgota0cQbTXE6Vd+KWpg41726jFRi7upxio0sR+Xd0=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
+github.com/chanxuehong/rand v0.0.0-20201110082127-2f19a1bdd973 h1:Js/7nHtkpvUW62passc9FOflXyLQDjSoYclkFeDdTEM=
+github.com/chanxuehong/rand v0.0.0-20201110082127-2f19a1bdd973/go.mod h1:9+sJ9zvvkXC5sPjPEZM3Jpb9n2Q2VtcrGZly0UHYF5I=
+github.com/chanxuehong/util v0.0.0-20200304121633-ca8141845b13/go.mod h1:XEYt99iTxMqkv+gW85JX/DdUINHUe43Sbe5AtqSaDAQ=
+github.com/chanxuehong/wechat v0.0.0-20201110083048-0180211b69fd h1:TM3wjEWel4U31J72dlhnwCBqPC0+FA0Ejm2NCbn5a5U=
+github.com/chanxuehong/wechat v0.0.0-20201110083048-0180211b69fd/go.mod h1:/dvhOIRCjjiZu6NV0QTTiMcc5XwoORbxfDSsRY2IfaM=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/cockroachdb/apd v1.1.0 h1:3LFP3629v+1aKXU5Q37mxmRxX/pIu1nijXydLShEq5I=
 github.com/cockroachdb/apd v1.1.0/go.mod h1:8Sl8LxpKi29FqWXR16WEFZRNSz3SoPzUzeMeY4+DwBQ=
