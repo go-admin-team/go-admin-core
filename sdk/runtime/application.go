@@ -5,9 +5,11 @@ import (
 	"sync"
 
 	"github.com/casbin/casbin/v2"
-	"github.com/go-admin-team/go-admin-core/logger"
 	"github.com/robfig/cron/v3"
 	"gorm.io/gorm"
+
+	"github.com/go-admin-team/go-admin-core/cache"
+	"github.com/go-admin-team/go-admin-core/logger"
 )
 
 type Application struct {
@@ -17,6 +19,7 @@ type Application struct {
 	crontab     map[string]*cron.Cron
 	mux         sync.RWMutex
 	middlewares map[string]interface{}
+	cache       cache.Adapter
 }
 
 // SetDb 设置对应key的db
@@ -134,4 +137,19 @@ func (e *Application) GetMiddlewareKey(key string) interface{} {
 	e.mux.Lock()
 	defer e.mux.Unlock()
 	return e.middlewares[key]
+}
+
+// SetCacheAdapter 设置缓存
+func (e *Application) SetCacheAdapter(c cache.Adapter) {
+	e.cache = c
+}
+
+// GetCacheAdapter 获取缓存
+func (e *Application) GetCacheAdapter() cache.Adapter {
+	return e.cache
+}
+
+// GetCachePrefix 获取带租户标记的cache
+func (e *Application) GetCachePrefix(key string) cache.Adapter {
+	return NewCache(key, e.cache, "")
 }

@@ -2,9 +2,10 @@ package config
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/go-admin-team/go-admin-core/config"
 	"github.com/go-admin-team/go-admin-core/config/source"
-	"log"
 )
 
 var (
@@ -27,6 +28,7 @@ type Config struct {
 	Database    *Database             `yaml:"database"`
 	Databases   *map[string]*Database `yaml:"databases"`
 	Gen         *Gen                  `yaml:"gen"`
+	Cache       *Cache                `yaml:"cache"`
 	Extend      interface{}           `yaml:"extend"`
 }
 
@@ -61,6 +63,7 @@ func Setup(f func(opts ...source.Option) source.Source, options ...source.Option
 		Database:    DatabaseConfig,
 		Databases:   &DatabasesConfig,
 		Gen:         GenConfig,
+		Cache:       CacheConfig,
 		Extend:      ExtendConfig,
 	}}
 	err = c.Scan(_cfg)

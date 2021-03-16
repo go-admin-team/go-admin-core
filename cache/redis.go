@@ -36,6 +36,8 @@ func (r *Redis) Connect() error {
 	return err
 }
 
+func (r *Redis) SetPrefix(string) {}
+
 // Get from key
 func (r *Redis) Get(key string) (string, error) {
 	return r.client.Get(key).Result()

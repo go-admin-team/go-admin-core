@@ -1,11 +1,13 @@
 package cache
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"sync"
 	"time"
 
+	"github.com/bsm/redislock"
 	"github.com/google/uuid"
 	"github.com/robinjoseph08/redisqueue/v2"
 	"github.com/spf13/cast"
@@ -26,6 +28,8 @@ type Memory struct {
 	PoolNum uint
 }
 
+func (r *Memory) SetPrefix(string) {}
+
 func (m *Memory) Connect() error {
 	m.items = new(sync.Map)
 	m.queue = new(sync.Map)
@@ -41,7 +45,7 @@ func (m *Memory) makeQueue() queue {
 
 func (m *Memory) Get(key string) (string, error) {
 	item, err := m.getItem(key)
-	if err != nil {
+	if err != nil || item == nil {
 		return "", err
 	}
 	return item.Value, nil
@@ -51,8 +55,7 @@ func (m *Memory) getItem(key string) (*item, error) {
 	var err error
 	i, ok := m.items.Load(key)
 	if !ok {
-		err = fmt.Errorf("%s not exist", key)
-		return nil, err
+		return nil, nil
 	}
 	switch i.(type) {
 	case *item:
@@ -60,9 +63,8 @@ func (m *Memory) getItem(key string) (*item, error) {
 		if item.Expired.Before(time.Now()) {
 			//过期
 			_ = m.del(key)
-			err = fmt.Errorf("%s is expired", key)
 			//过期后删除
-			return nil, err
+			return nil, nil
 		}
 		return item, nil
 	default:
@@ -99,8 +101,7 @@ func (m *Memory) del(key string) error {
 
 func (m *Memory) HashGet(hk, key string) (string, error) {
 	item, err := m.getItem(hk + key)
-	if item == nil {
-		err = fmt.Errorf("%s not exist", key)
+	if err != nil || item == nil {
 		return "", err
 	}
 	return item.Value, err
@@ -208,6 +209,11 @@ func (m *Memory) Register(name string, f ConsumerFunc) {
 			}
 		}
 	}(q, f)
+}
+
+// Lock 不支持memory的lock
+func (m *Memory) Lock(_ string, _ int64, _ *redislock.Options) (*redislock.Lock, error) {
+	return nil, errors.New("memory not support lock")
 }
 
 func (m *Memory) Run() {

@@ -1,4 +1,4 @@
-package app
+package response
 
 import (
 	"encoding/json"
@@ -13,7 +13,7 @@ import (
 // 失败数据处理
 func Error(c *gin.Context, code int32, err error, msg string) {
 	msgID := pkg.GenerateMsgIDFromContext(c)
-	var res Response
+	var res response
 	if err != nil {
 		res.Msg = err.Error()
 	}
@@ -21,38 +21,38 @@ func Error(c *gin.Context, code int32, err error, msg string) {
 		res.Msg = msg
 	}
 	res.RequestId = pkg.GenerateMsgIDFromContext(c)
-	Return := res.ReturnError(code)
+	res.Code = code
 	var jsonStr []byte
-	jsonStr, err = json.Marshal(Return)
+	jsonStr, err = json.Marshal(res)
 	if err != nil {
 		log.Debugf("MsgID[%s] ShouldBind error: %#v", msgID, err.Error())
 	}
 	c.Set("result", string(jsonStr))
-	c.AbortWithStatusJSON(http.StatusOK, Return)
+	c.AbortWithStatusJSON(http.StatusOK, res)
 }
 
 // 通常成功数据处理
 func OK(c *gin.Context, data interface{}, msg string) {
 	msgID := pkg.GenerateMsgIDFromContext(c)
-	var res Response
+	var res response
 	res.Data = data
 	if msg != "" {
 		res.Msg = msg
 	}
 	res.RequestId = pkg.GenerateMsgIDFromContext(c)
-	Return := res.ReturnOK()
+	res.Code = 200
 	var jsonStr []byte
-	jsonStr, err := json.Marshal(Return)
+	jsonStr, err := json.Marshal(res)
 	if err != nil {
 		log.Debugf("MsgID[%s] ShouldBind error: %#v", msgID, err.Error())
 	}
 	c.Set("result", string(jsonStr))
-	c.AbortWithStatusJSON(http.StatusOK, Return)
+	c.AbortWithStatusJSON(http.StatusOK, res)
 }
 
 // 分页数据处理
 func PageOK(c *gin.Context, result interface{}, count int, pageIndex int, pageSize int, msg string) {
-	var res Page
+	var res page
 	res.List = result
 	res.Count = count
 	res.PageIndex = pageIndex
