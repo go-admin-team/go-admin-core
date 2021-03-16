@@ -1,6 +1,6 @@
 module github.com/go-admin-team/go-admin-core/sdk
 
-go 1.16
+go 1.14
 
 require (
 	github.com/bsm/redislock v0.5.0
@@ -21,4 +21,9 @@ require (
 	github.com/shamsher31/goimgext v1.0.0
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
 	gorm.io/gorm v1.21.3
+)
+
+replace (
+	github.com/go-admin-team/go-admin-core => ../
+	github.com/go-admin-team/go-admin-core/plugins/logger/zap => ../plugins/logger/zap
 )
