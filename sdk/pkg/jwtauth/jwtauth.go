@@ -206,16 +206,26 @@ var (
 	// IdentityKey default identity key
 	IdentityKey = "identity"
 
-	NiceKey = "nice"
-
+	// NiceKey 昵称
+	NiceKey      = "nice"
 	DataScopeKey = "datascope"
 
-	RKey      = "r"
-	RoleIdKey = "roleid"
+	RKey = "r"
 
-	RoleKey = "rolekey"
+	// RoleIdKey 角色id  Old
+	RoleIdKey   = "roleid"
 
+	// RoleKey 角色名称  Old
+	RoleKey     = "rolekey"
+
+	// RoleNameKey 角色名称  Old
 	RoleNameKey = "rolename"
+
+	// RoleIdKey 部门id
+	DeptId   = "deptId"
+
+	// RoleKey 部门名称
+	DeptName     = "deptName"
 )
 
 // New for check error with GinJWTMiddleware
