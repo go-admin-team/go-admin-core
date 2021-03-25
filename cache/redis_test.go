@@ -45,7 +45,7 @@ func TestRedis_Append(t *testing.T) {
 				},
 				ProducerOptions: &redisqueue.ProducerOptions{
 					StreamMaxLength:      100,
-					ApproximateMaxLength: true,
+					ApproximateMaxLength: false,
 				},
 			},
 			args{
@@ -68,7 +68,7 @@ func TestRedis_Append(t *testing.T) {
 			if err := r.Connect(); err != nil {
 				t.Errorf("SetQueue() error = %v", err)
 			}
-			if err := r.Append(tt.args.name, tt.args.message); (err != nil) != tt.wantErr {
+			if err := r.Append(tt.args.message); (err != nil) != tt.wantErr {
 				t.Errorf("SetQueue() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

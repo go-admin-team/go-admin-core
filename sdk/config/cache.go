@@ -3,6 +3,7 @@ package config
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"github.com/go-admin-team/go-admin-core/cache"
 	"github.com/go-redis/redis/v7"
@@ -49,7 +50,10 @@ type Tls struct {
 // CacheConfig cache配置
 var CacheConfig = new(Cache)
 
-func (e Cache) Setup() cache.Adapter {
+func (e Cache) Setup() (cache.Adapter, error) {
+	if e.Driver == "" {
+		e.Driver = MemoryCache
+	}
 	var c cache.Adapter
 	switch e.Driver {
 	case MemoryCache:
@@ -108,8 +112,12 @@ func (e Cache) Setup() cache.Adapter {
 		}
 	default:
 		//没有配置，跳过
-		return nil
+		return nil, errors.New("cache driver[] not support")
 	}
-	c.Connect()
-	return c
+	err := c.Connect()
+	if err != nil {
+		return nil, err
+	}
+	go c.Run()
+	return c, err
 }

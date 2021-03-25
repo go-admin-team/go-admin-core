@@ -28,6 +28,10 @@ type Memory struct {
 	PoolNum uint
 }
 
+func (*Memory) String() string {
+	return "memory"
+}
+
 func (r *Memory) SetPrefix(string) {}
 
 func (m *Memory) Connect() error {
@@ -156,17 +160,17 @@ func (m *Memory) Expire(key string, dur time.Duration) error {
 	return m.setItem(key, item)
 }
 
-func (m *Memory) Append(name string, message Message) error {
+func (m *Memory) Append(message Message) error {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 	memoryMessage := new(MemoryMessage)
 	memoryMessage.SetID(message.GetID())
 	memoryMessage.SetStream(message.GetStream())
 	memoryMessage.SetValues(message.GetValues())
-	v, ok := m.queue.Load(name)
+	v, ok := m.queue.Load(message.GetStream())
 	if !ok {
 		v = m.makeQueue()
-		m.queue.Store(name, v)
+		m.queue.Store(message.GetStream(), v)
 	}
 	var q queue
 	switch v.(type) {
@@ -174,7 +178,7 @@ func (m *Memory) Append(name string, message Message) error {
 		q = v.(queue)
 	default:
 		q = m.makeQueue()
-		m.queue.Store(name, q)
+		m.queue.Store(message.GetStream(), q)
 	}
 	go func(gm Message, gq queue) {
 		gm.SetID(uuid.New().String())
@@ -251,4 +255,20 @@ func (m *MemoryMessage) SetStream(stream string) {
 
 func (m *MemoryMessage) SetValues(values map[string]interface{}) {
 	m.Values = values
+}
+
+func (m *MemoryMessage) GetPrefix() (prefix string) {
+	if m.Values == nil {
+		return
+	}
+	v, _ := m.Values[prefixKey]
+	prefix, _ = v.(string)
+	return
+}
+
+func (m *MemoryMessage) SetPrefix(prefix string) {
+	if m.Values == nil {
+		m.Values = make(map[string]interface{})
+	}
+	m.Values[prefixKey] = prefix
 }

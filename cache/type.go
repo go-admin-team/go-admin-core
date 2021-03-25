@@ -6,7 +6,12 @@ import (
 	"github.com/bsm/redislock"
 )
 
+const (
+	prefixKey = "__host"
+)
+
 type Adapter interface {
+	String() string
 	SetPrefix(string)
 	Connect() error
 	Get(key string) (string, error)
@@ -22,7 +27,7 @@ type Adapter interface {
 }
 
 type AdapterQueue interface {
-	Append(name string, message Message) error
+	Append(message Message) error
 	Register(name string, f ConsumerFunc)
 	Run()
 	Shutdown()
@@ -35,6 +40,8 @@ type Message interface {
 	GetID() string
 	GetStream() string
 	GetValues() map[string]interface{}
+	GetPrefix() string
+	SetPrefix(string)
 }
 
 type ConsumerFunc func(Message) error
