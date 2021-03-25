@@ -55,7 +55,7 @@ func TestMemory_Append(t *testing.T) {
 				t.Errorf("Connect() error = %v", err)
 				return
 			}
-			if err := m.Append(tt.args.name, tt.args.message); (err != nil) != tt.wantErr {
+			if err := m.Append(tt.args.message); (err != nil) != tt.wantErr {
 				t.Errorf("Append() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -104,7 +104,7 @@ func TestMemory_Register(t *testing.T) {
 				return
 			}
 			m.Register(tt.name, tt.args.f)
-			if err := m.Append(tt.name, &MemoryMessage{redisqueue.Message{
+			if err := m.Append(&MemoryMessage{redisqueue.Message{
 				ID:     "",
 				Stream: "test",
 				Values: map[string]interface{}{

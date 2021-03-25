@@ -19,6 +19,10 @@ type Redis struct {
 	mutex           *redislock.Client
 }
 
+func (*Redis) String() string {
+	return "redis"
+}
+
 // Connect Setup
 func (r *Redis) Connect() error {
 	var err error
@@ -77,10 +81,10 @@ func (r *Redis) Expire(key string, dur time.Duration) error {
 	return r.client.Expire(key, dur).Err()
 }
 
-func (r *Redis) Append(name string, message Message) error {
+func (r *Redis) Append(message Message) error {
 	err := r.producer.Enqueue(&redisqueue.Message{
 		ID:     message.GetID(),
-		Stream: name,
+		Stream: message.GetStream(),
 		Values: message.GetValues(),
 	})
 	return err
@@ -158,4 +162,20 @@ func (m *RedisMessage) SetStream(stream string) {
 
 func (m *RedisMessage) SetValues(values map[string]interface{}) {
 	m.Values = values
+}
+
+func (m *RedisMessage) GetPrefix() (prefix string) {
+	if m.Values == nil {
+		return
+	}
+	v, _ := m.Values[prefixKey]
+	prefix, _ = v.(string)
+	return
+}
+
+func (m *RedisMessage) SetPrefix(prefix string) {
+	if m.Values == nil {
+		m.Values = make(map[string]interface{})
+	}
+	m.Values[prefixKey] = prefix
 }

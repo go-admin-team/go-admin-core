@@ -41,4 +41,6 @@ type Runtime interface {
 	//cache
 	SetCacheAdapter(cache.Adapter)
 	GetCacheAdapter() cache.Adapter
+	GetCachePrefix(string) cache.Adapter
+	GetStreamMessage(id, stream string, value map[string]interface{}) (cache.Message, error)
 }

@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"errors"
 	"net/http"
 	"sync"
 
@@ -152,4 +153,21 @@ func (e *Application) GetCacheAdapter() cache.Adapter {
 // GetCachePrefix 获取带租户标记的cache
 func (e *Application) GetCachePrefix(key string) cache.Adapter {
 	return NewCache(key, e.cache, "")
+}
+
+// GetStreamMessage 获取队列需要用的message
+func (e *Application) GetStreamMessage(id, stream string, value map[string]interface{}) (cache.Message, error) {
+	var message cache.Message
+	switch e.GetCacheAdapter().String() {
+	case "memory":
+		message = &cache.MemoryMessage{}
+	case "redis":
+		message = &cache.RedisMessage{}
+	default:
+		return nil, errors.New("cache is nil or not support this adapter")
+	}
+	message.SetID(id)
+	message.SetStream(stream)
+	message.SetValues(value)
+	return message, nil
 }
