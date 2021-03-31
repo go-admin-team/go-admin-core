@@ -4,7 +4,7 @@ type Database struct {
 	Driver          string
 	Source          string
 	ConnMaxIdleTime int
-	ConnMaxLifetime int
+	ConnMaxLifeTime int
 	MaxIdleConns    int
 	MaxOpenConns    int
 	Registers       []DBResolverConfig
