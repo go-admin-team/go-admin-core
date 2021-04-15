@@ -37,7 +37,7 @@ func OK(c *gin.Context, data interface{}) {
 // PageOK 分页数据处理
 func PageOK(c *gin.Context, result interface{}, total int, current int, pageSize int) {
 	var res pages
-	res.List = result
+	res.Data = result
 	res.Total = total
 	res.Current = current
 	res.PageSize = pageSize
