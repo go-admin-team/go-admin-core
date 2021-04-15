@@ -29,5 +29,5 @@ type Pages struct {
 
 type pages struct {
 	Pages
-	List interface{} `json:"list,omitempty"`
+	Data interface{} `json:"data,omitempty"`
 }
