@@ -1,16 +1,15 @@
 package runtime
 
 import (
-	"errors"
 	"net/http"
 	"sync"
 
 	"github.com/casbin/casbin/v2"
+	"github.com/go-admin-team/go-admin-core/logger"
+	"github.com/go-admin-team/go-admin-core/storage"
+	"github.com/go-admin-team/go-admin-core/storage/queue"
 	"github.com/robfig/cron/v3"
 	"gorm.io/gorm"
-
-	"github.com/go-admin-team/go-admin-core/cache"
-	"github.com/go-admin-team/go-admin-core/logger"
 )
 
 type Application struct {
@@ -20,7 +19,10 @@ type Application struct {
 	crontab     map[string]*cron.Cron
 	mux         sync.RWMutex
 	middlewares map[string]interface{}
-	cache       cache.Adapter
+	cache       storage.AdapterCache
+	queue       storage.AdapterQueue
+	locker      storage.AdapterLocker
+	memoryQueue storage.AdapterQueue
 }
 
 // SetDb 设置对应key的db
@@ -94,6 +96,7 @@ func NewConfig() *Application {
 		casbins:     make(map[string]*casbin.SyncedEnforcer),
 		crontab:     make(map[string]*cron.Cron),
 		middlewares: make(map[string]interface{}),
+		memoryQueue: queue.NewMemory(10000),
 	}
 }
 
@@ -141,33 +144,58 @@ func (e *Application) GetMiddlewareKey(key string) interface{} {
 }
 
 // SetCacheAdapter 设置缓存
-func (e *Application) SetCacheAdapter(c cache.Adapter) {
+func (e *Application) SetCacheAdapter(c storage.AdapterCache) {
 	e.cache = c
 }
 
 // GetCacheAdapter 获取缓存
-func (e *Application) GetCacheAdapter() cache.Adapter {
-	return e.cache
+func (e *Application) GetCacheAdapter() storage.AdapterCache {
+	return NewCache("", e.cache, "")
 }
 
 // GetCachePrefix 获取带租户标记的cache
-func (e *Application) GetCachePrefix(key string) cache.Adapter {
+func (e *Application) GetCachePrefix(key string) storage.AdapterCache {
 	return NewCache(key, e.cache, "")
 }
 
+// SetQueueAdapter 设置队列适配器
+func (e *Application) SetQueueAdapter(c storage.AdapterQueue) {
+	e.queue = c
+}
+
+// GetQueueAdapter 获取队列适配器
+func (e *Application) GetQueueAdapter() storage.AdapterQueue {
+	return NewQueue("", e.queue)
+}
+
+// GetQueuePrefix 获取带租户标记的queue
+func (e *Application) GetQueuePrefix(key string) storage.AdapterQueue {
+	return NewQueue(key, e.queue)
+}
+
+// SetLockerAdapter 设置分布式锁
+func (e *Application) SetLockerAdapter(c storage.AdapterLocker) {
+	e.locker = c
+}
+
+// GetLockerAdapter 获取分布式锁
+func (e *Application) GetLockerAdapter() storage.AdapterLocker {
+	return NewLocker("", e.locker)
+}
+
+func (e *Application) GetLockerPrefix(key string) storage.AdapterLocker {
+	return NewLocker(key, e.locker)
+}
+
 // GetStreamMessage 获取队列需要用的message
-func (e *Application) GetStreamMessage(id, stream string, value map[string]interface{}) (cache.Message, error) {
-	var message cache.Message
-	switch e.GetCacheAdapter().String() {
-	case "memory":
-		message = &cache.MemoryMessage{}
-	case "redis":
-		message = &cache.RedisMessage{}
-	default:
-		return nil, errors.New("cache is nil or not support this adapter")
-	}
+func (e *Application) GetStreamMessage(id, stream string, value map[string]interface{}) (storage.Messager, error) {
+	message := &queue.Message{}
 	message.SetID(id)
 	message.SetStream(stream)
 	message.SetValues(value)
 	return message, nil
+}
+
+func (e *Application) GetMemoryQueue(prefix string) storage.AdapterQueue {
+	return NewQueue(prefix, e.memoryQueue)
 }

@@ -4,25 +4,17 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/bsm/redislock"
 	"github.com/chanxuehong/wechat/oauth2"
 
-	"github.com/go-admin-team/go-admin-core/cache"
+	"github.com/go-admin-team/go-admin-core/storage"
 )
 
 const (
 	intervalTenant = "/"
-	prefixKey      = "__host"
 )
 
-type Cache struct {
-	prefix          string
-	store           cache.Adapter
-	wxTokenStoreKey string
-}
-
 // NewCache 创建对应上下文缓存
-func NewCache(prefix string, store cache.Adapter, wxTokenStoreKey string) cache.Adapter {
+func NewCache(prefix string, store storage.AdapterCache, wxTokenStoreKey string) storage.AdapterCache {
 	if wxTokenStoreKey == "" {
 		wxTokenStoreKey = "wx_token_store_key"
 	}
@@ -31,6 +23,12 @@ func NewCache(prefix string, store cache.Adapter, wxTokenStoreKey string) cache.
 		store:           store,
 		wxTokenStoreKey: wxTokenStoreKey,
 	}
+}
+
+type Cache struct {
+	prefix          string
+	store           storage.AdapterCache
+	wxTokenStoreKey string
 }
 
 // String string输出
@@ -48,7 +46,8 @@ func (e *Cache) SetPrefix(prefix string) {
 
 // Connect 初始化
 func (e Cache) Connect() error {
-	return e.store.Connect()
+	return nil
+	//return e.store.Connect()
 }
 
 // Get val in cache
@@ -107,34 +106,4 @@ func (e Cache) PutToken(token *oauth2.Token) error {
 		return err
 	}
 	return e.store.Set(e.prefix+intervalTenant+e.wxTokenStoreKey, string(rb), int(token.ExpiresIn)-200)
-}
-
-// Register 注册消费者
-func (e Cache) Register(name string, f cache.ConsumerFunc) {
-	e.store.Register(name, f)
-}
-
-// Append 增加数据到生产者
-func (e Cache) Append(message cache.Message) error {
-	values := message.GetValues()
-	if values == nil {
-		values = make(map[string]interface{})
-	}
-	values[prefixKey] = e.prefix
-	return e.store.Append(message)
-}
-
-// Run 运行
-func (e Cache) Run() {
-	e.store.Run()
-}
-
-// Shutdown 停止
-func (e Cache) Shutdown() {
-	e.store.Shutdown()
-}
-
-// Lock 返回分布式锁对象
-func (e Cache) Lock(key string, ttl int64, options *redislock.Options) (*redislock.Lock, error) {
-	return e.store.Lock(e.prefix+intervalTenant+key, ttl, options)
 }

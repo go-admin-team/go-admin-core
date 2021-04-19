@@ -1,4 +1,4 @@
-package cache
+package storage
 
 import (
 	"time"
@@ -7,13 +7,11 @@ import (
 )
 
 const (
-	prefixKey = "__host"
+	PrefixKey = "__host"
 )
 
-type Adapter interface {
+type AdapterCache interface {
 	String() string
-	SetPrefix(string)
-	Connect() error
 	Get(key string) (string, error)
 	Set(key string, val interface{}, expire int) error
 	Del(key string) error
@@ -22,18 +20,17 @@ type Adapter interface {
 	Increase(key string) error
 	Decrease(key string) error
 	Expire(key string, dur time.Duration) error
-	AdapterQueue
-	AdapterLocker
 }
 
 type AdapterQueue interface {
-	Append(message Message) error
+	String() string
+	Append(message Messager) error
 	Register(name string, f ConsumerFunc)
 	Run()
 	Shutdown()
 }
 
-type Message interface {
+type Messager interface {
 	SetID(string)
 	SetStream(string)
 	SetValues(map[string]interface{})
@@ -44,8 +41,9 @@ type Message interface {
 	SetPrefix(string)
 }
 
-type ConsumerFunc func(Message) error
+type ConsumerFunc func(Messager) error
 
 type AdapterLocker interface {
+	String() string
 	Lock(key string, ttl int64, options *redislock.Options) (*redislock.Lock, error)
 }

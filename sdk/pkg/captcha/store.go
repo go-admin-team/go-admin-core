@@ -1,19 +1,19 @@
 package captcha
 
 import (
-	"github.com/go-admin-team/go-admin-core/cache"
+	"github.com/go-admin-team/go-admin-core/storage"
 	"github.com/mojocn/base64Captcha"
 )
 
 type cacheStore struct {
-	cache      cache.Adapter
+	cache      storage.AdapterCache
 	expiration int
 }
 
 // NewMemoryStore returns a new standard memory store for captchas with the
 // given collection threshold and expiration time (duration). The returned
 // store must be registered with SetCustomStore to replace the default one.
-func NewCacheStore(cache cache.Adapter, expiration int) base64Captcha.Store {
+func NewCacheStore(cache storage.AdapterCache, expiration int) base64Captcha.Store {
 	s := new(cacheStore)
 	s.cache = cache
 	s.expiration = expiration

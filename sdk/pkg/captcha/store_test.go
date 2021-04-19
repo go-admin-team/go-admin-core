@@ -2,22 +2,19 @@ package captcha
 
 import (
 	"fmt"
-	"github.com/go-admin-team/go-admin-core/cache"
-	"github.com/mojocn/base64Captcha"
 	"math/rand"
 	"testing"
 	"time"
+
+	"github.com/go-admin-team/go-admin-core/storage"
+	"github.com/go-admin-team/go-admin-core/storage/cache"
+	"github.com/mojocn/base64Captcha"
 )
 
 var _expiration = 6000
 
-func getStore(t *testing.T) cache.Adapter {
-	store := &cache.Memory{}
-	err := store.Connect()
-	if err != nil {
-		t.Error(err)
-	}
-	return store
+func getStore(_ *testing.T) storage.AdapterCache {
+	return cache.NewMemory()
 }
 
 func TestSetGet(t *testing.T) {
@@ -47,11 +44,7 @@ func TestGetClear(t *testing.T) {
 }
 
 func BenchmarkSetCollect(b *testing.B) {
-	store := &cache.Memory{}
-	err := store.Connect()
-	if err != nil {
-		b.Error(err)
-	}
+	store := cache.NewMemory()
 	b.StopTimer()
 	d := "fdskfew9832232r"
 	s := NewCacheStore(store, -1)
@@ -89,7 +82,7 @@ func TestStore_CollectNotExpire(t *testing.T) {
 
 func TestNewCacheStore(t *testing.T) {
 	type args struct {
-		store      cache.Adapter
+		store      storage.AdapterCache
 		expiration int
 	}
 	tests := []struct {
