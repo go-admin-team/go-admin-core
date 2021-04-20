@@ -2,13 +2,12 @@ package captcha
 
 import (
 	"fmt"
-	"math/rand"
-	"testing"
-	"time"
-
 	"github.com/go-admin-team/go-admin-core/storage"
 	"github.com/go-admin-team/go-admin-core/storage/cache"
 	"github.com/mojocn/base64Captcha"
+	"math/rand"
+	"testing"
+	"time"
 )
 
 var _expiration = 6000

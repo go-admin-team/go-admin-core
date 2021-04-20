@@ -29,6 +29,8 @@ type Config struct {
 	Databases   *map[string]*Database `yaml:"databases"`
 	Gen         *Gen                  `yaml:"gen"`
 	Cache       *Cache                `yaml:"cache"`
+	Queue       *Queue                `yaml:"queue"`
+	Locker      *Locker               `yaml:"locker"`
 	Extend      interface{}           `yaml:"extend"`
 }
 
@@ -64,6 +66,8 @@ func Setup(f func(opts ...source.Option) source.Source, options ...source.Option
 		Databases:   &DatabasesConfig,
 		Gen:         GenConfig,
 		Cache:       CacheConfig,
+		Queue:       QueueConfig,
+		Locker:      LockerConfig,
 		Extend:      ExtendConfig,
 	}}
 	err = c.Scan(_cfg)

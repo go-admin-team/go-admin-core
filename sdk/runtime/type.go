@@ -1,11 +1,11 @@
 package runtime
 
 import (
-	"github.com/go-admin-team/go-admin-core/cache"
 	"net/http"
 
 	"github.com/casbin/casbin/v2"
 	"github.com/go-admin-team/go-admin-core/logger"
+	"github.com/go-admin-team/go-admin-core/storage"
 	"github.com/robfig/cron/v3"
 	"gorm.io/gorm"
 )
@@ -39,8 +39,18 @@ type Runtime interface {
 	GetMiddlewareKey(key string) interface{}
 
 	//cache
-	SetCacheAdapter(cache.Adapter)
-	GetCacheAdapter() cache.Adapter
-	GetCachePrefix(string) cache.Adapter
-	GetStreamMessage(id, stream string, value map[string]interface{}) (cache.Message, error)
+	SetCacheAdapter(storage.AdapterCache)
+	GetCacheAdapter() storage.AdapterCache
+	GetCachePrefix(string) storage.AdapterCache
+
+	GetMemoryQueue(string) storage.AdapterQueue
+	SetQueueAdapter(storage.AdapterQueue)
+	GetQueueAdapter() storage.AdapterQueue
+	GetQueuePrefix(string) storage.AdapterQueue
+
+	SetLockerAdapter(storage.AdapterLocker)
+	GetLockerAdapter() storage.AdapterLocker
+	GetLockerPrefix(string) storage.AdapterLocker
+
+	GetStreamMessage(id, stream string, value map[string]interface{}) (storage.Messager, error)
 }
