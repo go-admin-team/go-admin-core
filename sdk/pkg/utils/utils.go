@@ -4,11 +4,12 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/hex"
-	uuid "github.com/satori/go.uuid"
 	"io/ioutil"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 func Hmac(data string) string {
@@ -22,7 +23,7 @@ func IsStringEmpty(str string) bool {
 }
 
 func GetUUID() string {
-	u := uuid.NewV4()
+	u := uuid.New()
 	return strings.ReplaceAll(u.String(), "-", "")
 }
 
