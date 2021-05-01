@@ -6,7 +6,7 @@ import (
 	"github.com/casbin/casbin/v2/model"
 	"gorm.io/gorm"
 
-	gormAdapter "github.com/go-admin-team/gorm-adapter/v3"
+	gormAdapter "github.com/casbin/gorm-adapter/v3"
 )
 
 // Initialize the model from a string.
@@ -25,7 +25,7 @@ m = r.sub == p.sub && (keyMatch2(r.obj, p.obj) || keyMatch(r.obj, p.obj)) && (r.
 `
 
 func Setup(db *gorm.DB, _ string) *casbin.SyncedEnforcer {
-	Apter, err := gormAdapter.NewAdapterByDB(db)
+	Apter, err := gormAdapter.NewAdapterByDBUseTableName(db, "", "sys_casbin_rule")
 	if err != nil {
 		panic(err)
 	}
