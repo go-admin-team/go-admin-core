@@ -25,6 +25,11 @@ type QueueMemory struct {
 
 var QueueConfig = new(Queue)
 
+// Empty 空设置
+func (e Queue) Empty() bool {
+	return e.Memory == nil && e.Redis == nil
+}
+
 // Setup 启用顺序 redis > 其他 > memory
 func (e Queue) Setup() (storage.AdapterQueue, error) {
 	if e.Redis != nil {
