@@ -9,7 +9,7 @@ require (
 	github.com/bsm/redislock v0.5.0
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/ghodss/yaml v1.0.0
-	github.com/gin-gonic/gin v1.6.3
+	github.com/gin-gonic/gin v1.7.1
 	github.com/go-redis/redis/v7 v7.4.0
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/golang/protobuf v1.4.2

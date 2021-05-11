@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"sync"
 
@@ -77,6 +78,15 @@ func (e *Application) SetEngine(engine http.Handler) {
 // GetEngine 获取路由引擎
 func (e *Application) GetEngine() http.Handler {
 	return e.engine
+}
+
+// GetRouter 获取路由列表
+func (e *Application) GetRouter() gin.RoutesInfo {
+	switch e.engine.(type) {
+	case *gin.Engine:
+		return e.engine.(*gin.Engine).Routes()
+	}
+	return nil
 }
 
 // SetLogger 设置日志组件
