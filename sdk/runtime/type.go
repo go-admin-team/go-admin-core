@@ -24,6 +24,8 @@ type Runtime interface {
 	SetEngine(engine http.Handler)
 	GetEngine() http.Handler
 
+	GetRouter() []Router
+
 	//使用go-admin定义的logger，参考来源go-micro
 	SetLogger(logger logger.Logger)
 	GetLogger() logger.Logger

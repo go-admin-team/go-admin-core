@@ -24,6 +24,11 @@ type Application struct {
 	queue       storage.AdapterQueue
 	locker      storage.AdapterLocker
 	memoryQueue storage.AdapterQueue
+	routers     []Router
+}
+
+type Router struct {
+	HttpMethod, RelativePath, Handler string
 }
 
 // SetDb 设置对应key的db
@@ -80,13 +85,21 @@ func (e *Application) GetEngine() http.Handler {
 	return e.engine
 }
 
-// GetRouter 获取路由列表
-func (e *Application) GetRouter() gin.RoutesInfo {
+// GetRouter 获取路由表
+func (e *Application) GetRouter() []Router {
+	return e.setRouter()
+}
+
+// setRouter 设置路由表
+func (e *Application) setRouter() []Router {
 	switch e.engine.(type) {
 	case *gin.Engine:
-		return e.engine.(*gin.Engine).Routes()
+		routers := e.engine.(*gin.Engine).Routes()
+		for _, router := range routers {
+			e.routers = append(e.routers, Router{RelativePath: router.Path, Handler: router.Handler, HttpMethod: router.Method})
+		}
 	}
-	return nil
+	return e.routers
 }
 
 // SetLogger 设置日志组件
@@ -107,6 +120,7 @@ func NewConfig() *Application {
 		crontab:     make(map[string]*cron.Cron),
 		middlewares: make(map[string]interface{}),
 		memoryQueue: queue.NewMemory(10000),
+		routers:     make([]Router, 0),
 	}
 }
 
