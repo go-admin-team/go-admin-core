@@ -31,6 +31,10 @@ type Router struct {
 	HttpMethod, RelativePath, Handler string
 }
 
+type Routers struct {
+	List []Router
+}
+
 // SetDb 设置对应key的db
 func (e *Application) SetDb(key string, db *gorm.DB) {
 	e.mux.Lock()
