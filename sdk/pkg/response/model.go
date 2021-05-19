@@ -1,7 +1,7 @@
 package response
 
 import (
-	pbErrors "github.com/go-admin-team/go-admin-core/errors"
+	pbErrors "github.com/yahao333/go-admin-core/errors"
 )
 
 type Response struct {

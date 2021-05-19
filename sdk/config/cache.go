@@ -5,7 +5,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"github.com/go-admin-team/go-admin-core/cache"
+	"github.com/yahao333/go-admin-core/cache"
 	"github.com/go-redis/redis/v7"
 	"github.com/robinjoseph08/redisqueue/v2"
 	"io/ioutil"

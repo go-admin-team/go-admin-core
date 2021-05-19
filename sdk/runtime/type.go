@@ -1,11 +1,11 @@
 package runtime
 
 import (
-	"github.com/go-admin-team/go-admin-core/cache"
+	"github.com/yahao333/go-admin-core/cache"
 	"net/http"
 
 	"github.com/casbin/casbin/v2"
-	"github.com/go-admin-team/go-admin-core/logger"
+	"github.com/yahao333/go-admin-core/logger"
 	"github.com/robfig/cron/v3"
 	"gorm.io/gorm"
 )

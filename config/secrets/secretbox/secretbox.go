@@ -3,7 +3,7 @@
 package secretbox
 
 import (
-	"github.com/go-admin-team/go-admin-core/config/secrets"
+	"github.com/yahao333/go-admin-core/config/secrets"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/nacl/secretbox"
 

@@ -7,7 +7,7 @@ import (
 	"github.com/bsm/redislock"
 	"github.com/chanxuehong/wechat/oauth2"
 
-	"github.com/go-admin-team/go-admin-core/cache"
+	"github.com/yahao333/go-admin-core/cache"
 )
 
 const (

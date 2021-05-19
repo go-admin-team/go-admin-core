@@ -5,10 +5,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	. "github.com/go-admin-team/go-admin-core/logger"
-	"github.com/go-admin-team/go-admin-core/sdk"
-	"github.com/go-admin-team/go-admin-core/sdk/pkg"
-	"github.com/go-admin-team/go-admin-core/sdk/pkg/logger"
+	. "github.com/yahao333/go-admin-core/logger"
+	"github.com/yahao333/go-admin-core/sdk"
+	"github.com/yahao333/go-admin-core/sdk/pkg"
+	"github.com/yahao333/go-admin-core/sdk/pkg/logger"
 )
 
 type loggerKey struct{}

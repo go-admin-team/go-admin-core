@@ -9,8 +9,8 @@ import (
 	"github.com/robfig/cron/v3"
 	"gorm.io/gorm"
 
-	"github.com/go-admin-team/go-admin-core/cache"
-	"github.com/go-admin-team/go-admin-core/logger"
+	"github.com/yahao333/go-admin-core/cache"
+	"github.com/yahao333/go-admin-core/logger"
 )
 
 type Application struct {

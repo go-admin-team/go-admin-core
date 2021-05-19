@@ -1,7 +1,7 @@
 package captcha
 
 import (
-	"github.com/go-admin-team/go-admin-core/cache"
+	"github.com/yahao333/go-admin-core/cache"
 	"github.com/mojocn/base64Captcha"
 )
 

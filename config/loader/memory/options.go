@@ -1,9 +1,9 @@
 package memory
 
 import (
-	"github.com/go-admin-team/go-admin-core/config/loader"
-	"github.com/go-admin-team/go-admin-core/config/reader"
-	"github.com/go-admin-team/go-admin-core/config/source"
+	"github.com/yahao333/go-admin-core/config/loader"
+	"github.com/yahao333/go-admin-core/config/reader"
+	"github.com/yahao333/go-admin-core/config/source"
 )
 
 // WithSource appends a source to list of sources
