@@ -14,7 +14,6 @@ import (
 
 // SetupLogger 日志
 func SetupLogger(logType, path, levelStr, outputType string) logger.Logger {
-	var setLogger logger.Logger
 	if !pkg.PathExist(path) {
 		err := pkg.PathCreate(path)
 		if err != nil {
@@ -40,14 +39,14 @@ func SetupLogger(logType, path, levelStr, outputType string) logger.Logger {
 
 	switch logType {
 	case "zap":
-		setLogger, err = zap.NewLogger(logger.WithLevel(level), logger.WithOutput(output), zap.WithCallerSkip(2))
+		log.DefaultLogger, err = zap.NewLogger(logger.WithLevel(level), logger.WithOutput(output), zap.WithCallerSkip(2))
 		if err != nil {
 			log.Fatalf("new zap logger error, %s", err.Error())
 		}
 	//case "logrus":
 	//	setLogger = logrus.NewLogger(logger.WithLevel(level), logger.WithOutput(output), logrus.ReportCaller())
 	default:
-		setLogger = logger.NewLogger(logger.WithLevel(level), logger.WithOutput(output))
+		log.DefaultLogger = logger.NewLogger(logger.WithLevel(level), logger.WithOutput(output))
 	}
-	return setLogger
+	return log.DefaultLogger
 }

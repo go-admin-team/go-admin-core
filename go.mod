@@ -12,7 +12,7 @@ require (
 	github.com/gin-gonic/gin v1.7.1
 	github.com/go-redis/redis/v7 v7.4.0
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
-	github.com/golang/protobuf v1.4.2
+	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/google/uuid v1.1.2
 	github.com/imdario/mergo v0.3.9
 	github.com/pkg/errors v0.9.1

@@ -3,10 +3,18 @@
 package errors
 
 import (
-	"encoding/json"
+	json "github.com/json-iterator/go"
 )
 
 //go:generate protoc -I. --go_out=paths=source_relative:. errors.proto
+
+const (
+	Silent       = "0"
+	MessageWarn  = "1"
+	MessageError = "2"
+	Notification = "4"
+	Page         = "9"
+)
 
 func (e *Error) Error() string {
 	b, _ := json.Marshal(e)
@@ -14,22 +22,23 @@ func (e *Error) Error() string {
 }
 
 // New generates a custom error.
-func New(id, msg string, code ErrorCoder) error {
+func New(id, domain string, code ErrorCoder) error {
 	return &Error{
-		RequestId: id,
-		Code:      code.Code(),
-		Msg:       msg,
-		Status:    code.String(),
+		ErrorCode:    code.Code(),
+		ErrorMessage: code.String(),
+		ShowType:     MessageError,
+		TraceId:      id,
+		Domain:       domain,
 	}
 }
 
 // Parse tries to parse a JSON string into an error. If that
 // fails, it will set the given string as the error detail.
-func Parse(err string) *Error {
+func Parse(errStr string) *Error {
 	e := new(Error)
-	errr := json.Unmarshal([]byte(err), e)
-	if errr != nil {
-		e.Msg = err
+	err := json.Unmarshal([]byte(errStr), e)
+	if err != nil {
+		e.ErrorMessage = errStr
 	}
 	return e
 }
@@ -47,7 +56,7 @@ func Equal(err1 error, err2 error) bool {
 		return err1 == err2
 	}
 
-	if verr1.Code != verr2.Code {
+	if verr1.ErrorCode != verr2.ErrorCode {
 		return false
 	}
 

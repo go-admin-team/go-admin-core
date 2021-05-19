@@ -5,8 +5,16 @@ package errors;
 option go_package = "github.com/go-admin-team/go-admin-core/errors";
 
 message Error {
-  string requestId = 1;
-  int32 code = 2;
-  string msg = 3;
-  string status = 4;
+  // Success if request is success
+  bool success = 1;
+  // ErrorCode code for errorType
+  string errorCode = 2;
+  // ErrorMessage message display to user
+  string errorMessage = 3;
+  // ShowType error display type： 0 silent; 1 message.warn; 2 message.error; 4 notification; 9 page
+  string showType = 4;
+  // TraceId Convenient for back-end Troubleshooting: unique request ID
+  string traceId = 5;
+  // Domain onvenient for backend Troubleshooting: host of current access server
+  string domain = 6;
 };
