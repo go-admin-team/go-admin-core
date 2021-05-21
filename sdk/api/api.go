@@ -3,7 +3,6 @@ package api
 import (
 	"errors"
 	"fmt"
-	"encoding/json"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -45,47 +44,24 @@ func (e Api) GetLogger() *logger.Helper {
 	return GetRequestLogger(e.Context)
 }
 
+// Bind 参数校验
 func (e *Api) Bind(d interface{}, bindings ...binding.Binding) *Api {
 	var err error
 	bindings = append(bindings, nil, binding.JSON)
 	for i := range bindings {
-		switch bindings[i] {
-		case binding.JSON:
-			err = e.Context.ShouldBindWith(d, binding.JSON)
-		case binding.XML:
-			err = e.Context.ShouldBindWith(d, binding.XML)
-		case binding.Form:
-			err = e.Context.ShouldBindWith(d, binding.Form)
-		case binding.Query:
-			err = e.Context.ShouldBindWith(d, binding.Query)
-		case binding.FormPost:
-			err = e.Context.ShouldBindWith(d, binding.FormPost)
-		case binding.FormMultipart:
-			err = e.Context.ShouldBindWith(d, binding.FormMultipart)
-		case binding.ProtoBuf:
-			err = e.Context.ShouldBindWith(d, binding.ProtoBuf)
-		case binding.MsgPack:
-			err = e.Context.ShouldBindWith(d, binding.MsgPack)
-		case binding.YAML:
-			err = e.Context.ShouldBindWith(d, binding.YAML)
-		case binding.Header:
-			err = e.Context.ShouldBindWith(d, binding.Header)
-		default:
+		if bindings[i] == nil {
 			err = e.Context.ShouldBindUri(d)
+		} else {
+			err = e.Context.ShouldBindWith(d, bindings[i])
 		}
 		if err != nil && err.Error() == "EOF" {
 			e.Logger.Warn("request body is not present anymore. ")
 			err = nil
+			continue
 		}
 		if err != nil {
 			e.AddError(err)
 		}
-		var jsonStr []byte
-		jsonStr, err = json.Marshal(d)
-		if err != nil {
-
-		}
-		e.Context.Set("body", string(jsonStr))
 		return e
 	}
 	return e
