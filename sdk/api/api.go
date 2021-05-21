@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"fmt"
+	"encoding/json"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -46,9 +47,7 @@ func (e Api) GetLogger() *logger.Helper {
 
 func (e *Api) Bind(d interface{}, bindings ...binding.Binding) *Api {
 	var err error
-	if len(bindings) == 0 {
-		bindings = append(bindings, binding.JSON, nil)
-	}
+	bindings = append(bindings, nil, binding.JSON)
 	for i := range bindings {
 		switch bindings[i] {
 		case binding.JSON:
@@ -74,9 +73,20 @@ func (e *Api) Bind(d interface{}, bindings ...binding.Binding) *Api {
 		default:
 			err = e.Context.ShouldBindUri(d)
 		}
+		if err != nil && err.Error() == "EOF" {
+			e.Logger.Warn("request body is not present anymore. ")
+			err = nil
+		}
 		if err != nil {
 			e.AddError(err)
 		}
+		var jsonStr []byte
+		jsonStr, err = json.Marshal(d)
+		if err != nil {
+
+		}
+		e.Context.Set("body", string(jsonStr))
+		return e
 	}
 	return e
 }
