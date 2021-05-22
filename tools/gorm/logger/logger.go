@@ -11,21 +11,21 @@ import (
 	loggerCore "github.com/go-admin-team/go-admin-core/logger"
 )
 
-//// Colors
-//const (
-//	Reset       = "\033[0m"
-//	Red         = "\033[31m"
-//	Green       = "\033[32m"
-//	Yellow      = "\033[33m"
-//	Blue        = "\033[34m"
-//	Magenta     = "\033[35m"
-//	Cyan        = "\033[36m"
-//	White       = "\033[37m"
-//	BlueBold    = "\033[34;1m"
-//	MagentaBold = "\033[35;1m"
-//	RedBold     = "\033[31;1m"
-//	YellowBold  = "\033[33;1m"
-//)
+// Colors
+const (
+	Reset       = "\033[0m"
+	Red         = "\033[31m"
+	Green       = "\033[32m"
+	Yellow      = "\033[33m"
+	Blue        = "\033[34m"
+	Magenta     = "\033[35m"
+	Cyan        = "\033[36m"
+	White       = "\033[37m"
+	BlueBold    = "\033[34;1m"
+	MagentaBold = "\033[35;1m"
+	RedBold     = "\033[31;1m"
+	YellowBold  = "\033[33;1m"
+)
 
 type gormLogger struct {
 	logger.Config
@@ -138,18 +138,18 @@ func New(config logger.Config) logger.Interface {
 		infoStr      = "%s\n[info] "
 		warnStr      = "%s\n[warn] "
 		errStr       = "%s\n[error] "
-		traceStr     = "%s  [%.3fms] [rows:%v] %s"
-		traceWarnStr = "%s %s  [%.3fms] [rows:%v] %s"
-		traceErrStr  = "%s %s  [%.3fms] [rows:%v] %s"
+		traceStr     = "%s [%.3fms] [rows:%v] %s"
+		traceWarnStr = "%s %s [%.3fms] [rows:%v] %s"
+		traceErrStr  = "%s %s [%.3fms] [rows:%v] %s"
 	)
 
 	//if config.Colorful {
-	//	infoStr = Green + "%s\n" + Reset + Green + "[info] " + Reset
-	//	warnStr = BlueBold + "%s\n" + Reset + Magenta + "[warn] " + Reset
-	//	errStr = Magenta + "%s\n" + Reset + Red + "[error] " + Reset
-	//	traceStr = Green + "%s\n" + Reset + Yellow + "[%.3fms] " + BlueBold + "[rows:%v]" + Reset + " %s"
-	//	traceWarnStr = Green + "%s " + Yellow + "%s\n" + Reset + RedBold + "[%.3fms] " + Yellow + "[rows:%v]" + Magenta + " %s" + Reset
-	//	traceErrStr = RedBold + "%s " + MagentaBold + "%s\n" + Reset + Yellow + "[%.3fms] " + BlueBold + "[rows:%v]" + Reset + " %s"
+	//	infoStr = Green + "%s " + Reset + Green + "[info] " + Reset
+	//	warnStr = BlueBold + "%s " + Reset + Magenta + "[warn] " + Reset
+	//	errStr = Magenta + "%s " + Reset + Red + "[error] " + Reset
+	//	traceStr = Green + "%s " + Reset + Yellow + "[%.3fms] " + BlueBold + "[rows:%v]" + Reset + " %s"
+	//	traceWarnStr = Green + "%s " + Yellow + "%s " + Reset + RedBold + "[%.3fms] " + Yellow + "[rows:%v]" + Magenta + " %s" + Reset
+	//	traceErrStr = RedBold + "%s " + MagentaBold + "%s " + Reset + Yellow + "[%.3fms] " + BlueBold + "[rows:%v]" + Reset + " %s"
 	//}
 
 	return &gormLogger{

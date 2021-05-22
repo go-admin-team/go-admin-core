@@ -8,9 +8,9 @@ import (
 )
 
 var (
-	// Default buffer size if any
+	// DefaultSize Default buffer size if any
 	DefaultSize = 256
-	// Default formatter
+	// DefaultFormat Default formatter
 	DefaultFormat = TextFormat
 )
 
@@ -40,7 +40,7 @@ type Stream interface {
 	Stop() error
 }
 
-// Format is a function which formats the output
+// FormatFunc is a function which formats the output
 type FormatFunc func(Record) string
 
 // TextFormat returns text format
