@@ -61,6 +61,7 @@ func (e *Api) Bind(d interface{}, bindings ...binding.Binding) *Api {
 		}
 		if err != nil {
 			e.AddError(err)
+			return e
 		}
 	}
 	return e
