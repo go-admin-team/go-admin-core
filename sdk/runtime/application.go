@@ -24,6 +24,7 @@ type Application struct {
 	queue       storage.AdapterQueue
 	locker      storage.AdapterLocker
 	memoryQueue storage.AdapterQueue
+	handler     map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)
 	routers     []Router
 }
 
@@ -124,6 +125,7 @@ func NewConfig() *Application {
 		crontab:     make(map[string]*cron.Cron),
 		middlewares: make(map[string]interface{}),
 		memoryQueue: queue.NewMemory(10000),
+		handler:     make(map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)),
 		routers:     make([]Router, 0),
 	}
 }
@@ -213,6 +215,24 @@ func (e *Application) GetLockerAdapter() storage.AdapterLocker {
 
 func (e *Application) GetLockerPrefix(key string) storage.AdapterLocker {
 	return NewLocker(key, e.locker)
+}
+
+func (e *Application) SetHandler(key string, routerGroup func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)) {
+	e.mux.Lock()
+	defer e.mux.Unlock()
+	e.handler[key] = append(e.handler[key], routerGroup)
+}
+
+func (e *Application) GetHandler() map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc) {
+	e.mux.Lock()
+	defer e.mux.Unlock()
+	return e.handler
+}
+
+func (e *Application) GetHandlerPrefix(key string) []func(r *gin.RouterGroup, hand ...*gin.HandlerFunc) {
+	e.mux.Lock()
+	defer e.mux.Unlock()
+	return e.handler[key]
 }
 
 // GetStreamMessage 获取队列需要用的message

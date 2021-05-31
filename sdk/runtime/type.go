@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"github.com/gin-gonic/gin"
 	"net/http"
 
 	"github.com/casbin/casbin/v2"
@@ -53,6 +54,10 @@ type Runtime interface {
 	SetLockerAdapter(storage.AdapterLocker)
 	GetLockerAdapter() storage.AdapterLocker
 	GetLockerPrefix(string) storage.AdapterLocker
+
+	SetHandler(key string, routerGroup func(r *gin.RouterGroup, hand ...*gin.HandlerFunc))
+	GetHandler() map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)
+	GetHandlerPrefix(key string) []func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)
 
 	GetStreamMessage(id, stream string, value map[string]interface{}) (storage.Messager, error)
 }
