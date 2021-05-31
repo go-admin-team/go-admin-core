@@ -15,6 +15,7 @@ const (
 	Postgres = "postgres"
 )
 
+// ResolveSearchQuery 解析
 /**
  * 	exact / iexact 等于
  * 	contains / icontains 包含
@@ -26,7 +27,6 @@ const (
  *	isnull
  *  order 排序		e.g. order[key]=desc     order[key]=asc
  */
-// ResolveSearchQuery 解析
 func ResolveSearchQuery(driver string, q interface{}, condition Condition) {
 	qType := reflect.TypeOf(q)
 	qValue := reflect.ValueOf(q)

@@ -48,16 +48,22 @@ func (e RedisConnectOptions) GetRedisOptions() (*redis.Options, error) {
 		MaxRetries: e.MaxRetries,
 		PoolSize:   e.PoolSize,
 	}
-	if e.Tls != nil && e.Tls.Cert != "" {
+	var err error
+	r.TLSConfig, err = getTLS(e.Tls)
+	return r, err
+}
+
+func getTLS(c *Tls) (*tls.Config, error) {
+	if c != nil && c.Cert != "" {
 		// 从证书相关文件中读取和解析信息，得到证书公钥、密钥对
-		cert, err := tls.LoadX509KeyPair(e.Tls.Cert, e.Tls.Key)
+		cert, err := tls.LoadX509KeyPair(c.Cert, c.Key)
 		if err != nil {
 			fmt.Printf("tls.LoadX509KeyPair err: %v\n", err)
 			return nil, err
 		}
 		// 创建一个新的、空的 CertPool，并尝试解析 PEM 编码的证书，解析成功会将其加到 CertPool 中
 		certPool := x509.NewCertPool()
-		ca, err := ioutil.ReadFile(e.Tls.Ca)
+		ca, err := ioutil.ReadFile(c.Ca)
 		if err != nil {
 			fmt.Printf("ioutil.ReadFile err: %v\n", err)
 			return nil, err
@@ -67,14 +73,14 @@ func (e RedisConnectOptions) GetRedisOptions() (*redis.Options, error) {
 			fmt.Println("certPool.AppendCertsFromPEM err")
 			return nil, err
 		}
-		r.TLSConfig = &tls.Config{
+		return &tls.Config{
 			// 设置证书链，允许包含一个或多个
 			Certificates: []tls.Certificate{cert},
 			// 要求必须校验客户端的证书
 			ClientAuth: tls.RequireAndVerifyClientCert,
 			// 设置根证书的集合，校验方式使用 ClientAuth 中设定的模式
 			ClientCAs: certPool,
-		}
+		}, nil
 	}
-	return r, nil
+	return nil, nil
 }

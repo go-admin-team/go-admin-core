@@ -16,6 +16,7 @@ require (
 	github.com/google/uuid v1.1.2
 	github.com/imdario/mergo v0.3.9
 	github.com/json-iterator/go v1.1.9
+	github.com/nsqio/go-nsq v1.0.8
 	github.com/pkg/errors v0.9.1
 	github.com/robinjoseph08/redisqueue/v2 v2.1.0
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
