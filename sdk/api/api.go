@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-admin-team/go-admin-core/logger"
@@ -46,6 +47,7 @@ func (e Api) GetLogger() *logger.Helper {
 func (e *Api) Bind(d interface{}, bindings ...binding.Binding) *Api {
 	var err error
 	bindings = append(bindings, nil, binding.JSON)
+	needValidateNum := len(bindings) - 1
 	for i := range bindings {
 		if bindings[i] == nil {
 			err = e.Context.ShouldBindUri(d)
@@ -58,6 +60,12 @@ func (e *Api) Bind(d interface{}, bindings ...binding.Binding) *Api {
 			continue
 		}
 		if err != nil {
+			if i < needValidateNum {
+				if _, ok := err.(validator.ValidationErrors); ok {
+					err = nil
+					continue
+				}
+			}
 			e.AddError(err)
 			return e
 		}
