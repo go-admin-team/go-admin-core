@@ -8,17 +8,19 @@ import (
 	"github.com/go-admin-team/go-admin-core/sdk/pkg"
 )
 
+var Default = &response{}
+
 // Error 失败数据处理
 func Error(c *gin.Context, code int, err error, msg string) {
-	var res response
+	res := Default.Clone()
 	if err != nil {
-		res.Msg = err.Error()
+		res.SetMsg(err.Error())
 	}
 	if msg != "" {
-		res.Msg = msg
+		res.SetMsg(msg)
 	}
-	res.RequestId = pkg.GenerateMsgIDFromContext(c)
-	res.Code = int32(code)
+	res.SetTraceID(pkg.GenerateMsgIDFromContext(c))
+	res.SetCode(int32(code))
 	c.Set("result", res)
 	c.Set("status", code)
 	c.AbortWithStatusJSON(http.StatusOK, res)
@@ -26,13 +28,13 @@ func Error(c *gin.Context, code int, err error, msg string) {
 
 // OK 通常成功数据处理
 func OK(c *gin.Context, data interface{}, msg string) {
-	var res response
-	res.Data = data
+	res := Default.Clone()
+	res.SetData(data)
 	if msg != "" {
-		res.Msg = msg
+		res.SetMsg(msg)
 	}
-	res.RequestId = pkg.GenerateMsgIDFromContext(c)
-	res.Code = http.StatusOK
+	res.SetTraceID(pkg.GenerateMsgIDFromContext(c))
+	res.SetCode(http.StatusOK)
 	c.Set("result", res)
 	c.Set("status", http.StatusOK)
 	c.AbortWithStatusJSON(http.StatusOK, res)

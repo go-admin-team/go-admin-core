@@ -23,3 +23,23 @@ type page struct {
 	Page
 	List interface{} `json:"list"`
 }
+
+func (e *response) SetData(data interface{}) {
+	e.Data = data
+}
+
+func (e response) Clone() Responses {
+	return &e
+}
+
+func (e *response) SetTraceID(id string) {
+	e.RequestId = id
+}
+
+func (e *response) SetMsg(s string) {
+	e.Msg = s
+}
+
+func (e *response) SetCode(code int32) {
+	e.Code = code
+}
