@@ -32,10 +32,8 @@ func (e *Api) AddError(err error) {
 
 // MakeContext 设置http上下文
 func (e *Api) MakeContext(c *gin.Context) *Api {
-	fmt.Println(&c)
 	e.Context = c
 	e.Logger = GetRequestLogger(c)
-	fmt.Println(&e.Context)
 	return e
 }
 
