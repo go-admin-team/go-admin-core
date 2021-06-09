@@ -22,7 +22,8 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/robinjoseph08/redisqueue/v2 v2.1.0
 	github.com/shamsher31/goimgext v1.0.0
+	github.com/slok/go-http-metrics v0.9.0
 	github.com/smartystreets/goconvey v1.6.4
-	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
+	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a
 	gorm.io/gorm v1.21.10
 )

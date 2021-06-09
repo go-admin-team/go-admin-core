@@ -17,6 +17,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/imdario/mergo v0.3.9
 	github.com/json-iterator/go v1.1.11
+	github.com/mattn/go-colorable v0.1.7 // indirect
 	github.com/nsqio/go-nsq v1.0.8
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0 // indirect
@@ -24,7 +25,8 @@ require (
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/spf13/cast v1.3.1
-	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
+	github.com/stretchr/testify v1.6.1 // indirect
+	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a
 	golang.org/x/image v0.0.0-20210220032944-ac19c3e999fb // indirect
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013 // indirect
 	google.golang.org/grpc v1.29.1
