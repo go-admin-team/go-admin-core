@@ -26,3 +26,10 @@ func WithReader(r reader.Reader) Option {
 		o.Reader = r
 	}
 }
+
+// WithEntity sets the config Entity
+func WithEntity(e Entity) Option {
+	return func(o *Options) {
+		o.Entity = e
+	}
+}

@@ -3,6 +3,7 @@
 package errors
 
 import (
+	"fmt"
 	json "github.com/json-iterator/go"
 )
 
@@ -24,7 +25,7 @@ func (e *Error) Error() string {
 // New generates a custom error.
 func New(id, domain string, code ErrorCoder) error {
 	return &Error{
-		ErrorCode:    code.Code(),
+		ErrorCode:    fmt.Sprintf("C%d", code.Code()),
 		ErrorMessage: code.String(),
 		ShowType:     MessageError,
 		TraceId:      id,

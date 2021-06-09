@@ -33,7 +33,10 @@ type watcher struct {
 func newConfig(opts ...Option) (Config, error) {
 	var c config
 
-	c.Init(opts...)
+	err := c.Init(opts...)
+	if err != nil {
+		return nil, err
+	}
 	go c.run()
 
 	return &c, nil
@@ -67,6 +70,9 @@ func (c *config) Init(opts ...Option) error {
 	if err != nil {
 		return err
 	}
+	if c.opts.Entity != nil {
+		_ = c.vals.Scan(c.opts.Entity)
+	}
 
 	return nil
 }
@@ -96,6 +102,10 @@ func (c *config) run() {
 
 			// set values
 			c.vals, _ = c.opts.Reader.Values(snap.ChangeSet)
+			if c.opts.Entity != nil {
+				_ = c.vals.Scan(c.opts.Entity)
+				c.opts.Entity.OnChange()
+			}
 
 			c.Unlock()
 		}
@@ -116,7 +126,7 @@ func (c *config) run() {
 			case <-done:
 			case <-c.exit:
 			}
-			w.Stop()
+			_ = w.Stop()
 		}()
 
 		// block watch
@@ -149,7 +159,7 @@ func (c *config) Scan(v interface{}) error {
 	return c.vals.Scan(v)
 }
 
-// sync loads all the sources, calls the parser and updates the config
+// Sync sync loads all the sources, calls the parser and updates the config
 func (c *config) Sync() error {
 	if err := c.opts.Loader.Sync(); err != nil {
 		return err

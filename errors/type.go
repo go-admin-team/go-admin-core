@@ -3,5 +3,5 @@ package errors
 // ErrorCoder error code
 type ErrorCoder interface {
 	String() string
-	Code() string
+	Code() int32
 }
