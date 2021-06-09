@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -11,9 +12,12 @@ import (
 	"github.com/go-admin-team/go-admin-core/sdk/pkg"
 	"github.com/go-admin-team/go-admin-core/sdk/pkg/response"
 	"github.com/go-admin-team/go-admin-core/sdk/service"
+	"github.com/go-admin-team/go-admin-core/tools/language"
 	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
 )
+
+var DefaultLanguage = "zh-CN"
 
 type Api struct {
 	Context *gin.Context
@@ -46,7 +50,9 @@ func (e Api) GetLogger() *logger.Helper {
 // Bind 参数校验
 func (e *Api) Bind(d interface{}, bindings ...binding.Binding) *Api {
 	var err error
-	bindings = append(bindings, nil, binding.JSON)
+	if len(bindings) == 0 {
+		bindings = []binding.Binding{nil, binding.JSON}
+	}
 	needValidateNum := len(bindings) - 1
 	for i := range bindings {
 		if bindings[i] == nil {
@@ -60,12 +66,23 @@ func (e *Api) Bind(d interface{}, bindings ...binding.Binding) *Api {
 			continue
 		}
 		if err != nil {
-			if i < needValidateNum {
-				if _, ok := err.(validator.ValidationErrors); ok {
-					err = nil
-					continue
-				}
+			errs, ok := err.(validator.ValidationErrors)
+			if ok && i < needValidateNum {
+				err = nil
+				continue
 			}
+			trans, errT := transInit(e.getAcceptLanguage())
+			if errT != nil {
+				err = fmt.Errorf(errT.Error()+", %w", err)
+				e.AddError(err)
+				return e
+			}
+			validatorErrs := errs.Translate(trans)
+			strArr := make([]string, 0)
+			for k, v := range validatorErrs {
+				strArr = append(strArr, k+":"+v)
+			}
+			err = errors.New(strings.Join(strArr, ","))
 			e.AddError(err)
 			return e
 		}
@@ -124,4 +141,13 @@ func (e Api) PageOK(result interface{}, count int, pageIndex int, pageSize int, 
 // Custom 兼容函数
 func (e Api) Custom(data gin.H) {
 	response.Custum(e.Context, data)
+}
+
+// getAcceptLanguage 获取当前语言
+func (e *Api) getAcceptLanguage() string {
+	languages := language.ParseAcceptLanguage(e.Context.GetHeader("Accept-Language"), nil)
+	if len(languages) == 0 {
+		return DefaultLanguage
+	}
+	return languages[0]
 }

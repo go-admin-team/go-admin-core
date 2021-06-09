@@ -24,7 +24,9 @@ func SetupLogger(logType, path, levelStr, outputType string) logger.Logger {
 	var output io.Writer
 	switch outputType {
 	case "file":
-		output, err = writer.NewFileWriter(path, "log")
+		output, err = writer.NewFileWriter(
+			writer.WithPathOption(path),
+		)
 		if err != nil {
 			log.Fatal("logger setup error: %s", err.Error())
 		}
