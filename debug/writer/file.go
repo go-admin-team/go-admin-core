@@ -71,7 +71,7 @@ func (p *FileWriter) Write(data []byte) (n int, err error) {
 	p.size += uint(n)
 	//每天一个文件
 	filename := p.getFilenameAccordingToTimestamp()
-	if p.file.Name() != filename || p.size > p.opts.cap {
+	if p.file.Name() != filename || (p.opts.cap > 0 && p.size > p.opts.cap) {
 		if p.size > p.opts.cap {
 			p.num += 1
 			filename = p.getFilenameAccordingToTimestamp()
