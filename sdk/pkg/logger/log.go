@@ -12,20 +12,25 @@ import (
 	log "github.com/go-admin-team/go-admin-core/logger"
 )
 
-// SetupLogger 日志
-func SetupLogger(logType, path, levelStr, outputType string) logger.Logger {
-	if !pkg.PathExist(path) {
-		err := pkg.PathCreate(path)
+// SetupLogger 日志 cap 单位为kb
+func SetupLogger(opts ...Option) logger.Logger {
+	op := setDefault()
+	for _, o := range opts {
+		o(&op)
+	}
+	if !pkg.PathExist(op.path) {
+		err := pkg.PathCreate(op.path)
 		if err != nil {
 			log.Fatalf("create dir error: %s", err.Error())
 		}
 	}
 	var err error
 	var output io.Writer
-	switch outputType {
+	switch op.stdout {
 	case "file":
 		output, err = writer.NewFileWriter(
-			writer.WithPathOption(path),
+			writer.WithPathOption(op.path),
+			writer.WithCapOption(op.cap<<10),
 		)
 		if err != nil {
 			log.Fatal("logger setup error: %s", err.Error())
@@ -34,12 +39,12 @@ func SetupLogger(logType, path, levelStr, outputType string) logger.Logger {
 		output = os.Stdout
 	}
 	var level logger.Level
-	level, err = logger.GetLevel(levelStr)
+	level, err = logger.GetLevel(op.level)
 	if err != nil {
 		log.Fatalf("get logger level error, %s", err.Error())
 	}
 
-	switch logType {
+	switch op.driver {
 	case "zap":
 		log.DefaultLogger, err = zap.NewLogger(logger.WithLevel(level), logger.WithOutput(output), zap.WithCallerSkip(2))
 		if err != nil {

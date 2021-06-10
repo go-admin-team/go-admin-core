@@ -6,6 +6,7 @@ type Logger struct {
 	Level     string
 	Stdout    string
 	EnabledDB bool
+	Cap       uint
 }
 
 var LoggerConfig = new(Logger)
