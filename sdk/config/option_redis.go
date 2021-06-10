@@ -18,6 +18,9 @@ func GetRedisClient() *redis.Client {
 
 // SetRedisClient 设置redis客户端
 func SetRedisClient(c *redis.Client) {
+	if _redis != nil && _redis != c {
+		_redis.Shutdown()
+	}
 	_redis = c
 }
 

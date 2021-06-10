@@ -26,15 +26,19 @@ func (e *Settings) runCallback() {
 }
 
 func (e *Settings) OnChange() {
-	e.Settings.multiDatabase()
-	e.runCallback()
+	e.init()
 	log.Println("!!! config change and reload")
 }
 
 func (e *Settings) Init() {
+	e.init()
+	log.Println("!!! config init")
+}
+
+func (e *Settings) init() {
+	e.Settings.Logger.Setup()
 	e.Settings.multiDatabase()
 	e.runCallback()
-	log.Println("!!! config init")
 }
 
 // Config 配置集合

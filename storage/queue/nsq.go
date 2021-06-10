@@ -29,6 +29,7 @@ type NSQ struct {
 	addresses     []string
 	cfg           *nsq.Config
 	producer      *nsq.Producer
+	consumer      *nsq.Consumer
 	channelPrefix string
 }
 
@@ -53,18 +54,20 @@ func (e *NSQ) newProducer() (*nsq.Producer, error) {
 	return nsq.NewProducer(e.addresses[0], e.cfg)
 }
 
-func (e *NSQ) newConsumer(topic string, h nsq.Handler) (*nsq.Consumer, error) {
+func (e *NSQ) newConsumer(topic string, h nsq.Handler) (err error) {
 	if e.cfg == nil {
 		e.cfg = nsq.NewConfig()
 	}
-	q, err := nsq.NewConsumer(topic, e.channelPrefix+topic, e.cfg)
-	if err != nil {
-		return nil, err
+	if e.consumer == nil {
+		e.consumer, err = nsq.NewConsumer(topic, e.channelPrefix+topic, e.cfg)
+		if err != nil {
+			return err
+		}
 	}
-	q.AddHandler(h)
-	err = q.ConnectToNSQDs(e.addresses)
+	e.consumer.AddHandler(h)
+	err = e.consumer.ConnectToNSQDs(e.addresses)
 
-	return q, err
+	return err
 }
 
 // Append 消息入生产者
@@ -79,7 +82,7 @@ func (e *NSQ) Append(message storage.Messager) error {
 // Register 监听消费者
 func (e *NSQ) Register(name string, f storage.ConsumerFunc) {
 	h := &nsqConsumerHandler{f}
-	_, err := e.newConsumer(name, h)
+	err := e.newConsumer(name, h)
 	if err != nil {
 		//目前不支持动态注册
 		panic(err)
@@ -87,11 +90,15 @@ func (e *NSQ) Register(name string, f storage.ConsumerFunc) {
 }
 
 func (e *NSQ) Run() {
-
 }
 
 func (e *NSQ) Shutdown() {
-
+	if e.producer != nil {
+		e.producer.Stop()
+	}
+	if e.consumer != nil {
+		e.consumer.Stop()
+	}
 }
 
 type nsqConsumerHandler struct {

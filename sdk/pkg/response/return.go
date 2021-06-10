@@ -21,6 +21,7 @@ func Error(c *gin.Context, code int, err error, msg string) {
 	}
 	res.SetTraceID(pkg.GenerateMsgIDFromContext(c))
 	res.SetCode(int32(code))
+	res.SetSuccess(false)
 	c.Set("result", res)
 	c.Set("status", code)
 	c.AbortWithStatusJSON(http.StatusOK, res)
@@ -30,6 +31,7 @@ func Error(c *gin.Context, code int, err error, msg string) {
 func OK(c *gin.Context, data interface{}, msg string) {
 	res := Default.Clone()
 	res.SetData(data)
+	res.SetSuccess(true)
 	if msg != "" {
 		res.SetMsg(msg)
 	}
