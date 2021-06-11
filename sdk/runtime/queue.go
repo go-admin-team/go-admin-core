@@ -41,5 +41,7 @@ func (e *Queue) Run() {
 
 // Shutdown 停止
 func (e *Queue) Shutdown() {
-	e.queue.Shutdown()
+	if e.queue != nil {
+		e.queue.Shutdown()
+	}
 }

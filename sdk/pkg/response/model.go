@@ -43,3 +43,9 @@ func (e *response) SetMsg(s string) {
 func (e *response) SetCode(code int32) {
 	e.Code = code
 }
+
+func (e *response) SetSuccess(success bool) {
+	if !success {
+		e.Status = "error"
+	}
+}

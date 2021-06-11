@@ -7,3 +7,4 @@ require (
 	github.com/sirupsen/logrus v1.8.0
 )
 
+replace github.com/go-admin-team/go-admin-core => ../../../
