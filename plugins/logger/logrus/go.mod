@@ -3,7 +3,7 @@ module github.com/go-admin-team/go-admin-core/plugins/logger/logrus
 go 1.14
 
 require (
-	github.com/go-admin-team/go-admin-core v1.3.5-rc.3.0.20210610020726-2db73adb505d
+	github.com/go-admin-team/go-admin-core v1.3.5-rc.5
 	github.com/sirupsen/logrus v1.8.0
 )
 
