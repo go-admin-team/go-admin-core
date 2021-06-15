@@ -15,8 +15,8 @@ func GetLocation(ip, key string) string {
 	}
 	resp, err := http.Get("https://restapi.amap.com/v3/ip?ip=" + ip + "&key=key")
 	if err != nil {
-		panic(err)
-
+		fmt.Println("restapi.amap.com failed:", err)
+		return "未知位置"
 	}
 	defer resp.Body.Close()
 	s, err := ioutil.ReadAll(resp.Body)
