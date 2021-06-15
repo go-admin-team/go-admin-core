@@ -55,16 +55,31 @@ func (e *Server) Add(r ...Runnable) {
 }
 
 // Start start runnable
-func (e *Server) Start(ctx context.Context) error {
+func (e *Server) Start(ctx context.Context) (err error) {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
-	e.internalCtx = ctx
+	e.internalCtx, e.internalCancel = context.WithCancel(ctx)
+	stopComplete := make(chan struct{})
+	defer close(stopComplete)
+	defer func() {
+		stopErr := e.engageStopProcedure(stopComplete)
+		if stopErr != nil {
+			if err != nil {
+				err = fmt.Errorf("%s, %w", stopErr.Error(), err)
+			} else {
+				err = stopErr
+			}
+		}
+	}()
+	e.errChan = make(chan error)
+
 	for k := range e.services {
 		if !e.services[k].Attempt() {
 			//先判断是否可以启动
 			return errors.New("can't accept new runnable as stop procedure is already engaged")
 		}
 	}
+	//按顺序启动
 	for k := range e.services {
 		e.startRunnable(e.services[k])
 	}

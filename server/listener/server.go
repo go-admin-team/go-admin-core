@@ -36,27 +36,46 @@ func New(name string, opts ...Option) server.Runnable {
 }
 
 // NewMetrics 新建默认监控服务
-func NewMetrics(name string, opts ...Option) server.Runnable {
+func NewMetrics(opts ...Option) server.Runnable {
 	s := &Server{
-		name: name,
+		name: "metrics",
 		opts: setDefaultOption(),
 	}
 	s.opts.addr = ":3000"
-	s.opts.handler = promhttp.Handler()
+	h := http.NewServeMux()
+	h.Handle("/metrics", promhttp.Handler())
+	s.opts.handler = h
 	s.Options(opts...)
 	return s
 }
 
-// NewHealth 默认健康检查服务
-func NewHealth(name string, opts ...Option) server.Runnable {
+// NewHealthz 默认健康检查服务
+func NewHealthz(opts ...Option) server.Runnable {
 	s := &Server{
-		name: name,
+		name: "healthz",
 		opts: setDefaultOption(),
 	}
 	s.opts.addr = ":4000"
-	s.opts.handler = http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = w.Write([]byte("ok"))
+	h := http.NewServeMux()
+	h.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
 	})
+	s.opts.handler = h
+	s.Options(opts...)
+	return s
+}
+
+func NewReadyz(opts ...Option) server.Runnable {
+	s := &Server{
+		name: "readyz",
+		opts: setDefaultOption(),
+	}
+	s.opts.addr = ":2000"
+	h := http.NewServeMux()
+	h.HandleFunc("/readyz", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	s.opts.handler = h
 	s.Options(opts...)
 	return s
 }
@@ -81,14 +100,33 @@ func (e *Server) Start(ctx context.Context) error {
 	e.ctx = ctx
 	e.started = true
 	e.srv = &http.Server{Handler: e.opts.handler}
-	log.Infof("%e Server listening on %e", e.name, l.Addr().String())
+	if e.opts.endHook != nil {
+		e.srv.RegisterOnShutdown(e.opts.endHook)
+	}
+	e.srv.BaseContext = func(_ net.Listener) context.Context {
+		return ctx
+	}
+	log.Infof("%s Server listening on %s", e.name, l.Addr().String())
 	go func() {
-		if err = e.srv.Serve(l); err != nil {
-			log.Errorf("%e gRPC Server start error: %e", e.name, err.Error())
+		if e.opts.keyFile == "" || e.opts.certFile == "" {
+			if err = e.srv.Serve(l); err != nil {
+				log.Errorf("%s Server start error: %s", e.name, err.Error())
+			}
+		} else {
+			if err = e.srv.ServeTLS(l, e.opts.certFile, e.opts.keyFile); err != nil {
+				log.Errorf("%s Server start error: %s", e.name, err.Error())
+			}
+		}
+		<-ctx.Done()
+		err = e.Shutdown(ctx)
+		if err != nil {
+			log.Errorf("%S Server shutdown error: %s", e.name, err.Error())
 		}
 	}()
-	<-ctx.Done()
-	return e.Shutdown(ctx)
+	if e.opts.startedHook != nil {
+		e.opts.startedHook()
+	}
+	return nil
 }
 
 // Attempt 判断是否可以启动
