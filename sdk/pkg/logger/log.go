@@ -29,8 +29,8 @@ func SetupLogger(opts ...Option) logger.Logger {
 	switch op.stdout {
 	case "file":
 		output, err = writer.NewFileWriter(
-			writer.WithPathOption(op.path),
-			writer.WithCapOption(op.cap<<10),
+			writer.WithPath(op.path),
+			writer.WithCap(op.cap<<10),
 		)
 		if err != nil {
 			log.Fatal("logger setup error: %s", err.Error())

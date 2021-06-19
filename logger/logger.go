@@ -1,4 +1,3 @@
-// Package log provides a log interface
 package logger
 
 var (
