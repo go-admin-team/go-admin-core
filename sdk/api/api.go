@@ -71,6 +71,10 @@ func (e *Api) Bind(d interface{}, bindings ...binding.Binding) *Api {
 				err = nil
 				continue
 			}
+			if err!=nil{
+				e.AddError(err)
+				return e
+			}
 			trans, errT := transInit(e.getAcceptLanguage())
 			if errT != nil {
 				err = fmt.Errorf(errT.Error()+", %w", err)
@@ -82,9 +86,11 @@ func (e *Api) Bind(d interface{}, bindings ...binding.Binding) *Api {
 			for k, v := range validatorErrs {
 				strArr = append(strArr, k+":"+v)
 			}
-			err = errors.New(strings.Join(strArr, ","))
-			e.AddError(err)
-			return e
+			if len(strArr)!=0 {
+				err = errors.New(strings.Join(strArr, ","))
+				e.AddError(err)
+				return e
+			}
 		}
 	}
 	return e
