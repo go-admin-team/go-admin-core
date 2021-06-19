@@ -10,8 +10,9 @@ import (
 	"time"
 )
 
-// fileNameTimeFormat 文件名称格式
-const fileNameTimeFormat = "2006-01-02"
+// timeFormat 时间格式
+// 用于文件名称格式
+const timeFormat = "2006-01-02"
 
 // FileWriter 文件写入结构体
 type FileWriter struct {
@@ -33,13 +34,13 @@ func NewFileWriter(opts ...Option) (*FileWriter, error) {
 	var filename string
 	var err error
 	for {
-		filename = p.getFilenameAccordingToTimestamp()
+		filename = p.getFilename()
 		_, err := os.Stat(filename)
 		if err != nil {
 			if os.IsNotExist(err) {
 				if p.num > 0 {
 					p.num--
-					filename = p.getFilenameAccordingToTimestamp()
+					filename = p.getFilename()
 				}
 				//文件不存在
 				break
@@ -76,7 +77,7 @@ func (p *FileWriter) write() {
 
 func (p *FileWriter) checkFile() {
 	info, _ := p.file.Stat()
-	if strings.Index(p.file.Name(), time.Now().Format(fileNameTimeFormat)) < 0 ||
+	if strings.Index(p.file.Name(), time.Now().Format(timeFormat)) < 0 ||
 		(p.opts.cap > 0 && uint(info.Size()) > p.opts.cap) {
 		//生成新文件
 		if uint(info.Size()) > p.opts.cap {
@@ -84,7 +85,7 @@ func (p *FileWriter) checkFile() {
 		} else {
 			p.num = 0
 		}
-		filename := p.getFilenameAccordingToTimestamp()
+		filename := p.getFilename()
 		_ = p.file.Close()
 		p.file, _ = os.OpenFile(filename, os.O_WRONLY|os.O_APPEND|os.O_CREATE|os.O_SYNC, 0600)
 	}
@@ -105,20 +106,21 @@ func (p *FileWriter) Write(data []byte) (n int, err error) {
 	return n, nil
 }
 
-// getFilenameAccordingToTimestamp 通过日期命名log文件
-func (p *FileWriter) getFilenameAccordingToTimestamp() string {
+// getFilename 获取log文件名
+// 目前为：以日期格式命名，eg：2006-01-02.log or 2006-01-02.log
+func (p *FileWriter) getFilename() string {
 	if p.FilenameFunc != nil {
 		return p.FilenameFunc(p)
 	}
 	if p.opts.cap == 0 {
 		return filepath.Join(p.opts.path,
 			fmt.Sprintf("%s.%s",
-				time.Now().Format(fileNameTimeFormat),
+				time.Now().Format(timeFormat),
 				p.opts.suffix))
 	}
 	return filepath.Join(p.opts.path,
 		fmt.Sprintf("%s-[%d].%s",
-			time.Now().Format(fileNameTimeFormat),
+			time.Now().Format(timeFormat),
 			p.num,
 			p.opts.suffix))
 }
