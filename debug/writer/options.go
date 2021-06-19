@@ -7,36 +7,40 @@
 
 package writer
 
-// options 可配置参数
-type options struct {
+// Options 可配置参数
+type Options struct {
 	path   string
 	suffix string //文件扩展名
 	cap    uint
 }
 
-func setDefault() options {
-	return options{
+func setDefault() Options {
+	return Options{
 		path:   "/tmp/go-admin",
 		suffix: "log",
 	}
 }
 
-type Option func(*options)
+// Option set options
+type Option func(*Options)
 
-func WithPathOption(s string) Option {
-	return func(o *options) {
+// WithPath set path
+func WithPath(s string) Option {
+	return func(o *Options) {
 		o.path = s
 	}
 }
 
-func WithSuffixOption(s string) Option {
-	return func(o *options) {
+// WithSuffix set suffix
+func WithSuffix(s string) Option {
+	return func(o *Options) {
 		o.suffix = s
 	}
 }
 
-func WithCapOption(n uint) Option {
-	return func(o *options) {
+// WithCap set cap
+func WithCap(n uint) Option {
+	return func(o *Options) {
 		o.cap = n
 	}
 }
