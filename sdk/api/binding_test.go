@@ -40,7 +40,7 @@ func TestResolve(t *testing.T) {
 
 		d := SysUserSearch{}
 
-		list := Resolve(d)
+		list := constructor.GetBindingForGin(d)
 		for _, binding := range list {
 			fmt.Printf("%v /n",binding)
 		}

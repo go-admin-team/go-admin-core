@@ -3,9 +3,8 @@ package api
 import (
 	"errors"
 	"fmt"
-	"net/http"
-	"strings"
 
+	vd "github.com/bytedance/go-tagexpr/v2/validator"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-admin-team/go-admin-core/logger"
@@ -13,8 +12,8 @@ import (
 	"github.com/go-admin-team/go-admin-core/sdk/pkg/response"
 	"github.com/go-admin-team/go-admin-core/sdk/service"
 	"github.com/go-admin-team/go-admin-core/tools/language"
-	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
+	"net/http"
 )
 
 var DefaultLanguage = "zh-CN"
@@ -51,9 +50,8 @@ func (e Api) GetLogger() *logger.Helper {
 func (e *Api) Bind(d interface{}, bindings ...binding.Binding) *Api {
 	var err error
 	if len(bindings) == 0 {
-		bindings = []binding.Binding{nil, binding.JSON}
+		bindings = constructor.GetBindingForGin(d)
 	}
-	needValidateNum := len(bindings) - 1
 	for i := range bindings {
 		if bindings[i] == nil {
 			err = e.Context.ShouldBindUri(d)
@@ -66,32 +64,15 @@ func (e *Api) Bind(d interface{}, bindings ...binding.Binding) *Api {
 			continue
 		}
 		if err != nil {
-			errs, ok := err.(validator.ValidationErrors)
-			if ok && i < needValidateNum {
-				err = nil
-				continue
-			}
-			if err!=nil{
-				e.AddError(err)
-				return e
-			}
-			trans, errT := transInit(e.getAcceptLanguage())
-			if errT != nil {
-				err = fmt.Errorf(errT.Error()+", %w", err)
-				e.AddError(err)
-				return e
-			}
-			validatorErrs := errs.Translate(trans)
-			strArr := make([]string, 0)
-			for k, v := range validatorErrs {
-				strArr = append(strArr, k+":"+v)
-			}
-			if len(strArr)!=0 {
-				err = errors.New(strings.Join(strArr, ","))
-				e.AddError(err)
-				return e
-			}
+			e.AddError(err)
+			break
 		}
+	}
+	vd.SetErrorFactory(func(failPath, msg string) error {
+		return fmt.Errorf(`{"succ":false, "error":"validation failed: %s"}`, failPath)
+	})
+	if err1 := vd.Validate(d); err1 != nil {
+		e.AddError(errors.New(fmt.Sprintf("Validate error: %s", err1.Error())))
 	}
 	return e
 }
