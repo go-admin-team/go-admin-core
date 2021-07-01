@@ -68,11 +68,11 @@ func (e *Api) Bind(d interface{}, bindings ...binding.Binding) *Api {
 			break
 		}
 	}
-	vd.SetErrorFactory(func(failPath, msg string) error {
-		return fmt.Errorf(`{"succ":false, "error":"validation failed: %s"}`, failPath)
-	})
+	//vd.SetErrorFactory(func(failPath, msg string) error {
+	//	return fmt.Errorf(`"validation failed: %s %s"`, failPath, msg)
+	//})
 	if err1 := vd.Validate(d); err1 != nil {
-		e.AddError(errors.New(fmt.Sprintf("Validate error: %s", err1.Error())))
+		e.AddError(err1)
 	}
 	return e
 }
