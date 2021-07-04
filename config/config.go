@@ -12,17 +12,17 @@ import (
 
 // Config is an interface abstraction for dynamic configuration
 type Config interface {
-	// provide the reader.Values interface
+	// Values provide the reader.Values interface
 	reader.Values
 	// Init the config
 	Init(opts ...Option) error
 	// Options in the config
 	Options() Options
-	// Stop the config loader/watcher
+	// Close Stop the config loader/watcher
 	Close() error
 	// Load config sources
 	Load(source ...source.Source) error
-	// Force a source changeset sync
+	// Sync Force a source changeset sync
 	Sync() error
 	// Watch a value for changes
 	Watch(path ...string) (Watcher, error)
@@ -34,6 +34,12 @@ type Watcher interface {
 	Stop() error
 }
 
+// Entity 配置实体
+type Entity interface {
+	OnChange()
+}
+
+// Options 配置的参数
 type Options struct {
 	Loader loader.Loader
 	Reader reader.Reader
@@ -41,13 +47,16 @@ type Options struct {
 
 	// for alternative data
 	Context context.Context
+
+	Entity Entity
 }
 
+// Option 调用类型
 type Option func(o *Options)
 
 var (
-	// Default Config Manager
-	DefaultConfig, _ = NewConfig()
+	// DefaultConfig Default Config Manager
+	DefaultConfig Config
 )
 
 // NewConfig returns new config
@@ -55,12 +64,12 @@ func NewConfig(opts ...Option) (Config, error) {
 	return newConfig(opts...)
 }
 
-// Return config as raw json
+// Bytes Return config as raw json
 func Bytes() []byte {
 	return DefaultConfig.Bytes()
 }
 
-// Return config as a map
+// Map Return config as a map
 func Map() map[string]interface{} {
 	return DefaultConfig.Map()
 }
@@ -70,7 +79,7 @@ func Scan(v interface{}) error {
 	return DefaultConfig.Scan(v)
 }
 
-// Force a source changeset sync
+// Sync Force a source changeset sync
 func Sync() error {
 	return DefaultConfig.Sync()
 }

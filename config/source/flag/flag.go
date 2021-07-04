@@ -35,7 +35,7 @@ func (fs *flagsrc) Read() (*source.ChangeSet, error) {
 			tmp = map[string]interface{}{k: tmp}
 		}
 
-		mergo.Map(&changes, tmp) // need to sort error handling
+		_ = mergo.Map(&changes, tmp) // need to sort error handling
 		return
 	}
 

@@ -11,6 +11,8 @@ import (
 	"github.com/imdario/mergo"
 )
 
+const readerTyp = "json"
+
 type jsonReader struct {
 	opts reader.Options
 	json encoder.Encoder

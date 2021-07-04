@@ -9,18 +9,20 @@ import (
 )
 
 // 获取外网ip地址
-func GetLocation(ip string) string {
+func GetLocation(ip, key string) string {
 	if ip == "127.0.0.1" || ip == "localhost" {
 		return "内部IP"
 	}
-	resp, err := http.Get("https://restapi.amap.com/v3/ip?ip=" + ip + "&key=3fabc36c20379fbb9300c79b19d5d05e")
+	url := "https://restapi.amap.com/v5/ip?ip=" + ip + "&type=4&key=" + key
+	fmt.Println("url", url)
+	resp, err := http.Get(url)
 	if err != nil {
-		panic(err)
-
+		fmt.Println("restapi.amap.com failed:", err)
+		return "未知位置"
 	}
 	defer resp.Body.Close()
 	s, err := ioutil.ReadAll(resp.Body)
-	fmt.Printf(string(s))
+	fmt.Println(string(s))
 
 	m := make(map[string]string)
 
@@ -28,10 +30,10 @@ func GetLocation(ip string) string {
 	if err != nil {
 		fmt.Println("Umarshal failed:", err)
 	}
-	if m["province"] == "" {
-		return "未知位置"
-	}
-	return m["province"] + "-" + m["city"]
+	//if m["province"] == "" {
+	//	return "未知位置"
+	//}
+	return m["country"] + "-" + m["province"] + "-" + m["city"] + "-" + m["district"] + "-" + m["isp"]
 }
 
 // 获取局域网ip地址

@@ -28,7 +28,7 @@ type defaultLogger struct {
 	opts Options
 }
 
-// Init(opts...) should only overwrite provided options
+// Init (opts...) should only overwrite provided options
 func (l *defaultLogger) Init(opts ...Option) error {
 	for _, o := range opts {
 		o(&l.opts)
@@ -122,20 +122,34 @@ func (l *defaultLogger) logf(level Level, format string, v ...interface{}) {
 	sort.Strings(keys)
 	metadata := ""
 
-	for _, k := range keys {
-		metadata += fmt.Sprintf(" %s: %v", k, fields[k])
+	for i, k := range keys {
+		if i == 0 {
+			metadata += fmt.Sprintf("%s:%v", k, fields[k])
+		} else {
+			metadata += fmt.Sprintf(" %s:%v", k, fields[k])
+		}
 	}
 
 	var name string
 	if l.opts.Name != "" {
 		name = "[" + l.opts.Name + "]"
 	}
-	t := rec.Timestamp.Format("2006-01-02T15:04:05.000Z0700")
-	//fmt.Printf("%s %s %v\n", t, metadata, rec.Message)
-	_, err := l.opts.Out.Write([]byte(fmt.Sprintf("%s %s %s %v\n", name, t, metadata, rec.Message)))
+	t := rec.Timestamp.Format("2006-01-02 15:04:05.000Z0700")
+	//fmt.Printf("%s\n", t)
+	//fmt.Printf("%s\n", name)
+	//fmt.Printf("%s\n", metadata)
+	//fmt.Printf("%v\n", rec.Message)
+	logStr := ""
+	if name == "" {
+		logStr = fmt.Sprintf("%s %s %v\n", t, metadata, rec.Message)
+	} else {
+		logStr = fmt.Sprintf("%s %s %s %v\n", name, t, metadata, rec.Message)
+	}
+	_, err := l.opts.Out.Write([]byte(logStr))
 	if err != nil {
 		log.Printf("log [Logf] write error: %s \n", err.Error())
 	}
+
 }
 
 func (l *defaultLogger) Options() Options {

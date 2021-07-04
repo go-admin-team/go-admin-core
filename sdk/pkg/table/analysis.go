@@ -26,8 +26,9 @@ func Crc8Hash(src string) string {
 	return strconv.Itoa(int(sum))
 }
 
+// DynamicTable 动态表名
 // e.g. DB.Scopes(DynamicTable(Crc32Hash, "test", "小圈圈")).Find(&tests)
-// DynamicTable 设置动态表名scope params: f 分表计算函数 baseTable 基础表名 fieldValue 参与分表字段
+// 设置动态表名scope params: f 分表计算函数 baseTable 基础表名 fieldValue 参与分表字段
 func DynamicTable(f func(string) string, baseTable, fieldValue string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		return db.Table(fmt.Sprintf("%s_%s", baseTable, f(fieldValue)))

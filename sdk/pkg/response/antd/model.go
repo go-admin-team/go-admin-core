@@ -1,5 +1,11 @@
 package antd
 
+import (
+	"fmt"
+
+	resp "github.com/go-admin-team/go-admin-core/sdk/pkg/response"
+)
+
 const (
 	Silent       = "0"
 	MessageWarn  = "1"
@@ -30,4 +36,32 @@ type Pages struct {
 type pages struct {
 	Pages
 	Data interface{} `json:"data,omitempty"`
+}
+
+func (e *response) SetCode(code int32) {
+	switch code {
+	case 200, 0:
+	default:
+		e.ErrorCode = fmt.Sprintf("C%d", code)
+	}
+}
+
+func (e *response) SetTraceID(id string) {
+	e.TraceId = id
+}
+
+func (e *response) SetMsg(msg string) {
+	e.ErrorMessage = msg
+}
+
+func (e *response) SetData(data interface{}) {
+	e.Data = data
+}
+
+func (e *response) SetSuccess(success bool) {
+	e.Success = success
+}
+
+func (e response) Clone() resp.Responses {
+	return &e
 }

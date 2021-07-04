@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"sync"
 
@@ -23,6 +24,16 @@ type Application struct {
 	queue       storage.AdapterQueue
 	locker      storage.AdapterLocker
 	memoryQueue storage.AdapterQueue
+	handler     map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)
+	routers     []Router
+}
+
+type Router struct {
+	HttpMethod, RelativePath, Handler string
+}
+
+type Routers struct {
+	List []Router
 }
 
 // SetDb 设置对应key的db
@@ -79,6 +90,23 @@ func (e *Application) GetEngine() http.Handler {
 	return e.engine
 }
 
+// GetRouter 获取路由表
+func (e *Application) GetRouter() []Router {
+	return e.setRouter()
+}
+
+// setRouter 设置路由表
+func (e *Application) setRouter() []Router {
+	switch e.engine.(type) {
+	case *gin.Engine:
+		routers := e.engine.(*gin.Engine).Routes()
+		for _, router := range routers {
+			e.routers = append(e.routers, Router{RelativePath: router.Path, Handler: router.Handler, HttpMethod: router.Method})
+		}
+	}
+	return e.routers
+}
+
 // SetLogger 设置日志组件
 func (e *Application) SetLogger(l logger.Logger) {
 	logger.DefaultLogger = l
@@ -97,6 +125,8 @@ func NewConfig() *Application {
 		crontab:     make(map[string]*cron.Cron),
 		middlewares: make(map[string]interface{}),
 		memoryQueue: queue.NewMemory(10000),
+		handler:     make(map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)),
+		routers:     make([]Router, 0),
 	}
 }
 
@@ -185,6 +215,24 @@ func (e *Application) GetLockerAdapter() storage.AdapterLocker {
 
 func (e *Application) GetLockerPrefix(key string) storage.AdapterLocker {
 	return NewLocker(key, e.locker)
+}
+
+func (e *Application) SetHandler(key string, routerGroup func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)) {
+	e.mux.Lock()
+	defer e.mux.Unlock()
+	e.handler[key] = append(e.handler[key], routerGroup)
+}
+
+func (e *Application) GetHandler() map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc) {
+	e.mux.Lock()
+	defer e.mux.Unlock()
+	return e.handler
+}
+
+func (e *Application) GetHandlerPrefix(key string) []func(r *gin.RouterGroup, hand ...*gin.HandlerFunc) {
+	e.mux.Lock()
+	defer e.mux.Unlock()
+	return e.handler[key]
 }
 
 // GetStreamMessage 获取队列需要用的message
