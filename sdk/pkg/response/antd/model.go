@@ -28,6 +28,8 @@ type response struct {
 }
 
 type Pages struct {
+	Response
+	Data interface{} `json:"data,omitempty"` // response data
 	Total    int `json:"total,omitempty"`
 	Current  int `json:"current,omitempty"`
 	PageSize int `json:"pageSize,omitempty"`

@@ -9,7 +9,7 @@ require (
 	github.com/bsm/redislock v0.5.0
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/ghodss/yaml v1.0.0
-	github.com/gin-gonic/gin v1.7.1
+	github.com/gin-gonic/gin v1.7.2
 	github.com/go-redis/redis/v7 v7.4.0
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/google/uuid v1.1.2
@@ -32,6 +32,6 @@ require (
 	google.golang.org/grpc v1.29.1
 	google.golang.org/protobuf v1.26.0-rc.1
 	gorm.io/driver/mysql v1.0.3
-	gorm.io/gorm v1.21.10
+	gorm.io/gorm v1.21.11
 	gorm.io/plugin/dbresolver v1.1.0
 )
