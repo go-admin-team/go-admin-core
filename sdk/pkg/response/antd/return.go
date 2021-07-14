@@ -41,7 +41,11 @@ func PageOK(c *gin.Context, result interface{}, total int, current int, pageSize
 	res.Total = total
 	res.Current = current
 	res.PageSize = pageSize
-	OK(c, res)
+	res.Success = true
+	res.TraceId = pkg.GenerateMsgIDFromContext(c)
+	c.Set("result", res)
+	c.Set("status", http.StatusOK)
+	c.AbortWithStatusJSON(http.StatusOK, res)
 }
 
 // Custum 兼容函数
