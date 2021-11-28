@@ -10,7 +10,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/shamsher31/goimgext"
+	imgext "github.com/shamsher31/goimgext"
 )
 
 // GetSize 获取文件大小
@@ -94,7 +94,7 @@ func GetImgType(p string) (string, error) {
 	ext := imgext.Get()
 
 	for i := 0; i < len(ext); i++ {
-		if strings.Contains(ext[i], filetype[6:len(filetype)]) {
+		if strings.Contains(ext[i], filetype[6:]) {
 			return filetype, nil
 		}
 	}
