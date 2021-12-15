@@ -43,11 +43,16 @@ func (m *Memory) Append(message storage.Messager) error {
 	memoryMessage.SetID(message.GetID())
 	memoryMessage.SetStream(message.GetStream())
 	memoryMessage.SetValues(message.GetValues())
+
 	v, ok := m.queue.Load(message.GetStream())
-	if !ok {
+
+	// TODO: 错误超出5次将放弃
+	if !ok && memoryMessage.GetErrorCount() < 5 {
 		v = m.makeQueue()
 		m.queue.Store(message.GetStream(), v)
+		memoryMessage.SetErrorCount()
 	}
+
 	var q queue
 	switch v.(type) {
 	case queue:
