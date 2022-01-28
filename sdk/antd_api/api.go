@@ -131,3 +131,7 @@ func (e *Api) AddError(err error) {
 	}
 }
 
+func (e Api) Translate(form, to interface{}) {
+	pkg.Translate(form, to)
+}
+
