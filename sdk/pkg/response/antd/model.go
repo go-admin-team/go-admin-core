@@ -40,6 +40,19 @@ type pages struct {
 	Data interface{} `json:"data,omitempty"`
 }
 
+type lists struct {
+	Response
+	ListData ListData `json:"data,omitempty"` // response data
+}
+
+
+type ListData struct {
+	List interface{} `json:"list,omitempty"` // response data
+	Total    int `json:"total,omitempty"`
+	Current  int `json:"current,omitempty"`
+	PageSize int `json:"pageSize,omitempty"`
+}
+
 func (e *response) SetCode(code int32) {
 	switch code {
 	case 200, 0:

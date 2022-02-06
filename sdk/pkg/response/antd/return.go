@@ -48,6 +48,19 @@ func PageOK(c *gin.Context, result interface{}, total int, current int, pageSize
 	c.AbortWithStatusJSON(http.StatusOK, res)
 }
 
+func ListOK(c *gin.Context, result interface{}, total int, current int, pageSize int) {
+	var res lists
+	res.ListData.List = result
+	res.ListData.Total = total
+	res.ListData.Current = current
+	res.ListData.PageSize = pageSize
+	res.Success = true
+	res.TraceId = pkg.GenerateMsgIDFromContext(c)
+	c.Set("result", res)
+	c.Set("status", http.StatusOK)
+	c.AbortWithStatusJSON(http.StatusOK, res)
+}
+
 // Custum 兼容函数
 func Custum(c *gin.Context, data gin.H) {
 	data["traceId"] = pkg.GenerateMsgIDFromContext(c)

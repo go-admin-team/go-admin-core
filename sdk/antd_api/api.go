@@ -57,6 +57,10 @@ func (e *Api) PageOK( result interface{}, total int, current int, pageSize int) 
 	antd.PageOK(e.Context, result, total, current, pageSize)
 }
 
+func (e *Api) ListOK( result interface{}, total int, current int, pageSize int) {
+	antd.ListOK(e.Context, result, total, current, pageSize)
+}
+
 // Custom 兼容函数
 func (e *Api) Custom( data gin.H) {
 	antd.Custum(e.Context, data)
@@ -134,4 +138,3 @@ func (e *Api) AddError(err error) {
 func (e Api) Translate(form, to interface{}) {
 	pkg.Translate(form, to)
 }
-
