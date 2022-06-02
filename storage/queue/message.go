@@ -51,8 +51,8 @@ func (m *Message) SetPrefix(prefix string) {
 	m.Values[storage.PrefixKey] = prefix
 }
 
-func (m *Message) SetErrorCount() {
-	m.ErrorCount = m.ErrorCount + 1
+func (m *Message) SetErrorCount(count int) {
+	m.ErrorCount = count
 }
 
 func (m *Message) GetErrorCount() int {

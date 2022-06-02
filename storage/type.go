@@ -39,7 +39,7 @@ type Messager interface {
 	GetValues() map[string]interface{}
 	GetPrefix() string
 	SetPrefix(string)
-	SetErrorCount()
+	SetErrorCount(count int)
 	GetErrorCount() int
 }
 
