@@ -249,3 +249,17 @@ func (e *Application) GetStreamMessage(id, stream string, value map[string]inter
 func (e *Application) GetMemoryQueue(prefix string) storage.AdapterQueue {
 	return NewQueue(prefix, e.memoryQueue)
 }
+
+// SetConfig 设置对应key的config
+func (e *Application) SetConfig(key string, value interface{}) {
+	e.mux.Lock()
+	defer e.mux.Unlock()
+	e.configs[key] = value
+}
+
+// GetConfig 获取对应key的config
+func (e *Application) GetConfig(key string) interface{} {
+	e.mux.Lock()
+	defer e.mux.Unlock()
+	return e.configs[key]
+}
