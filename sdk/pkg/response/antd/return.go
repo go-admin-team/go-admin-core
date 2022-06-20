@@ -28,6 +28,18 @@ func OK(c *gin.Context, data interface{}) {
 	var res response
 	res.Data = data
 	res.Success = true
+	res.Status = "done"
+	res.TraceId = pkg.GenerateMsgIDFromContext(c)
+	c.Set("result", res)
+	c.Set("status", http.StatusOK)
+	c.AbortWithStatusJSON(http.StatusOK, res)
+}
+
+func UpFileOK(c *gin.Context, data interface{}) {
+	var res response
+	res.Data = data
+	res.Success = true
+	res.Status = "done"
 	res.TraceId = pkg.GenerateMsgIDFromContext(c)
 	c.Set("result", res)
 	c.Set("status", http.StatusOK)
