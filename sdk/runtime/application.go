@@ -26,6 +26,7 @@ type Application struct {
 	memoryQueue storage.AdapterQueue
 	handler     map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)
 	routers     []Router
+	configs     map[string]interface{}
 }
 
 type Router struct {
@@ -127,6 +128,7 @@ func NewConfig() *Application {
 		memoryQueue: queue.NewMemory(10000),
 		handler:     make(map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)),
 		routers:     make([]Router, 0),
+		configs:     make(map[string]interface{}),
 	}
 }
 
