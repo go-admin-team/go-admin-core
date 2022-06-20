@@ -1,6 +1,6 @@
 module github.com/go-admin-team/go-admin-core
 
-go 1.14
+go 1.18
 
 require (
 	github.com/BurntSushi/toml v0.3.1
@@ -9,7 +9,7 @@ require (
 	github.com/bsm/redislock v0.5.0
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/ghodss/yaml v1.0.0
-	github.com/gin-gonic/gin v1.7.3
+	github.com/gin-gonic/gin v1.7.7
 	github.com/go-redis/redis/v7 v7.4.0
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/google/uuid v1.1.2
