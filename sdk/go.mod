@@ -5,7 +5,8 @@ go 1.18
 require (
 	github.com/bsm/redislock v0.5.0
 	github.com/bytedance/go-tagexpr/v2 v2.7.12
-	github.com/casbin/casbin/v2 v2.24.0
+	github.com/casbin/casbin/v2 v2.47.2
+	github.com/casbin/redis-watcher/v2 v2.0.0-20220614104201-0e70bf2be930
 	github.com/chanxuehong/wechat v0.0.0-20201110083048-0180211b69fd
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-gonic/gin v1.7.3
