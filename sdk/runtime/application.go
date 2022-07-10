@@ -266,7 +266,12 @@ func (e *Application) GetConfig(key string) interface{} {
 	return e.configs[key]
 }
 
-// SetAppRouters 设置其他app的路由
+// SetAppRouters 设置app的路由
 func (e *Application) SetAppRouters(appRouters func()) {
 	e.appRouters = append(e.appRouters, appRouters)
+}
+
+// GetAppRouters 获取app的路由
+func (e *Application) GetAppRouters() []func() {
+	return e.appRouters
 }
