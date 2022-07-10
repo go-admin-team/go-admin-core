@@ -63,4 +63,8 @@ type Runtime interface {
 
 	GetConfig(key string) interface{}
 	SetConfig(key string, value interface{})
+
+	// SetAppRouters set AppRouter
+	SetAppRouters(appRouters func())
+	GetAppRouters() []func()
 }
