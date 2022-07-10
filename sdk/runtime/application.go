@@ -26,7 +26,9 @@ type Application struct {
 	memoryQueue storage.AdapterQueue
 	handler     map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)
 	routers     []Router
-	configs     map[string]interface{}
+	configs     map[string]interface{} // 系统参数
+	appRouters  []func()               // app路由
+
 }
 
 type Router struct {
@@ -262,4 +264,9 @@ func (e *Application) GetConfig(key string) interface{} {
 	e.mux.Lock()
 	defer e.mux.Unlock()
 	return e.configs[key]
+}
+
+// SetAppRouters 设置其他app的路由
+func (e *Application) SetAppRouters(appRouters func()) {
+	e.appRouters = append(e.appRouters, appRouters)
 }
