@@ -28,11 +28,12 @@ type Api struct {
 func (e Api) GetLogger() *logger.Helper {
 	return api.GetRequestLogger(e.Context)
 }
+
 // GetOrm 获取Orm DB
 func (e *Api) GetOrm(c *gin.Context) (*gorm.DB, error) {
 	db, err := pkg.GetOrm(c)
 	if err != nil {
-		e.Error( http.StatusInternalServerError, "数据库连接获取失败", "9")
+		e.Error(http.StatusInternalServerError, "数据库连接获取失败", "9")
 		return nil, err
 	}
 	return db, nil
@@ -40,7 +41,7 @@ func (e *Api) GetOrm(c *gin.Context) (*gorm.DB, error) {
 
 // Error 通常错误数据处理
 // showType error display type： 0 silent; 1 message.warn; 2 message.error; 4 notification; 9 page
-func (e *Api) Error( errCode int, errMsg string, showType string) {
+func (e *Api) Error(errCode int, errMsg string, showType string) {
 	if showType == "" {
 		showType = "2"
 	}
@@ -48,20 +49,23 @@ func (e *Api) Error( errCode int, errMsg string, showType string) {
 }
 
 // OK 通常成功数据处理
-func (e *Api) OK( data interface{}) {
+func (e *Api) OK(data interface{}) {
 	antd.OK(e.Context, data)
 }
 
 // PageOK 分页数据处理
-func (e *Api) PageOK( result interface{}, total int, current int, pageSize int) {
+func (e *Api) PageOK(result interface{}, total int, current int, pageSize int) {
 	antd.PageOK(e.Context, result, total, current, pageSize)
 }
 
-// Custom 兼容函数
-func (e *Api) Custom( data gin.H) {
-	antd.Custum(e.Context, data)
+func (e *Api) ListOK(result interface{}, total int, current int, pageSize int) {
+	antd.ListOK(e.Context, result, total, current, pageSize)
 }
 
+// Custom 兼容函数
+func (e *Api) Custom(data gin.H) {
+	antd.Custum(e.Context, data)
+}
 
 // MakeContext 设置http上下文
 func (e *Api) MakeContext(c *gin.Context) *Api {
@@ -69,7 +73,6 @@ func (e *Api) MakeContext(c *gin.Context) *Api {
 	e.Logger = api.GetRequestLogger(c)
 	return e
 }
-
 
 // Bind 参数校验
 func (e *Api) Bind(d interface{}, bindings ...binding.Binding) *Api {
@@ -131,3 +134,6 @@ func (e *Api) AddError(err error) {
 	}
 }
 
+func (e Api) Translate(form, to interface{}) {
+	pkg.Translate(form, to)
+}

@@ -65,6 +65,9 @@ type GinJWTMiddleware struct {
 	// User can define own LoginResponse func.
 	LoginResponse func(*gin.Context, int, string, time.Time)
 
+	// User can define own AntdLoginResponse func.
+	AntdLoginResponse func(*gin.Context, int, string, time.Time)
+
 	// User can define own RefreshResponse func.
 	RefreshResponse func(*gin.Context, int, string, time.Time)
 
@@ -328,6 +331,18 @@ func (mw *GinJWTMiddleware) MiddlewareInit() error {
 		}
 	}
 
+	if mw.AntdLoginResponse == nil {
+		mw.AntdLoginResponse = func(c *gin.Context, code int, token string, expire time.Time) {
+			c.JSON(http.StatusOK, gin.H{
+				"code":             http.StatusOK,
+				"success":          true,
+				"token":            token,
+				"currentAuthority": token,
+				"expire":           expire.Format(time.RFC3339),
+			})
+		}
+	}
+
 	if mw.RefreshResponse == nil {
 		mw.RefreshResponse = func(c *gin.Context, code int, token string, expire time.Time) {
 			c.JSON(http.StatusOK, gin.H{
@@ -446,24 +461,19 @@ func (mw *GinJWTMiddleware) LoginHandler(c *gin.Context) {
 		mw.unauthorized(c, http.StatusInternalServerError, mw.HTTPStatusMessageFunc(ErrMissingAuthenticatorFunc, c))
 		return
 	}
-
 	data, err := mw.Authenticator(c)
-
 	if err != nil {
 		mw.unauthorized(c, 400, mw.HTTPStatusMessageFunc(err, c))
 		return
 	}
-
 	// Create the token
 	token := jwt.New(jwt.GetSigningMethod(mw.SigningAlgorithm))
 	claims := token.Claims.(jwt.MapClaims)
-
 	if mw.PayloadFunc != nil {
 		for key, value := range mw.PayloadFunc(data) {
 			claims[key] = value
 		}
 	}
-
 	expire := mw.TimeFunc().Add(mw.Timeout)
 	claims["exp"] = expire.Unix()
 	claims["orig_iat"] = mw.TimeFunc().Unix()
@@ -488,7 +498,7 @@ func (mw *GinJWTMiddleware) LoginHandler(c *gin.Context) {
 		)
 	}
 
-	mw.LoginResponse(c, http.StatusOK, tokenString, expire)
+	mw.AntdLoginResponse(c, http.StatusOK, tokenString, expire)
 }
 
 func (mw *GinJWTMiddleware) signedString(token *jwt.Token) (string, error) {
