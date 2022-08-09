@@ -11,10 +11,12 @@ require (
 	github.com/gin-gonic/gin v1.7.3
 	github.com/go-admin-team/go-admin-core v1.3.11
 	github.com/go-admin-team/go-admin-core/plugins/logger/zap v0.0.0-20210610020726-2db73adb505d
+	github.com/go-admin-team/gorm-adapter/v3 v3.7.8-0.20220809100335-eaf9f67b3d21
 	github.com/go-playground/locales v0.13.0
 	github.com/go-playground/universal-translator v0.17.0
 	github.com/go-playground/validator/v10 v10.4.1
 	github.com/go-redis/redis/v7 v7.4.0
+	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.4.2
@@ -34,18 +36,15 @@ require (
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bitly/go-simplejson v0.5.0 // indirect
-	github.com/casbin/gorm-adapter/v3 v3.7.4 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/chanxuehong/rand v0.0.0-20201110082127-2f19a1bdd973 // indirect
 	github.com/denisenkom/go-mssqldb v0.12.0 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/fatih/color v1.7.0 // indirect
-	github.com/fsnotify/fsnotify v1.4.7 // indirect
+	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/git-chglog/git-chglog v0.0.0-20190611050339-63a4e637021f // indirect
-	github.com/glebarez/go-sqlite v1.16.0 // indirect
-	github.com/glebarez/sqlite v1.4.3 // indirect
-	github.com/go-admin-team/gorm-adapter/v3 v3.7.6 // indirect
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
 	github.com/golang-sql/sqlexp v0.0.0-20170517235910-f1bb20e5a188 // indirect
@@ -84,7 +83,6 @@ require (
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.26.0 // indirect
 	github.com/prometheus/procfs v0.6.0 // indirect
-	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/tsuyoshiwada/go-gitcmd v0.0.0-20180205145712-5f1f5f9475df // indirect
@@ -94,23 +92,19 @@ require (
 	go.uber.org/multierr v1.5.0 // indirect
 	go.uber.org/zap v1.13.0 // indirect
 	golang.org/x/image v0.0.0-20210220032944-ac19c3e999fb // indirect
+	golang.org/x/lint v0.0.0-20190930215403-16217165b5de // indirect
 	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.0.0-20210106214847-113979e3529a // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.26.0-rc.1 // indirect
 	gopkg.in/AlecAivazis/survey.v1 v1.8.5 // indirect
 	gopkg.in/kyokomi/emoji.v1 v1.5.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gorm.io/driver/mysql v1.3.3 // indirect
+	gorm.io/driver/mysql v1.3.5 // indirect
 	gorm.io/driver/postgres v1.3.4 // indirect
-	gorm.io/driver/sqlite v1.3.1 // indirect
+	gorm.io/driver/sqlite v1.3.6 // indirect
 	gorm.io/driver/sqlserver v1.3.2 // indirect
-	gorm.io/plugin/dbresolver v1.1.0 // indirect
-	modernc.org/libc v1.15.1 // indirect
-	modernc.org/mathutil v1.4.1 // indirect
-	modernc.org/memory v1.0.7 // indirect
-	modernc.org/sqlite v1.16.0 // indirect
+	gorm.io/plugin/dbresolver v1.2.2 // indirect
 )
 
 //replace (
