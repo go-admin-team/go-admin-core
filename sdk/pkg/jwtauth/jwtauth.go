@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 const JwtPayloadKey = "JWT_PAYLOAD"
@@ -213,19 +213,19 @@ var (
 	RKey = "r"
 
 	// RoleIdKey 角色id  Old
-	RoleIdKey   = "roleid"
+	RoleIdKey = "roleid"
 
 	// RoleKey 角色名称  Old
-	RoleKey     = "rolekey"
+	RoleKey = "rolekey"
 
 	// RoleNameKey 角色名称  Old
 	RoleNameKey = "rolename"
 
 	// RoleIdKey 部门id
-	DeptId   = "deptId"
+	DeptId = "deptId"
 
 	// RoleKey 部门名称
-	DeptName     = "deptName"
+	DeptName = "deptName"
 )
 
 // New for check error with GinJWTMiddleware
