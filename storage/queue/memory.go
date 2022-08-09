@@ -2,6 +2,7 @@ package queue
 
 import (
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -43,11 +44,14 @@ func (m *Memory) Append(message storage.Messager) error {
 	memoryMessage.SetID(message.GetID())
 	memoryMessage.SetStream(message.GetStream())
 	memoryMessage.SetValues(message.GetValues())
+
 	v, ok := m.queue.Load(message.GetStream())
+
 	if !ok {
 		v = m.makeQueue()
 		m.queue.Store(message.GetStream(), v)
 	}
+
 	var q queue
 	switch v.(type) {
 	case queue:
@@ -84,7 +88,13 @@ func (m *Memory) Register(name string, f storage.ConsumerFunc) {
 		for message := range q {
 			err = gf(message)
 			if err != nil {
-				out <- message
+				if message.GetErrorCount() < 3 {
+					message.SetErrorCount(message.GetErrorCount() + 1)
+					// 每次间隔时长放大
+					i := time.Second * time.Duration(message.GetErrorCount())
+					time.Sleep(i)
+					out <- message
+				}
 				err = nil
 			}
 		}

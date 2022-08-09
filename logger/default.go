@@ -99,7 +99,7 @@ func (l *defaultLogger) logf(level Level, format string, v ...interface{}) {
 
 	fields["level"] = level.String()
 
-	if _, file, line, ok := runtime.Caller(l.opts.CallerSkipCount); ok {
+	if _, file, line, ok := runtime.Caller(l.opts.CallerSkipCount); ok && level.String() == "error" {
 		fields["file"] = fmt.Sprintf("%s:%d", logCallerfilePath(file), line)
 	}
 
@@ -124,9 +124,9 @@ func (l *defaultLogger) logf(level Level, format string, v ...interface{}) {
 
 	for i, k := range keys {
 		if i == 0 {
-			metadata += fmt.Sprintf("%s:%v", k, fields[k])
+			metadata += fmt.Sprintf("%v", fields[k])
 		} else {
-			metadata += fmt.Sprintf(" %s:%v", k, fields[k])
+			metadata += fmt.Sprintf(" %v", fields[k])
 		}
 	}
 

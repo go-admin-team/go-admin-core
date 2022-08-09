@@ -21,6 +21,7 @@ type Response struct {
 	ShowType     string `json:"showType,omitempty"`     // error display type： 0 silent; 1 message.warn; 2 message.error; 4 notification; 9 page
 	TraceId      string `json:"traceId,omitempty"`      // Convenient for back-end Troubleshooting: unique request ID
 	Host         string `json:"host,omitempty"`         // onvenient for backend Troubleshooting: host of current access server
+	Status       string `json:"status,omitempty"`
 }
 type response struct {
 	Response
@@ -29,15 +30,27 @@ type response struct {
 
 type Pages struct {
 	Response
-	Data interface{} `json:"data,omitempty"` // response data
-	Total    int `json:"total,omitempty"`
-	Current  int `json:"current,omitempty"`
-	PageSize int `json:"pageSize,omitempty"`
+	Data     interface{} `json:"data,omitempty"` // response data
+	Total    int         `json:"total,omitempty"`
+	Current  int         `json:"current,omitempty"`
+	PageSize int         `json:"pageSize,omitempty"`
 }
 
 type pages struct {
 	Pages
 	Data interface{} `json:"data,omitempty"`
+}
+
+type lists struct {
+	Response
+	ListData ListData `json:"data,omitempty"` // response data
+}
+
+type ListData struct {
+	List     interface{} `json:"list,omitempty"` // response data
+	Total    int         `json:"total,omitempty"`
+	Current  int         `json:"current,omitempty"`
+	PageSize int         `json:"pageSize,omitempty"`
 }
 
 func (e *response) SetCode(code int32) {
