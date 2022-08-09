@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	intervalTenant = "/"
+	intervalTenant = ""
 )
 
 // NewCache 创建对应上下文缓存
