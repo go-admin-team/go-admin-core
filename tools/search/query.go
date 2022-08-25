@@ -33,6 +33,12 @@ func ResolveSearchQuery(driver string, q interface{}, condition Condition) {
 	var tag string
 	var ok bool
 	var t *resolveSearchTag
+
+	var sep = "`"
+	if driver == Postgres {
+		sep = "\""
+	}
+
 	for i := 0; i < qType.NumField(); i++ {
 		tag, ok = "", false
 		tag, ok = qType.Field(i).Tag.Lookup(FromQueryTag)
@@ -54,7 +60,7 @@ func ResolveSearchQuery(driver string, q interface{}, condition Condition) {
 		case "left":
 			//左关联
 			join := condition.SetJoinOn(t.Type, fmt.Sprintf(
-				"left join `%s` on `%s`.`%s` = `%s`.`%s`",
+				"left join "+sep+"%s"+sep+" on "+sep+"%s"+sep+"."+sep+"%s"+sep+" = "+sep+"%s"+sep+"."+sep+"%s"+sep+"",
 				t.Join,
 				t.Join,
 				t.On[0],
@@ -63,44 +69,44 @@ func ResolveSearchQuery(driver string, q interface{}, condition Condition) {
 			))
 			ResolveSearchQuery(driver, qValue.Field(i).Interface(), join)
 		case "exact", "iexact":
-			condition.SetWhere(fmt.Sprintf("`%s`.`%s` = ?", t.Table, t.Column), []interface{}{qValue.Field(i).Interface()})
+			condition.SetWhere(fmt.Sprintf(sep+"%s"+sep+"."+sep+"%s"+sep+" = ?", t.Table, t.Column), []interface{}{qValue.Field(i).Interface()})
 		case "contains", "icontains":
 			//fixme mysql不支持ilike
 			if driver == Postgres && t.Type == "icontains" {
-				condition.SetWhere(fmt.Sprintf("`%s`.`%s` ilike ?", t.Table, t.Column), []interface{}{"%" + qValue.Field(i).String() + "%"})
+				condition.SetWhere(fmt.Sprintf(sep+"%s"+sep+"."+sep+"%s"+sep+" ilike ?", t.Table, t.Column), []interface{}{"%" + qValue.Field(i).String() + "%"})
 			} else {
-				condition.SetWhere(fmt.Sprintf("`%s`.`%s` like ?", t.Table, t.Column), []interface{}{"%" + qValue.Field(i).String() + "%"})
+				condition.SetWhere(fmt.Sprintf(sep+"%s"+sep+"."+sep+"%s"+sep+" like ?", t.Table, t.Column), []interface{}{"%" + qValue.Field(i).String() + "%"})
 			}
 		case "gt":
-			condition.SetWhere(fmt.Sprintf("`%s`.`%s` > ?", t.Table, t.Column), []interface{}{qValue.Field(i).Interface()})
+			condition.SetWhere(fmt.Sprintf(sep+"%s"+sep+"."+sep+"%s"+sep+" > ?", t.Table, t.Column), []interface{}{qValue.Field(i).Interface()})
 		case "gte":
-			condition.SetWhere(fmt.Sprintf("`%s`.`%s` >= ?", t.Table, t.Column), []interface{}{qValue.Field(i).Interface()})
+			condition.SetWhere(fmt.Sprintf(sep+"%s"+sep+"."+sep+"%s"+sep+" >= ?", t.Table, t.Column), []interface{}{qValue.Field(i).Interface()})
 		case "lt":
-			condition.SetWhere(fmt.Sprintf("`%s`.`%s` < ?", t.Table, t.Column), []interface{}{qValue.Field(i).Interface()})
+			condition.SetWhere(fmt.Sprintf(sep+"%s"+sep+"."+sep+"%s"+sep+" < ?", t.Table, t.Column), []interface{}{qValue.Field(i).Interface()})
 		case "lte":
-			condition.SetWhere(fmt.Sprintf("`%s`.`%s` <= ?", t.Table, t.Column), []interface{}{qValue.Field(i).Interface()})
+			condition.SetWhere(fmt.Sprintf(sep+"%s"+sep+"."+sep+"%s"+sep+" <= ?", t.Table, t.Column), []interface{}{qValue.Field(i).Interface()})
 		case "startswith", "istartswith":
 			if driver == Postgres && t.Type == "istartswith" {
-				condition.SetWhere(fmt.Sprintf("`%s`.`%s` ilike ?", t.Table, t.Column), []interface{}{qValue.Field(i).String() + "%"})
+				condition.SetWhere(fmt.Sprintf(sep+"%s"+sep+"."+sep+"%s"+sep+" ilike ?", t.Table, t.Column), []interface{}{qValue.Field(i).String() + "%"})
 			} else {
-				condition.SetWhere(fmt.Sprintf("`%s`.`%s` like ?", t.Table, t.Column), []interface{}{qValue.Field(i).String() + "%"})
+				condition.SetWhere(fmt.Sprintf(sep+"%s"+sep+"."+sep+"%s"+sep+" like ?", t.Table, t.Column), []interface{}{qValue.Field(i).String() + "%"})
 			}
 		case "endswith", "iendswith":
 			if driver == Postgres && t.Type == "iendswith" {
-				condition.SetWhere(fmt.Sprintf("`%s`.`%s` ilike ?", t.Table, t.Column), []interface{}{"%" + qValue.Field(i).String()})
+				condition.SetWhere(fmt.Sprintf(sep+"%s"+sep+"."+sep+"%s"+sep+" ilike ?", t.Table, t.Column), []interface{}{"%" + qValue.Field(i).String()})
 			} else {
-				condition.SetWhere(fmt.Sprintf("`%s`.`%s` like ?", t.Table, t.Column), []interface{}{"%" + qValue.Field(i).String()})
+				condition.SetWhere(fmt.Sprintf(sep+"%s"+sep+"."+sep+"%s"+sep+" like ?", t.Table, t.Column), []interface{}{"%" + qValue.Field(i).String()})
 			}
 		case "in":
-			condition.SetWhere(fmt.Sprintf("`%s`.`%s` in (?)", t.Table, t.Column), []interface{}{qValue.Field(i).Interface()})
+			condition.SetWhere(fmt.Sprintf(sep+"%s"+sep+"."+sep+"%s"+sep+" in (?)", t.Table, t.Column), []interface{}{qValue.Field(i).Interface()})
 		case "isnull":
 			if !(qValue.Field(i).IsZero() && qValue.Field(i).IsNil()) {
-				condition.SetWhere(fmt.Sprintf("`%s`.`%s` isnull", t.Table, t.Column), make([]interface{}, 0))
+				condition.SetWhere(fmt.Sprintf(sep+"%s"+sep+"."+sep+"%s"+sep+" isnull", t.Table, t.Column), make([]interface{}, 0))
 			}
 		case "order":
 			switch strings.ToLower(qValue.Field(i).String()) {
 			case "desc", "asc":
-				condition.SetOrder(fmt.Sprintf("`%s`.`%s` %s", t.Table, t.Column, qValue.Field(i).String()))
+				condition.SetOrder(fmt.Sprintf(sep+"%s"+sep+"."+sep+"%s"+sep+" %s", t.Table, t.Column, qValue.Field(i).String()))
 			}
 		}
 	}
