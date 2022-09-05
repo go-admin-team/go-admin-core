@@ -30,6 +30,12 @@ func PathExist(addr string) bool {
 
 func FileCreate(content bytes.Buffer, name string) {
 	file, err := os.Create(name)
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}(file)
 	if err != nil {
 		log.Println(err)
 	}
@@ -37,7 +43,6 @@ func FileCreate(content bytes.Buffer, name string) {
 	if err != nil {
 		log.Println(err)
 	}
-	file.Close()
 }
 
 type ReplaceHelper struct {
@@ -46,10 +51,8 @@ type ReplaceHelper struct {
 	NewText string //新的文本
 }
 
-func (h *ReplaceHelper) DoWrok() error {
-
+func (h *ReplaceHelper) DoWork() error {
 	return filepath.Walk(h.Root, h.walkCallback)
-
 }
 
 func (h ReplaceHelper) walkCallback(path string, f os.FileInfo, err error) error {
@@ -65,11 +68,8 @@ func (h ReplaceHelper) walkCallback(path string, f os.FileInfo, err error) error
 		return nil
 	}
 
-	//文件类型需要进行过滤
-
 	buf, err := ioutil.ReadFile(path)
 	if err != nil {
-		//err
 		return err
 	}
 	content := string(buf)
@@ -80,7 +80,10 @@ func (h ReplaceHelper) walkCallback(path string, f os.FileInfo, err error) error
 	newContent := strings.Replace(content, h.OldText, h.NewText, -1)
 
 	//重新写入
-	ioutil.WriteFile(path, []byte(newContent), 0)
+	err = ioutil.WriteFile(path, []byte(newContent), 0)
+	if err != nil {
+		return err
+	}
 
 	return err
 }
@@ -90,10 +93,18 @@ func FileMonitoringById(ctx context.Context, filePth string, id string, group st
 	if err != nil {
 		log.Fatalln(err)
 	}
-	defer f.Close()
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}(f)
 
 	rd := bufio.NewReader(f)
-	f.Seek(0, 2)
+	_, err = f.Seek(0, 2)
+	if err != nil {
+		return
+	}
 	for {
 		if ctx.Err() != nil {
 			break
@@ -110,17 +121,21 @@ func FileMonitoringById(ctx context.Context, filePth string, id string, group st
 	}
 }
 
-// 获取文件大小
+// GetFileSize 获取文件大小
 func GetFileSize(filename string) int64 {
 	var result int64
-	filepath.Walk(filename, func(path string, f os.FileInfo, err error) error {
+	err := filepath.Walk(filename, func(path string, f os.FileInfo, err error) error {
 		result = f.Size()
 		return nil
 	})
+	if err != nil {
+		log.Println(err)
+		return 0
+	}
 	return result
 }
 
-//获取当前路径，比如：E:/abc/data/test
+// GetCurrentPath 获取当前路径，比如：E:/abc/data/test
 func GetCurrentPath() string {
 	dir, err := os.Getwd()
 	if err != nil {
