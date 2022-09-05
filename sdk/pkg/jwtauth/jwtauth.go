@@ -74,23 +74,20 @@ type GinJWTMiddleware struct {
 	// Set the identity handler function
 	IdentityHandler func(*gin.Context) interface{}
 
+	// 关键字段，用于存储用户信息
 	// Set the identity key
 	IdentityKey string
-
-	// username
+	// 用户名
 	NiceKey string
-
+	// 数据权限类型
 	DataScopeKey string
-
-	// rolekey
+	// role key
 	RKey string
-
-	// roleId
+	// 角色id
 	RoleIdKey string
-
+	// 角色key
 	RoleKey string
-
-	// roleName
+	// 角色名称
 	RoleNameKey string
 
 	// TokenLookup is a string in the form of "<source>:<name>" that is used
