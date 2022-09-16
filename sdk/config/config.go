@@ -27,12 +27,12 @@ func (e *Settings) runCallback() {
 
 func (e *Settings) OnChange() {
 	e.init()
-	log.Println("!!! config change and reload")
+	log.Println("config change and reload")
 }
 
 func (e *Settings) Init() {
 	e.init()
-	log.Println("!!! config init")
+	log.Println("config init")
 }
 
 func (e *Settings) init() {
