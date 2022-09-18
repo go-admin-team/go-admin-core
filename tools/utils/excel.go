@@ -25,14 +25,19 @@ func WriteXlsx(sheet string, records interface{}) *excelize.File {
 		elem := s.Index(i).Interface()
 		elemType := reflect.TypeOf(elem)
 		elemValue := reflect.ValueOf(elem)
+		index := -1
 		for j := 0; j < elemType.NumField(); j++ {
 			field := elemType.Field(j)
 			tag := field.Tag.Get("xlsx")
 			name := tag
-			column, _ := ConvertNumToChars(j)
-			if tag == "" {
+			if tag == "" || tag == "-" {
 				continue
 			}
+			index++
+			if index == -1 {
+				continue
+			}
+			column, _ := ConvertNumToChars(index)
 			// 设置表头
 			if i == 0 {
 				err := xlsx.SetCellValue(sheet, fmt.Sprintf("%s%d", column, i+1), name)
