@@ -1,10 +1,10 @@
 package user
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
-
 	"github.com/go-admin-team/go-admin-core/sdk/pkg"
 	jwt "github.com/go-admin-team/go-admin-core/sdk/pkg/jwtauth"
 )
@@ -27,10 +27,40 @@ func Get(c *gin.Context, key string) interface{} {
 	return nil
 }
 
+// GetUserId 获取一个int的userId
 func GetUserId(c *gin.Context) int {
 	data := ExtractClaims(c)
-	if data["identity"] != nil {
-		return int((data["identity"]).(float64))
+	id := data["identity"]
+	if id != nil {
+		switch id.(type) {
+		case json.Number:
+			numId := id.(json.Number)
+			userId, err := numId.Int64()
+			if err != nil {
+				fmt.Println(pkg.GetCurrentTimeStr() + " [ERROR] " + c.Request.Method + " " + c.Request.URL.Path + " GetUserId identity 转int64错误" + err.Error())
+				return 0
+			}
+			return int(userId)
+		default:
+			return int((data["identity"]).(float64))
+		}
+	}
+	fmt.Println(pkg.GetCurrentTimeStr() + " [WARING] " + c.Request.Method + " " + c.Request.URL.Path + " GetUserId 缺少 identity")
+	return 0
+}
+
+// GetUserIdInt64 获得int64的userId
+func GetUserIdInt64(c *gin.Context) int64 {
+	data := ExtractClaims(c)
+	id := data["identity"]
+	if id != nil {
+		numId := id.(json.Number)
+		userId, err := numId.Int64()
+		if err != nil {
+			fmt.Println(pkg.GetCurrentTimeStr() + " [ERROR] " + c.Request.Method + " " + c.Request.URL.Path + " GetUserId identity 转int64错误" + err.Error())
+			return 0
+		}
+		return userId
 	}
 	fmt.Println(pkg.GetCurrentTimeStr() + " [WARING] " + c.Request.Method + " " + c.Request.URL.Path + " GetUserId 缺少 identity")
 	return 0
@@ -38,8 +68,17 @@ func GetUserId(c *gin.Context) int {
 
 func GetUserIdStr(c *gin.Context) string {
 	data := ExtractClaims(c)
-	if data["identity"] != nil {
-		return pkg.Int64ToString(int64((data["identity"]).(float64)))
+	id := data["identity"]
+	if id != nil {
+		switch id.(type) {
+		case string:
+			return id.(string)
+		case json.Number:
+			numId := id.(json.Number)
+			return numId.String()
+		default:
+			return pkg.Int64ToString(int64((data["identity"]).(float64)))
+		}
 	}
 	fmt.Println(pkg.GetCurrentTimeStr() + " [WARING] " + c.Request.Method + " " + c.Request.URL.Path + " GetUserIdStr 缺少 identity")
 	return ""
