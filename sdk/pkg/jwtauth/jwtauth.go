@@ -697,7 +697,7 @@ func (mw *GinJWTMiddleware) ParseToken(c *gin.Context) (*jwt.Token, error) {
 		c.Set("JWT_TOKEN", token)
 
 		return mw.Key, nil
-	})
+	}, jwt.WithJSONNumber())
 }
 
 // ParseTokenString parse jwt token string
