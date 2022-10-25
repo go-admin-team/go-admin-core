@@ -399,17 +399,12 @@ func (mw *GinJWTMiddleware) middlewareImpl(c *gin.Context) {
 		mw.unauthorized(c, http.StatusUnauthorized, mw.HTTPStatusMessageFunc(err, c))
 		return
 	}
-
-	if claims["exp"] == nil {
-		mw.unauthorized(c, http.StatusBadRequest, mw.HTTPStatusMessageFunc(ErrMissingExpField, c))
+	exp, err := claims.Exp()
+	if err != nil {
+		mw.unauthorized(c, http.StatusBadRequest, mw.HTTPStatusMessageFunc(err, c))
 		return
 	}
-
-	if _, ok := claims["exp"].(float64); !ok {
-		mw.unauthorized(c, http.StatusBadRequest, mw.HTTPStatusMessageFunc(ErrWrongFormatOfExp, c))
-		return
-	}
-	if int64(claims["exp"].(float64)) < mw.TimeFunc().Unix() {
+	if exp < mw.TimeFunc().Unix() {
 		mw.unauthorized(c, 6401, mw.HTTPStatusMessageFunc(ErrExpiredToken, c))
 		return
 	}
@@ -443,12 +438,7 @@ func (mw *GinJWTMiddleware) GetClaimsFromJWT(c *gin.Context) (MapClaims, error) 
 		}
 	}
 
-	claims := MapClaims{}
-	for key, value := range token.Claims.(jwt.MapClaims) {
-		claims[key] = value
-	}
-
-	return claims, nil
+	return MapClaims(token.Claims.(jwt.MapClaims)), nil
 }
 
 // LoginHandler can be used by clients to get a jwt token.
@@ -580,15 +570,17 @@ func (mw *GinJWTMiddleware) CheckIfTokenExpire(c *gin.Context) (jwt.MapClaims, e
 		}
 	}
 
-	claims := token.Claims.(jwt.MapClaims)
-
-	origIat := int64(claims["orig_iat"].(float64))
+	claims := MapClaims(token.Claims.(jwt.MapClaims))
+	origIat, err := claims.OrigIat()
+	if err != nil {
+		return nil, err
+	}
 
 	if origIat < mw.TimeFunc().Add(-mw.MaxRefresh).Unix() {
 		return nil, ErrExpiredToken
 	}
 
-	return claims, nil
+	return token.Claims.(jwt.MapClaims), nil
 }
 
 // TokenGenerator method that clients can use to get a jwt token.
