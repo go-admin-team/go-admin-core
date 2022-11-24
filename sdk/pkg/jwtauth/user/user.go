@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/gin-gonic/gin"
-
 	"github.com/go-admin-team/go-admin-core/sdk/pkg"
 	jwt "github.com/go-admin-team/go-admin-core/sdk/pkg/jwtauth"
 )
@@ -23,71 +22,70 @@ func Get(c *gin.Context, key string) interface{} {
 	if data[key] != nil {
 		return data[key]
 	}
+
 	fmt.Println(pkg.GetCurrentTimeStr() + " [WARING] " + c.Request.Method + " " + c.Request.URL.Path + " Get 缺少 " + key)
+
 	return nil
 }
 
+// GetUserId 获取一个int的userId
 func GetUserId(c *gin.Context) int {
 	data := ExtractClaims(c)
-	if data["identity"] != nil {
-		return int((data["identity"]).(float64))
+	identity, err := data.Identity()
+	if err != nil {
+		fmt.Println(pkg.GetCurrentTimeStr() + " [WARING] " + c.Request.Method + " " + c.Request.URL.Path + " GetUserId 缺少 identity error: " + err.Error())
+		return 0
 	}
-	fmt.Println(pkg.GetCurrentTimeStr() + " [WARING] " + c.Request.Method + " " + c.Request.URL.Path + " GetUserId 缺少 identity")
-	return 0
+
+	return int(identity)
+}
+
+// GetUserIdInt64 获得int64的userId
+func GetUserIdInt64(c *gin.Context) int64 {
+	data := ExtractClaims(c)
+	identity, err := data.Identity()
+	if err != nil {
+		fmt.Println(pkg.GetCurrentTimeStr() + " [WARING] " + c.Request.Method + " " + c.Request.URL.Path + " GetUserId 缺少 identity error: " + err.Error())
+		return 0
+	}
+
+	return identity
 }
 
 func GetUserIdStr(c *gin.Context) string {
 	data := ExtractClaims(c)
-	if data["identity"] != nil {
-		return pkg.Int64ToString(int64((data["identity"]).(float64)))
-	}
-	fmt.Println(pkg.GetCurrentTimeStr() + " [WARING] " + c.Request.Method + " " + c.Request.URL.Path + " GetUserIdStr 缺少 identity")
-	return ""
+
+	return data.String("identity")
 }
 
 func GetUserName(c *gin.Context) string {
-	data := ExtractClaims(c)
-	if data["nice"] != nil {
-		return (data["nice"]).(string)
-	}
-	fmt.Println(pkg.GetCurrentTimeStr() + " [WARING] " + c.Request.Method + " " + c.Request.URL.Path + " GetUserName 缺少 nice")
-	return ""
+	return ExtractClaims(c).String("nice")
 }
 
 func GetRoleName(c *gin.Context) string {
-	data := ExtractClaims(c)
-	if data["rolekey"] != nil {
-		return (data["rolekey"]).(string)
-	}
-	fmt.Println(pkg.GetCurrentTimeStr() + " [WARING] " + c.Request.Method + " " + c.Request.URL.Path + " GetRoleName 缺少 rolekey")
-	return ""
+	return ExtractClaims(c).String("rolekey")
 }
 
 func GetRoleId(c *gin.Context) int {
-	data := ExtractClaims(c)
-	if data["roleid"] != nil {
-		i := int((data["roleid"]).(float64))
-		return i
+	roleId, err := ExtractClaims(c).Int("roleid")
+	if err != nil {
+		fmt.Println(pkg.GetCurrentTimeStr() + " [WARING] " + c.Request.Method + " " + c.Request.URL.Path + " GetRoleId 缺少 roleid error: " + err.Error())
+		return 0
 	}
-	fmt.Println(pkg.GetCurrentTimeStr() + " [WARING] " + c.Request.Method + " " + c.Request.URL.Path + " GetRoleId 缺少 roleid")
-	return 0
+
+	return roleId
 }
 
 func GetDeptId(c *gin.Context) int {
-	data := ExtractClaims(c)
-	if data["deptid"] != nil {
-		i := int((data["deptid"]).(float64))
-		return i
+	deptId, err := ExtractClaims(c).Int("deptid")
+	if err != nil {
+		fmt.Println(pkg.GetCurrentTimeStr() + " [WARING] " + c.Request.Method + " " + c.Request.URL.Path + " GetDeptId 缺少 deptid error: " + err.Error())
+		return 0
 	}
-	fmt.Println(pkg.GetCurrentTimeStr() + " [WARING] " + c.Request.Method + " " + c.Request.URL.Path + " GetDeptId 缺少 deptid")
-	return 0
+
+	return deptId
 }
 
 func GetDeptName(c *gin.Context) string {
-	data := ExtractClaims(c)
-	if data["deptkey"] != nil {
-		return (data["deptkey"]).(string)
-	}
-	fmt.Println(pkg.GetCurrentTimeStr() + " [WARING] " + c.Request.Method + " " + c.Request.URL.Path + " GetDeptName 缺少 deptkey")
-	return ""
+	return ExtractClaims(c).String("deptkey")
 }
