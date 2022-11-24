@@ -64,6 +64,7 @@ func MkDir(src string) error {
 // Open 打开文件
 func Open(name string, flag int, perm os.FileMode) (*os.File, error) {
 	f, err := os.OpenFile(name, flag, perm)
+	defer f.Close()
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +75,7 @@ func Open(name string, flag int, perm os.FileMode) (*os.File, error) {
 // GetImgType 获取Img文件类型
 func GetImgType(p string) (string, error) {
 	file, err := os.Open(p)
-
+	defer file.Close()
 	if err != nil {
 		log.Println(err)
 		os.Exit(1)
@@ -105,7 +106,7 @@ func GetImgType(p string) (string, error) {
 // GetType 获取文件类型
 func GetType(p string) (string, error) {
 	file, err := os.Open(p)
-
+	defer file.Close()
 	if err != nil {
 		log.Println(err)
 		os.Exit(1)

@@ -33,6 +33,12 @@ func ResolveSearchQuery(driver string, q interface{}, condition Condition) {
 	var tag string
 	var ok bool
 	var t *resolveSearchTag
+
+	var sep = "`"
+	if driver == Postgres {
+		sep = "\""
+	}
+
 	for i := 0; i < qType.NumField(); i++ {
 		tag, ok = "", false
 		tag, ok = qType.Field(i).Tag.Lookup(FromQueryTag)

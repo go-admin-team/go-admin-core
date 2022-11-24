@@ -4,16 +4,19 @@ import (
 	"errors"
 	"fmt"
 
+	"net/http"
+
 	vd "github.com/bytedance/go-tagexpr/v2/validator"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-admin-team/go-admin-core/logger"
+	"github.com/go-admin-team/go-admin-core/sdk"
 	"github.com/go-admin-team/go-admin-core/sdk/pkg"
 	"github.com/go-admin-team/go-admin-core/sdk/pkg/response"
 	"github.com/go-admin-team/go-admin-core/sdk/service"
+	"github.com/go-admin-team/go-admin-core/storage"
 	"github.com/go-admin-team/go-admin-core/tools/language"
 	"gorm.io/gorm"
-	"net/http"
 )
 
 var DefaultLanguage = "zh-CN"
@@ -23,6 +26,7 @@ type Api struct {
 	Logger  *logger.Helper
 	Orm     *gorm.DB
 	Errors  error
+	Cache   storage.AdapterCache
 }
 
 func (e *Api) AddError(err error) {
@@ -107,6 +111,8 @@ func (e *Api) MakeOrm() *Api {
 func (e *Api) MakeService(c *service.Service) *Api {
 	c.Log = e.Logger
 	c.Orm = e.Orm
+	c.Cache = sdk.Runtime.GetCacheAdapter()
+	e.Cache = c.Cache
 	return e
 }
 
