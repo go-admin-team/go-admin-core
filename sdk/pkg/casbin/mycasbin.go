@@ -38,7 +38,7 @@ var (
 
 func Setup(db *gorm.DB, _ string) *casbin.SyncedEnforcer {
 	once.Do(func() {
-		Apter, err := gormAdapter.NewAdapterByDBUseTableName(db, "sys", "casbin_rule")
+		Apter, err := gormAdapter.NewAdapterByDBUseTableName(db, "", "casbin_rule")
 		if err != nil && err.Error() != "invalid DDL" {
 			panic(err)
 		}
