@@ -19,7 +19,7 @@ type Runtime interface {
 
 	SetCasbinExclude(key string, list interface{})
 	GetCasbinExclude() map[string]interface{}
-	GetCasbinExcludeKey(key string) interface{}
+	GetCasbinExcludeByKey(key string) interface{}
 
 	SetCasbin(key string, enforcer *casbin.SyncedEnforcer)
 	GetCasbin() map[string]*casbin.SyncedEnforcer
