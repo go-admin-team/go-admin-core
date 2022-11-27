@@ -14,21 +14,27 @@ import (
 )
 
 type Application struct {
-	dbs         map[string]*gorm.DB
-	casbins     map[string]*casbin.SyncedEnforcer
-	engine      http.Handler
-	crontab     map[string]*cron.Cron
-	mux         sync.RWMutex
-	middlewares map[string]interface{}
-	cache       storage.AdapterCache
-	queue       storage.AdapterQueue
-	locker      storage.AdapterLocker
-	memoryQueue storage.AdapterQueue
-	handler     map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)
-	routers     []Router
-	configs     map[string]interface{} // 系统参数
-	appRouters  []func()               // app路由
+	dbs           map[string]*gorm.DB
+	casbins       map[string]*casbin.SyncedEnforcer
+	engine        http.Handler
+	crontab       map[string]*cron.Cron
+	mux           sync.RWMutex
+	middlewares   map[string]interface{}
+	cache         storage.AdapterCache
+	queue         storage.AdapterQueue
+	locker        storage.AdapterLocker
+	memoryQueue   storage.AdapterQueue
+	handler       map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)
+	routers       []Router
+	configs       map[string]interface{} // 系统参数
+	appRouters    []func()               // app路由
+	casbinExclude map[string]*[]UrlInfo  // casbin排除
+}
 
+type UrlInfo struct {
+	Url    string
+	Method string
+	Access string
 }
 
 type Router struct {
@@ -37,6 +43,30 @@ type Router struct {
 
 type Routers struct {
 	List []Router
+}
+
+// SetCasbinExclude 设置对应key的Exclude
+func (e *Application) SetCasbinExclude(key string, list *[]UrlInfo) {
+	e.mux.Lock()
+	defer e.mux.Unlock()
+	e.casbinExclude[key] = list
+}
+
+// GetCasbinExclude 获取所有map里的Exclude数据
+func (e *Application) GetCasbinExclude() map[string]*[]UrlInfo {
+	e.mux.Lock()
+	defer e.mux.Unlock()
+	return e.casbinExclude
+}
+
+// GetCasbinExcludeByKey 根据key获取Exclude
+func (e *Application) GetCasbinExcludeByKey(key string) *[]UrlInfo {
+	e.mux.Lock()
+	defer e.mux.Unlock()
+	if exclude, ok := e.casbinExclude["*"]; ok {
+		return exclude
+	}
+	return e.casbinExclude[key]
 }
 
 // SetDb 设置对应key的db
