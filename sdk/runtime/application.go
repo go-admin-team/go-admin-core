@@ -28,7 +28,7 @@ type Application struct {
 	routers       []Router
 	configs       map[string]interface{} // 系统参数
 	appRouters    []func()               // app路由
-	casbinExclude map[string]*[]UrlInfo  // casbin排除
+	casbinExclude map[string]interface{} // casbin排除
 }
 
 type UrlInfo struct {
@@ -46,21 +46,21 @@ type Routers struct {
 }
 
 // SetCasbinExclude 设置对应key的Exclude
-func (e *Application) SetCasbinExclude(key string, list *[]UrlInfo) {
+func (e *Application) SetCasbinExclude(key string, list interface{}) {
 	e.mux.Lock()
 	defer e.mux.Unlock()
 	e.casbinExclude[key] = list
 }
 
 // GetCasbinExclude 获取所有map里的Exclude数据
-func (e *Application) GetCasbinExclude() map[string]*[]UrlInfo {
+func (e *Application) GetCasbinExclude() map[string]interface{} {
 	e.mux.Lock()
 	defer e.mux.Unlock()
 	return e.casbinExclude
 }
 
 // GetCasbinExcludeByKey 根据key获取Exclude
-func (e *Application) GetCasbinExcludeByKey(key string) *[]UrlInfo {
+func (e *Application) GetCasbinExcludeByKey(key string) interface{} {
 	e.mux.Lock()
 	defer e.mux.Unlock()
 	if exclude, ok := e.casbinExclude["*"]; ok {
@@ -153,14 +153,15 @@ func (e *Application) GetLogger() logger.Logger {
 // NewConfig 默认值
 func NewConfig() *Application {
 	return &Application{
-		dbs:         make(map[string]*gorm.DB),
-		casbins:     make(map[string]*casbin.SyncedEnforcer),
-		crontab:     make(map[string]*cron.Cron),
-		middlewares: make(map[string]interface{}),
-		memoryQueue: queue.NewMemory(10000),
-		handler:     make(map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)),
-		routers:     make([]Router, 0),
-		configs:     make(map[string]interface{}),
+		dbs:           make(map[string]*gorm.DB),
+		casbins:       make(map[string]*casbin.SyncedEnforcer),
+		crontab:       make(map[string]*cron.Cron),
+		middlewares:   make(map[string]interface{}),
+		memoryQueue:   queue.NewMemory(10000),
+		handler:       make(map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)),
+		routers:       make([]Router, 0),
+		configs:       make(map[string]interface{}),
+		casbinExclude: make(map[string]interface{}),
 	}
 }
 
