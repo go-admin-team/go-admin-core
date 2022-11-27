@@ -17,9 +17,9 @@ type Runtime interface {
 	GetDb() map[string]*gorm.DB
 	GetDbByKey(key string) *gorm.DB
 
-	SetCasbinExclude(key string, list *[]UrlInfo)
-	GetCasbinExclude() map[string]*[]UrlInfo
-	GetCasbinExcludeKey(key string) *[]UrlInfo
+	SetCasbinExclude(key string, list interface{})
+	GetCasbinExclude() map[string]interface{}
+	GetCasbinExcludeKey(key string) interface{}
 
 	SetCasbin(key string, enforcer *casbin.SyncedEnforcer)
 	GetCasbin() map[string]*casbin.SyncedEnforcer

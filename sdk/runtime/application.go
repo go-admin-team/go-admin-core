@@ -31,12 +31,6 @@ type Application struct {
 	casbinExclude map[string]interface{} // casbin排除
 }
 
-type UrlInfo struct {
-	Url    string
-	Method string
-	Access string
-}
-
 type Router struct {
 	HttpMethod, RelativePath, Handler string
 }
