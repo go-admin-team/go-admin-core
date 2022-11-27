@@ -10,7 +10,7 @@ require (
 	github.com/gin-gonic/gin v1.7.7
 	github.com/go-admin-team/go-admin-core v1.3.12-0.20221121065133-27b7dbe27a8f
 	github.com/go-admin-team/go-admin-core/plugins/logger/zap v0.0.0-20210610020726-2db73adb505d
-	github.com/go-admin-team/gorm-adapter/v3 v3.2.1-0.20210902112335-4148cb356a24
+	github.com/go-admin-team/gorm-adapter/v3 v3.7.8-0.20221127063444-bc66b935a0ab
 	github.com/go-admin-team/redis-watcher/v2 v2.0.0-20221121052608-058cebff72c2
 	github.com/go-admin-team/redisqueue/v2 v2.0.0-20221119141731-97c556b0d5b7
 	github.com/go-playground/locales v0.13.0
@@ -105,6 +105,7 @@ require (
 	gorm.io/driver/postgres v1.4.5 // indirect
 	gorm.io/driver/sqlite v1.4.3 // indirect
 	gorm.io/driver/sqlserver v1.4.1 // indirect
+	gorm.io/plugin/dbresolver v1.3.0 // indirect
 )
 
 //replace github.com/go-admin-team/go-admin-core => ../
