@@ -17,6 +17,9 @@ type Runtime interface {
 	GetDb() map[string]*gorm.DB
 	GetDbByKey(key string) *gorm.DB
 
+	SetBefore(f func())
+	GetBefore() []func()
+
 	SetCasbinExclude(key string, list interface{})
 	GetCasbinExclude() map[string]interface{}
 	GetCasbinExcludeByKey(key string) interface{}

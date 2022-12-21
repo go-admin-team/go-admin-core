@@ -29,6 +29,7 @@ type Application struct {
 	configs       map[string]interface{} // 系统参数
 	appRouters    []func()               // app路由
 	casbinExclude map[string]interface{} // casbin排除
+	before        []func()               // 启动前执行
 }
 
 type Router struct {
@@ -37,6 +38,14 @@ type Router struct {
 
 type Routers struct {
 	List []Router
+}
+
+func (e *Application) SetBefore(f func()) {
+	e.before = append(e.before, f)
+}
+
+func (e *Application) GetBefore() []func() {
+	return e.before
 }
 
 // SetCasbinExclude 设置对应key的Exclude
