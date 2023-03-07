@@ -297,6 +297,9 @@ func (e *Application) SetConfigByTenant(tenant string, value map[string]interfac
 func (e *Application) SetConfig(tenant, key string, value interface{}) {
 	e.mux.Lock()
 	defer e.mux.Unlock()
+	if _, ok := e.configs[tenant]; !ok {
+		e.configs[tenant] = make(map[string]interface{})
+	}
 	e.configs[tenant][key] = value
 }
 
