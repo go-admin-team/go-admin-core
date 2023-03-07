@@ -26,10 +26,10 @@ type Application struct {
 	memoryQueue   storage.AdapterQueue
 	handler       map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)
 	routers       []Router
-	configs       map[string]interface{} // 系统参数
-	appRouters    []func()               // app路由
-	casbinExclude map[string]interface{} // casbin排除
-	before        []func()               // 启动前执行
+	configs       map[string]map[string]interface{} // 系统参数
+	appRouters    []func()                          // app路由
+	casbinExclude map[string]interface{}            // casbin排除
+	before        []func()                          // 启动前执行
 }
 
 type Router struct {
@@ -163,7 +163,7 @@ func NewConfig() *Application {
 		memoryQueue:   queue.NewMemory(10000),
 		handler:       make(map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)),
 		routers:       make([]Router, 0),
-		configs:       make(map[string]interface{}),
+		configs:       make(map[string]map[string]interface{}),
 		casbinExclude: make(map[string]interface{}),
 	}
 }
@@ -286,18 +286,32 @@ func (e *Application) GetMemoryQueue(prefix string) storage.AdapterQueue {
 	return NewQueue(prefix, e.memoryQueue)
 }
 
-// SetConfig 设置对应key的config
-func (e *Application) SetConfig(key string, value interface{}) {
+// SetConfigByTenant 设置对应租户的config
+func (e *Application) SetConfigByTenant(tenant string, value map[string]interface{}) {
 	e.mux.Lock()
 	defer e.mux.Unlock()
-	e.configs[key] = value
+	e.configs[tenant] = value
+}
+
+// SetConfig 设置对应key的config
+func (e *Application) SetConfig(tenant, key string, value interface{}) {
+	e.mux.Lock()
+	defer e.mux.Unlock()
+	e.configs[tenant][key] = value
 }
 
 // GetConfig 获取对应key的config
-func (e *Application) GetConfig(key string) interface{} {
+func (e *Application) GetConfig(tenant, key string) interface{} {
 	e.mux.Lock()
 	defer e.mux.Unlock()
-	return e.configs[key]
+	return e.configs[tenant][key]
+}
+
+// GetConfigByTenant 获取对应租户的config
+func (e *Application) GetConfigByTenant(tenant string) interface{} {
+	e.mux.Lock()
+	defer e.mux.Unlock()
+	return e.configs[tenant]
 }
 
 // SetAppRouters 设置app的路由

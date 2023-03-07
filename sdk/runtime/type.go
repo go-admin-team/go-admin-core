@@ -68,8 +68,10 @@ type Runtime interface {
 
 	GetStreamMessage(id, stream string, value map[string]interface{}) (storage.Messager, error)
 
-	GetConfig(key string) interface{}
-	SetConfig(key string, value interface{})
+	GetConfigByTenant(tenant string) interface{}
+	GetConfig(tenant, key string) interface{}
+	SetConfigByTenant(tenant string, value map[string]interface{})
+	SetConfig(tenant, key string, value interface{})
 
 	// SetAppRouters set AppRouter
 	SetAppRouters(appRouters func())
