@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/spf13/cast"
+
+	"github.com/go-admin-team/go-admin-core/storage"
 )
 
 type item struct {
@@ -20,6 +22,8 @@ func NewMemory() *Memory {
 		items: new(sync.Map),
 	}
 }
+
+var _ storage.AdapterCache = &Memory{}
 
 type Memory struct {
 	items *sync.Map

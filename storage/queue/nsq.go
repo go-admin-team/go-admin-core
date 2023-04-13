@@ -8,9 +8,10 @@
 package queue
 
 import (
-	"github.com/go-admin-team/go-admin-core/storage"
 	json "github.com/json-iterator/go"
 	"github.com/nsqio/go-nsq"
+
+	"github.com/go-admin-team/go-admin-core/storage"
 )
 
 // NewNSQ nsq模式 只能监听一个channel
@@ -24,6 +25,8 @@ func NewNSQ(addresses []string, cfg *nsq.Config, channelPrefix string) (*NSQ, er
 	n.producer, err = n.newProducer()
 	return n, err
 }
+
+var _ storage.AdapterQueue = &NSQ{}
 
 type NSQ struct {
 	addresses     []string

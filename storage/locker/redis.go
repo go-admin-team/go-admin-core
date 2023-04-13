@@ -2,10 +2,13 @@ package locker
 
 import (
 	"context"
-	"github.com/go-redis/redis/v9"
 	"time"
 
+	"github.com/go-redis/redis/v9"
+
 	"github.com/bsm/redislock"
+
+	"github.com/go-admin-team/go-admin-core/storage"
 )
 
 // NewRedis 初始化locker
@@ -14,6 +17,8 @@ func NewRedis(c *redis.Client) *Redis {
 		client: c,
 	}
 }
+
+var _ storage.AdapterLocker = &Redis{}
 
 type Redis struct {
 	client *redis.Client

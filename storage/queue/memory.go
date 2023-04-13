@@ -19,6 +19,8 @@ func NewMemory(poolNum uint) *Memory {
 	}
 }
 
+var _ storage.AdapterQueue = &Memory{}
+
 type Memory struct {
 	queue   *sync.Map
 	wait    sync.WaitGroup

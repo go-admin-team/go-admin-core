@@ -1,12 +1,16 @@
 package cache
 
 import (
-	"github.com/go-admin-team/go-admin-core/storage"
 	"github.com/go-admin-team/redisqueue/v2"
+
+	"github.com/go-admin-team/go-admin-core/storage"
 )
+
+var _ storage.Messager = &Message{}
 
 type Message struct {
 	redisqueue.Message
+	ErrorCount int
 }
 
 func (m *Message) GetID() string {
@@ -47,4 +51,12 @@ func (m *Message) SetPrefix(prefix string) {
 		m.Values = make(map[string]interface{})
 	}
 	m.Values[storage.PrefixKey] = prefix
+}
+
+func (m *Message) SetErrorCount(count int) {
+	m.ErrorCount = count
+}
+
+func (m *Message) GetErrorCount() int {
+	return m.ErrorCount
 }

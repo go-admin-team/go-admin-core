@@ -2,8 +2,11 @@ package cache
 
 import (
 	"context"
-	"github.com/go-redis/redis/v9"
 	"time"
+
+	"github.com/go-redis/redis/v9"
+
+	"github.com/go-admin-team/go-admin-core/storage"
 )
 
 // NewRedis redis模式
@@ -20,6 +23,8 @@ func NewRedis(client *redis.Client, options *redis.Options) (*Redis, error) {
 	}
 	return r, nil
 }
+
+var _ storage.AdapterCache = &Redis{}
 
 // Redis cache implement
 type Redis struct {
