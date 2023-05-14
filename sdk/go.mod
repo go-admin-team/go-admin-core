@@ -1,11 +1,11 @@
 module github.com/go-admin-team/go-admin-core/sdk
 
-go 1.18
+go 1.20
 
 require (
 	github.com/bsm/redislock v0.8.2
 	github.com/bytedance/go-tagexpr/v2 v2.7.12
-	github.com/casbin/casbin/v2 v2.54.0
+	github.com/casbin/casbin/v2 v2.69.0
 	github.com/chanxuehong/wechat v0.0.0-20201110083048-0180211b69fd
 	github.com/gin-gonic/gin v1.9.0
 	github.com/go-admin-team/go-admin-core v1.3.12-0.20221121065133-27b7dbe27a8f
@@ -21,10 +21,10 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/mojocn/base64Captcha v1.3.1
-	github.com/nsqio/go-nsq v1.0.8
+	github.com/nsqio/go-nsq v1.1.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/shamsher31/goimgext v1.0.0
-	github.com/slok/go-http-metrics v0.9.0
+	github.com/slok/go-http-metrics v0.10.0
 	github.com/smartystreets/goconvey v1.6.4
 	golang.org/x/crypto v0.6.0
 	gorm.io/gorm v1.25.1
@@ -67,7 +67,7 @@ require (
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
-	github.com/mattn/go-colorable v0.1.7 // indirect
+	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-sqlite3 v1.14.15 // indirect
 	github.com/mattn/goveralls v0.0.2 // indirect
@@ -81,7 +81,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.11.1 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
-	github.com/prometheus/common v0.26.0 // indirect
+	github.com/prometheus/common v0.28.0 // indirect
 	github.com/prometheus/procfs v0.6.0 // indirect
 	github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d // indirect
 	github.com/spf13/cast v1.3.1 // indirect
@@ -94,7 +94,7 @@ require (
 	go.uber.org/zap v1.13.0 // indirect
 	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect
 	golang.org/x/image v0.1.0 // indirect
-	golang.org/x/lint v0.0.0-20190930215403-16217165b5de // indirect
+	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
