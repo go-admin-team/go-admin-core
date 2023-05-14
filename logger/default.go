@@ -141,7 +141,7 @@ func (l *defaultLogger) logf(level Level, format string, v ...interface{}) {
 	//fmt.Printf("%v\n", rec.Message)
 	logStr := ""
 	if name == "" {
-		logStr = fmt.Sprintf("%s %s %v\n", t, metadata, rec.Message)
+		logStr = fmt.Sprintf("%s %s %s %v\n", t, level.String(), metadata, rec.Message)
 	} else {
 		logStr = fmt.Sprintf("%s %s %s %s %v\n", name, t, level.String(), metadata, rec.Message)
 	}
