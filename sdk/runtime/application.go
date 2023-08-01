@@ -30,6 +30,7 @@ type Application struct {
 	appRouters    []func()                          // app路由
 	casbinExclude map[string]interface{}            // casbin排除
 	before        []func()                          // 启动前执行
+	app           map[string]interface{}            // app
 }
 
 type Router struct {
@@ -70,6 +71,30 @@ func (e *Application) GetCasbinExcludeByKey(key string) interface{} {
 		return exclude
 	}
 	return e.casbinExclude[key]
+}
+
+// SetApp 设置对应key的app
+func (e *Application) SetApp(key string, app interface{}) {
+	e.mux.Lock()
+	defer e.mux.Unlock()
+	e.app[key] = app
+}
+
+// GetApp 获取所有map里的app数据
+func (e *Application) GetApp() map[string]interface{} {
+	e.mux.Lock()
+	defer e.mux.Unlock()
+	return e.app
+}
+
+// GetAppByKey 根据key获取app
+func (e *Application) GetAppByKey(key string) interface{} {
+	e.mux.Lock()
+	defer e.mux.Unlock()
+	if app, ok := e.app["*"]; ok {
+		return app
+	}
+	return e.app[key]
 }
 
 // SetDb 设置对应key的db

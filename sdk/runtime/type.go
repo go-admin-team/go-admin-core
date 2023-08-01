@@ -17,6 +17,10 @@ type Runtime interface {
 	GetDb() map[string]*gorm.DB
 	GetDbByKey(key string) *gorm.DB
 
+	SetApp(key string, app interface{})
+	GetApp() map[string]interface{}
+	GetAppByKey(key string) interface{}
+
 	SetBefore(f func())
 	GetBefore() []func()
 
