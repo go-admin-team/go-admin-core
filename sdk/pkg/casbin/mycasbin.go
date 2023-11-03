@@ -10,7 +10,7 @@ import (
 	"github.com/go-admin-team/go-admin-core/sdk"
 	"github.com/go-admin-team/go-admin-core/sdk/config"
 	redisWatcher "github.com/go-admin-team/redis-watcher/v2"
-	"github.com/go-redis/redis/v9"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
 	gormAdapter "github.com/go-admin-team/gorm-adapter/v3"
