@@ -81,7 +81,7 @@ func (p *FileWriter) checkFile() {
 	if strings.Index(p.file.Name(), time.Now().Format(timeFormat)) < 0 ||
 		(p.opts.cap > 0 && uint(info.Size()) > p.opts.cap*1024*1024) {
 		//生成新文件
-		if uint(info.Size()) > p.opts.cap {
+		if uint(info.Size()) > p.opts.cap*1024*1024 {
 			p.num++
 		} else {
 			p.num = 0
