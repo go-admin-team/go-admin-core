@@ -8,7 +8,7 @@ require (
 	github.com/casbin/casbin/v2 v2.77.2
 	github.com/chanxuehong/wechat v0.0.0-20230222024006-36f0325263cd
 	github.com/gin-gonic/gin v1.9.1
-	github.com/go-admin-team/go-admin-core v1.3.12-0.20221121065133-27b7dbe27a8f
+	github.com/go-admin-team/go-admin-core v1.5.2-0.20231103074559-ed33214df557
 	github.com/go-admin-team/go-admin-core/plugins/logger/zap v0.0.0-20210610020726-2db73adb505d
 	github.com/go-admin-team/gorm-adapter/v3 v3.2.1-0.20210902112335-4148cb356a24
 	github.com/go-admin-team/redis-watcher/v2 v2.0.0-20231102130416-bfe327cac940
@@ -41,22 +41,22 @@ require (
 	github.com/andeya/goutil v1.0.1 // indirect
 	github.com/andygrunwald/go-jira v1.16.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/bitly/go-simplejson v0.5.0 // indirect
-	github.com/bytedance/sonic v1.9.1 // indirect
+	github.com/bitly/go-simplejson v0.5.1 // indirect
+	github.com/bytedance/sonic v1.10.2 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chanxuehong/rand v0.0.0-20211009035549-2f07823e8e99 // indirect
-	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
+	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect
 	github.com/coreos/go-semver v0.3.1 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
-	github.com/fsnotify/fsnotify v1.4.9 // indirect
+	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/git-chglog/git-chglog v0.15.4 // indirect
-	github.com/go-sql-driver/mysql v1.6.0 // indirect
+	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
@@ -104,7 +104,7 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/smarty/assertions v1.15.0 // indirect
-	github.com/spf13/cast v1.3.1 // indirect
+	github.com/spf13/cast v1.5.1 // indirect
 	github.com/tidwall/gjson v1.14.4 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
@@ -118,7 +118,7 @@ require (
 	go.uber.org/multierr v1.5.0 // indirect
 	go.uber.org/zap v1.13.0 // indirect
 	golang.org/x/arch v0.3.0 // indirect
-	golang.org/x/image v0.1.0 // indirect
+	golang.org/x/image v0.11.0 // indirect
 	golang.org/x/lint v0.0.0-20190930215403-16217165b5de // indirect
 	golang.org/x/mod v0.10.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
@@ -129,7 +129,7 @@ require (
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	gorm.io/driver/mysql v1.4.4 // indirect
+	gorm.io/driver/mysql v1.5.2 // indirect
 	gorm.io/driver/postgres v1.4.5 // indirect
 	gorm.io/driver/sqlite v1.4.3 // indirect
 	gorm.io/driver/sqlserver v1.4.1 // indirect
