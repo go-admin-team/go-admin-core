@@ -79,7 +79,7 @@ func (p *FileWriter) write() {
 func (p *FileWriter) checkFile() {
 	info, _ := p.file.Stat()
 	if strings.Index(p.file.Name(), time.Now().Format(timeFormat)) < 0 ||
-		(p.opts.cap > 0 && uint(info.Size()) > p.opts.cap) {
+		(p.opts.cap > 0 && uint(info.Size()) > p.opts.cap*1024*1024) {
 		//生成新文件
 		if uint(info.Size()) > p.opts.cap {
 			p.num++
@@ -91,7 +91,6 @@ func (p *FileWriter) checkFile() {
 		p.file, _ = os.OpenFile(filename, os.O_WRONLY|os.O_APPEND|os.O_CREATE|os.O_SYNC, 0600)
 
 		dir := filepath.Dir(p.file.Name())
-		fmt.Println("File directory:", dir)
 		files, err := ioutil.ReadDir(dir)
 		if err != nil {
 			fmt.Println("Error reading log directory:", err)
