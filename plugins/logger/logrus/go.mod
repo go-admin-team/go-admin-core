@@ -1,6 +1,6 @@
 module github.com/go-admin-team/go-admin-core/plugins/logger/logrus
 
-go 1.20
+go 1.21
 
 require (
 	github.com/go-admin-team/go-admin-core v1.3.11
