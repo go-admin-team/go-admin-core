@@ -1,10 +1,10 @@
 package flag
 
 import (
+	"dario.cat/mergo"
 	"errors"
 	"flag"
 	"github.com/go-admin-team/go-admin-core/config/source"
-	"github.com/imdario/mergo"
 	"strings"
 	"time"
 )
@@ -89,13 +89,14 @@ func (fs *flagsrc) String() string {
 // Hyphens are delimiters for nesting, and all keys are lowercased.
 //
 // Example:
-//      dbhost := flag.String("database-host", "localhost", "the db host name")
 //
-//      {
-//          "database": {
-//              "host": "localhost"
-//          }
-//      }
+//	dbhost := flag.String("database-host", "localhost", "the db host name")
+//
+//	{
+//	    "database": {
+//	        "host": "localhost"
+//	    }
+//	}
 func NewSource(opts ...source.Option) source.Source {
 	return &flagsrc{opts: source.NewOptions(opts...)}
 }
