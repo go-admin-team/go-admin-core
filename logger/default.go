@@ -135,10 +135,6 @@ func (l *defaultLogger) logf(level Level, format string, v ...interface{}) {
 		name = "[" + l.opts.Name + "]"
 	}
 	t := rec.Timestamp.Format("2006-01-02 15:04:05.000Z0700")
-	//fmt.Printf("%s\n", t)
-	//fmt.Printf("%s\n", name)
-	//fmt.Printf("%s\n", metadata)
-	//fmt.Printf("%v\n", rec.Message)
 	logStr := ""
 	if name == "" {
 		logStr = fmt.Sprintf("%s %s %v\n", t, metadata, rec.Message)
