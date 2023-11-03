@@ -55,3 +55,9 @@ func WithCap(n uint) Option {
 		o.cap = n
 	}
 }
+
+func WithDaysToKeep(n uint) Option {
+	return func(o *options) {
+		o.cap = n
+	}
+}
