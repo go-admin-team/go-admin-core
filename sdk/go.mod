@@ -8,7 +8,7 @@ require (
 	github.com/casbin/casbin/v2 v2.77.2
 	github.com/chanxuehong/wechat v0.0.0-20230222024006-36f0325263cd
 	github.com/gin-gonic/gin v1.9.1
-	github.com/go-admin-team/go-admin-core v1.5.2-0.20231103074559-ed33214df557
+	github.com/go-admin-team/go-admin-core v1.5.2-0.20231103083600-51f695cf90ba
 	github.com/go-admin-team/go-admin-core/plugins/logger/zap v1.3.5-rc.0.0.20231103082419-856c36dae756
 	github.com/go-admin-team/gorm-adapter/v3 v3.2.1-0.20210902112335-4148cb356a24
 	github.com/go-admin-team/redis-watcher/v2 v2.0.0-20231102130416-bfe327cac940
