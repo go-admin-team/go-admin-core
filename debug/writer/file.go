@@ -3,6 +3,7 @@ package writer
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -88,6 +89,30 @@ func (p *FileWriter) checkFile() {
 		filename := p.getFilename()
 		_ = p.file.Close()
 		p.file, _ = os.OpenFile(filename, os.O_WRONLY|os.O_APPEND|os.O_CREATE|os.O_SYNC, 0600)
+
+		dir := filepath.Dir(p.file.Name())
+		fmt.Println("File directory:", dir)
+		files, err := ioutil.ReadDir(dir)
+		if err != nil {
+			fmt.Println("Error reading log directory:", err)
+			return
+		}
+
+		for _, file := range files {
+			if !file.IsDir() && strings.HasSuffix(file.Name(), p.opts.suffix) {
+				filePath := filepath.Join(dir, file.Name())
+				fileModTime := file.ModTime()
+				daysSinceMod := uint(time.Since(fileModTime).Hours() / 24)
+				if daysSinceMod > p.opts.daysToKeep {
+					err := os.Remove(filePath)
+					if err != nil {
+						fmt.Println("Error deleting file:", err)
+					} else {
+						fmt.Println("Deleted file:", filePath)
+					}
+				}
+			}
+		}
 	}
 }
 
