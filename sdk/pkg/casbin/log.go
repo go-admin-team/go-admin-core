@@ -12,7 +12,6 @@ type Logger struct {
 }
 
 func (l *Logger) LogError(err error, msg ...string) {
-	//TODO implement me
 	slog.Error(err.Error(), msg, err)
 }
 
