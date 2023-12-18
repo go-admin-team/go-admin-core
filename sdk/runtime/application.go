@@ -14,21 +14,23 @@ import (
 )
 
 type Application struct {
-	dbs         map[string]*gorm.DB
-	casbins     map[string]*casbin.SyncedEnforcer
-	engine      http.Handler
-	crontab     map[string]*cron.Cron
-	mux         sync.RWMutex
-	middlewares map[string]interface{}
-	cache       storage.AdapterCache
-	queue       storage.AdapterQueue
-	locker      storage.AdapterLocker
-	memoryQueue storage.AdapterQueue
-	handler     map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)
-	routers     []Router
-	configs     map[string]interface{} // 系统参数
-	appRouters  []func()               // app路由
-
+	dbs           map[string]*gorm.DB
+	casbins       map[string]*casbin.SyncedEnforcer
+	engine        http.Handler
+	crontab       map[string]*cron.Cron
+	mux           sync.RWMutex
+	middlewares   map[string]interface{}
+	cache         storage.AdapterCache
+	queue         storage.AdapterQueue
+	locker        storage.AdapterLocker
+	memoryQueue   storage.AdapterQueue
+	handler       map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)
+	routers       []Router
+	configs       map[string]map[string]interface{} // 系统参数
+	appRouters    []func()                          // app路由
+	casbinExclude map[string]interface{}            // casbin排除
+	before        []func()                          // 启动前执行
+	app           map[string]interface{}            // app
 }
 
 type Router struct {
@@ -37,6 +39,62 @@ type Router struct {
 
 type Routers struct {
 	List []Router
+}
+
+func (e *Application) SetBefore(f func()) {
+	e.before = append(e.before, f)
+}
+
+func (e *Application) GetBefore() []func() {
+	return e.before
+}
+
+// SetCasbinExclude 设置对应key的Exclude
+func (e *Application) SetCasbinExclude(key string, list interface{}) {
+	e.mux.Lock()
+	defer e.mux.Unlock()
+	e.casbinExclude[key] = list
+}
+
+// GetCasbinExclude 获取所有map里的Exclude数据
+func (e *Application) GetCasbinExclude() map[string]interface{} {
+	e.mux.Lock()
+	defer e.mux.Unlock()
+	return e.casbinExclude
+}
+
+// GetCasbinExcludeByKey 根据key获取Exclude
+func (e *Application) GetCasbinExcludeByKey(key string) interface{} {
+	e.mux.Lock()
+	defer e.mux.Unlock()
+	if exclude, ok := e.casbinExclude["*"]; ok {
+		return exclude
+	}
+	return e.casbinExclude[key]
+}
+
+// SetApp 设置对应key的app
+func (e *Application) SetApp(key string, app interface{}) {
+	e.mux.Lock()
+	defer e.mux.Unlock()
+	e.app[key] = app
+}
+
+// GetApp 获取所有map里的app数据
+func (e *Application) GetApp() map[string]interface{} {
+	e.mux.Lock()
+	defer e.mux.Unlock()
+	return e.app
+}
+
+// GetAppByKey 根据key获取app
+func (e *Application) GetAppByKey(key string) interface{} {
+	e.mux.Lock()
+	defer e.mux.Unlock()
+	if app, ok := e.app["*"]; ok {
+		return app
+	}
+	return e.app[key]
 }
 
 // SetDb 设置对应key的db
@@ -123,14 +181,15 @@ func (e *Application) GetLogger() logger.Logger {
 // NewConfig 默认值
 func NewConfig() *Application {
 	return &Application{
-		dbs:         make(map[string]*gorm.DB),
-		casbins:     make(map[string]*casbin.SyncedEnforcer),
-		crontab:     make(map[string]*cron.Cron),
-		middlewares: make(map[string]interface{}),
-		memoryQueue: queue.NewMemory(10000),
-		handler:     make(map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)),
-		routers:     make([]Router, 0),
-		configs:     make(map[string]interface{}),
+		dbs:           make(map[string]*gorm.DB),
+		casbins:       make(map[string]*casbin.SyncedEnforcer),
+		crontab:       make(map[string]*cron.Cron),
+		middlewares:   make(map[string]interface{}),
+		memoryQueue:   queue.NewMemory(10000),
+		handler:       make(map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)),
+		routers:       make([]Router, 0),
+		configs:       make(map[string]map[string]interface{}),
+		casbinExclude: make(map[string]interface{}),
 	}
 }
 
@@ -252,18 +311,35 @@ func (e *Application) GetMemoryQueue(prefix string) storage.AdapterQueue {
 	return NewQueue(prefix, e.memoryQueue)
 }
 
-// SetConfig 设置对应key的config
-func (e *Application) SetConfig(key string, value interface{}) {
+// SetConfigByTenant 设置对应租户的config
+func (e *Application) SetConfigByTenant(tenant string, value map[string]interface{}) {
 	e.mux.Lock()
 	defer e.mux.Unlock()
-	e.configs[key] = value
+	e.configs[tenant] = value
+}
+
+// SetConfig 设置对应key的config
+func (e *Application) SetConfig(tenant, key string, value interface{}) {
+	e.mux.Lock()
+	defer e.mux.Unlock()
+	if _, ok := e.configs[tenant]; !ok {
+		e.configs[tenant] = make(map[string]interface{})
+	}
+	e.configs[tenant][key] = value
 }
 
 // GetConfig 获取对应key的config
-func (e *Application) GetConfig(key string) interface{} {
+func (e *Application) GetConfig(tenant, key string) interface{} {
 	e.mux.Lock()
 	defer e.mux.Unlock()
-	return e.configs[key]
+	return e.configs[tenant][key]
+}
+
+// GetConfigByTenant 获取对应租户的config
+func (e *Application) GetConfigByTenant(tenant string) interface{} {
+	e.mux.Lock()
+	defer e.mux.Unlock()
+	return e.configs[tenant]
 }
 
 // SetAppRouters 设置app的路由
