@@ -12,14 +12,14 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-admin-team/redisqueue/v2 v2.0.0
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
-	github.com/google/uuid v1.4.0
+	github.com/google/uuid v1.5.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/json-iterator/go v1.1.12
 	github.com/nsqio/go-nsq v1.1.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.17.0
-	github.com/redis/go-redis/v9 v9.3.0
+	github.com/redis/go-redis/v9 v9.3.1
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/smartystreets/goconvey v1.8.1
 	github.com/spf13/cast v1.5.1
