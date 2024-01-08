@@ -14,6 +14,8 @@ import (
 // 用于文件名称格式
 const timeFormat = "2006-01-02"
 
+const MB = 1024 * 1024
+
 // FileWriter 文件写入结构体
 type FileWriter struct {
 	file         *os.File
@@ -78,9 +80,9 @@ func (p *FileWriter) write() {
 func (p *FileWriter) checkFile() {
 	info, _ := p.file.Stat()
 	if strings.Index(p.file.Name(), time.Now().Format(timeFormat)) < 0 ||
-		(p.opts.cap > 0 && uint(info.Size()) > p.opts.cap) {
+		(p.opts.cap > 0 && uint(info.Size()) > p.opts.cap*MB) {
 		//生成新文件
-		if uint(info.Size()) > p.opts.cap {
+		if uint(info.Size()) > p.opts.cap*MB {
 			p.num++
 		} else {
 			p.num = 0
@@ -88,6 +90,34 @@ func (p *FileWriter) checkFile() {
 		filename := p.getFilename()
 		_ = p.file.Close()
 		p.file, _ = os.OpenFile(filename, os.O_WRONLY|os.O_APPEND|os.O_CREATE|os.O_SYNC, 0600)
+
+		dir := filepath.Dir(p.file.Name())
+		files, err := os.ReadDir(dir)
+		if err != nil {
+			fmt.Println("Error reading log directory:", err)
+			return
+		}
+
+		for _, file := range files {
+			if !file.IsDir() && strings.HasSuffix(file.Name(), p.opts.suffix) {
+				filePath := filepath.Join(dir, file.Name())
+				fileInfo, err := file.Info()
+				if err != nil {
+					fmt.Println("Error get Info file:", err)
+					break
+				}
+				fileModTime := fileInfo.ModTime()
+				daysSinceMod := uint(time.Since(fileModTime).Hours() / 24)
+				if daysSinceMod > p.opts.daysToKeep {
+					err := os.Remove(filePath)
+					if err != nil {
+						fmt.Println("Error deleting file:", err)
+					} else {
+						fmt.Println("Deleted file:", filePath)
+					}
+				}
+			}
+		}
 	}
 }
 

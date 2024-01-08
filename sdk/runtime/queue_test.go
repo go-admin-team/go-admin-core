@@ -3,7 +3,7 @@ package runtime
 import (
 	"fmt"
 	"github.com/go-admin-team/redisqueue/v2"
-	"github.com/go-redis/redis/v9"
+	"github.com/redis/go-redis/v9"
 	"reflect"
 	"testing"
 	"time"

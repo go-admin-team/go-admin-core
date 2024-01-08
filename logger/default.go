@@ -97,7 +97,7 @@ func (l *defaultLogger) logf(level Level, format string, v ...interface{}) {
 	fields := copyFields(l.opts.Fields)
 	l.RUnlock()
 
-	fields["level"] = level.String()
+	//fields["level"] = level.String()
 
 	if _, file, line, ok := runtime.Caller(l.opts.CallerSkipCount); ok && level.String() == "error" {
 		fields["file"] = fmt.Sprintf("%s:%d", logCallerfilePath(file), line)
@@ -134,16 +134,16 @@ func (l *defaultLogger) logf(level Level, format string, v ...interface{}) {
 	if l.opts.Name != "" {
 		name = "[" + l.opts.Name + "]"
 	}
-	t := rec.Timestamp.Format("2006-01-02 15:04:05.000Z0700")
-	//fmt.Printf("%s\n", t)
-	//fmt.Printf("%s\n", name)
-	//fmt.Printf("%s\n", metadata)
-	//fmt.Printf("%v\n", rec.Message)
+	timeFormat := "2006-01-02 15:04:05"
+	if l.opts.TimeFormat != "" {
+		timeFormat = l.opts.TimeFormat
+	}
+	t := rec.Timestamp.Format(timeFormat)
 	logStr := ""
 	if name == "" {
-		logStr = fmt.Sprintf("%s %s %v\n", t, metadata, rec.Message)
+		logStr = fmt.Sprintf("%s %s %s %v\n", t, level.String(), metadata, rec.Message)
 	} else {
-		logStr = fmt.Sprintf("%s %s %s %v\n", name, t, metadata, rec.Message)
+		logStr = fmt.Sprintf("%s %s %s %s %v\n", name, t, level.String(), metadata, rec.Message)
 	}
 	_, err := l.opts.Out.Write([]byte(logStr))
 	if err != nil {

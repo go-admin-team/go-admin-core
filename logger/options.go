@@ -20,12 +20,20 @@ type Options struct {
 	Context context.Context
 	// Name logger name
 	Name string
+	// Timestamp.Format
+	TimeFormat string
 }
 
 // WithFields set default fields for the logger
 func WithFields(fields map[string]interface{}) Option {
 	return func(args *Options) {
 		args.Fields = fields
+	}
+}
+
+func RemoveFieldByKey(key string) Option {
+	return func(args *Options) {
+		delete(args.Fields, key)
 	}
 }
 
@@ -54,6 +62,13 @@ func WithCallerSkipCount(c int) Option {
 func WithName(name string) Option {
 	return func(args *Options) {
 		args.Name = name
+	}
+}
+
+// WithTimeFormat set time format for logger eg. 2006-01-02 15:04:05.000Z0700
+func WithTimeFormat(TimeFormat string) Option {
+	return func(args *Options) {
+		args.TimeFormat = TimeFormat
 	}
 }
 

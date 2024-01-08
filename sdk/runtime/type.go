@@ -17,6 +17,17 @@ type Runtime interface {
 	GetDb() map[string]*gorm.DB
 	GetDbByKey(key string) *gorm.DB
 
+	SetApp(key string, app interface{})
+	GetApp() map[string]interface{}
+	GetAppByKey(key string) interface{}
+
+	SetBefore(f func())
+	GetBefore() []func()
+
+	SetCasbinExclude(key string, list interface{})
+	GetCasbinExclude() map[string]interface{}
+	GetCasbinExcludeByKey(key string) interface{}
+
 	SetCasbin(key string, enforcer *casbin.SyncedEnforcer)
 	GetCasbin() map[string]*casbin.SyncedEnforcer
 	GetCasbinKey(key string) *casbin.SyncedEnforcer
@@ -61,8 +72,10 @@ type Runtime interface {
 
 	GetStreamMessage(id, stream string, value map[string]interface{}) (storage.Messager, error)
 
-	GetConfig(key string) interface{}
-	SetConfig(key string, value interface{})
+	GetConfigByTenant(tenant string) interface{}
+	GetConfig(tenant, key string) interface{}
+	SetConfigByTenant(tenant string, value map[string]interface{})
+	SetConfig(tenant, key string, value interface{})
 
 	// SetAppRouters set AppRouter
 	SetAppRouters(appRouters func())

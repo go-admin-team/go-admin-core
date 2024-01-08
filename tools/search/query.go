@@ -34,10 +34,10 @@ func ResolveSearchQuery(driver string, q interface{}, condition Condition) {
 	var ok bool
 	var t *resolveSearchTag
 
-	var sep = "`"
-	if driver == Postgres {
-		sep = "\""
-	}
+	//var sep = "`"
+	//if driver == Postgres {
+	//	sep = "\""
+	//}
 
 	for i := 0; i < qType.NumField(); i++ {
 		tag, ok = "", false
@@ -74,6 +74,8 @@ func pgSql(driver string, t *resolveSearchTag, condition Condition, qValue refle
 		ResolveSearchQuery(driver, qValue.Field(i).Interface(), join)
 	case "exact", "iexact":
 		condition.SetWhere(fmt.Sprintf("%s.%s = ?", t.Table, t.Column), []interface{}{qValue.Field(i).Interface()})
+	case "glt":
+		condition.SetWhere(fmt.Sprintf("%s.%s <> ?", t.Table, t.Column), []interface{}{qValue.Field(i).Interface()})
 	case "icontains":
 		condition.SetWhere(fmt.Sprintf("%s.%s ilike ?", t.Table, t.Column), []interface{}{"%" + qValue.Field(i).String() + "%"})
 	case "contains":

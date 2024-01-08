@@ -4,11 +4,11 @@ import (
 	"errors"
 	"time"
 
+	"dario.cat/mergo"
 	"github.com/go-admin-team/go-admin-core/config/encoder"
 	"github.com/go-admin-team/go-admin-core/config/encoder/json"
 	"github.com/go-admin-team/go-admin-core/config/reader"
 	"github.com/go-admin-team/go-admin-core/config/source"
-	"github.com/imdario/mergo"
 )
 
 const readerTyp = "json"

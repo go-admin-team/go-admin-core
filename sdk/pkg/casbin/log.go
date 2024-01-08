@@ -1,14 +1,18 @@
 package mycasbin
 
 import (
-	"sync/atomic"
-
 	"github.com/go-admin-team/go-admin-core/logger"
+	"log/slog"
+	"sync/atomic"
 )
 
 // Logger is the implementation for a Logger using golang log.
 type Logger struct {
 	enable int32
+}
+
+func (l *Logger) LogError(err error, msg ...string) {
+	slog.Error(err.Error(), msg, err)
 }
 
 // EnableLog controls whether print the message.

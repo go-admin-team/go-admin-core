@@ -11,9 +11,9 @@ var Cols = []string{"", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "
 
 // WriteXlsx 填充excel
 func WriteXlsx(sheet string, records interface{}) *excelize.File {
-	xlsx := excelize.NewFile()    // new file
-	index := xlsx.NewSheet(sheet) // new sheet
-	xlsx.SetActiveSheet(index)    // set active (default) sheet
+	xlsx := excelize.NewFile()       // new file
+	index, _ := xlsx.NewSheet(sheet) // new sheet
+	xlsx.SetActiveSheet(index)       // set active (default) sheet
 	t := reflect.TypeOf(records)
 
 	if t.Kind() != reflect.Slice {

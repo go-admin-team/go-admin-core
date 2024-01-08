@@ -6,7 +6,6 @@ type Application struct {
 	Host          string
 	Port          int64
 	Name          string
-	JwtSecret     string
 	Mode          string
 	DemoMsg       string
 	EnableDP      bool

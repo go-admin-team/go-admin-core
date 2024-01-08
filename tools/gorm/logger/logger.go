@@ -138,18 +138,18 @@ func New(config logger.Config) logger.Interface {
 		infoStr      = "%s\n[info] "
 		warnStr      = "%s\n[warn] "
 		errStr       = "%s\n[error] "
-		traceStr     = "%s [%.3fms] [rows:%v] %s"
-		traceWarnStr = "%s %s [%.3fms] [rows:%v] %s"
-		traceErrStr  = "%s %s [%.3fms] [rows:%v] %s"
+		traceStr     = "%s\n[%.3fms] [rows:%v] %s\n"
+		traceWarnStr = "%s %s\n[%.3fms] [rows:%v] %s\n"
+		traceErrStr  = "%s %s\n[%.3fms] [rows:%v] %s\n"
 	)
 
 	if config.Colorful {
-		infoStr = Green + "%s " + Reset + Green + "[info] " + Reset
-		warnStr = BlueBold + "%s " + Reset + Magenta + "[warn] " + Reset
-		errStr = Magenta + "%s " + Reset + Red + "[error] " + Reset
-		traceStr = Green + "%s " + Reset + Yellow + "[%.3fms] " + BlueBold + "[rows:%v]" + Reset + " %s"
-		traceWarnStr = Green + "%s " + Yellow + "%s " + Reset + RedBold + "[%.3fms] " + Yellow + "[rows:%v]" + Magenta + " %s" + Reset
-		traceErrStr = RedBold + "%s " + MagentaBold + "%s " + Reset + Yellow + "[%.3fms] " + BlueBold + "[rows:%v]" + Reset + " %s"
+		infoStr = Green + "%s\n" + Reset + Green + "[info] " + Reset
+		warnStr = BlueBold + "%s\n" + Reset + Magenta + "[warn] " + Reset
+		errStr = Magenta + "%s\n" + Reset + Red + "[error] " + Reset
+		traceStr = Green + "%s\n" + Reset + Yellow + "[%.3fms] " + BlueBold + "[rows:%v]" + Reset + " %s\n"
+		traceWarnStr = Green + "%s " + Yellow + "%s\n" + Reset + RedBold + "[%.3fms] " + Yellow + "[rows:%v]" + Magenta + " %s" + Reset
+		traceErrStr = RedBold + "%s " + MagentaBold + "%s\n" + Reset + Yellow + "[%.3fms] " + BlueBold + "[rows:%v]" + Reset + " %s"
 	}
 
 	return &gormLogger{

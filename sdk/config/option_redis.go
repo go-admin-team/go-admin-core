@@ -5,9 +5,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"github.com/redis/go-redis/v9"
 	"io/ioutil"
-
-	"github.com/go-redis/redis/v9"
 )
 
 var _redis *redis.Client
