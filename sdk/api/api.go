@@ -42,6 +42,7 @@ func (e *Api) AddError(err error) {
 func (e *Api) MakeContext(c *gin.Context) *Api {
 	e.Context = c
 	e.Logger = GetRequestLogger(c)
+	e.Errors = nil
 	return e
 }
 
