@@ -60,10 +60,13 @@ func (m *Memory) Append(message storage.Messager) error {
 		q = m.makeQueue()
 		m.queue.Store(message.GetStream(), q)
 	}
-	go func(gm storage.Messager, gq queue) {
-		gm.SetID(uuid.New().String())
-		gq <- gm
-	}(memoryMessage, q)
+	memoryMessage.SetID(uuid.New().String())
+	select {
+	case q <- memoryMessage:
+	default:
+		log.Printf("memory queue for stream %s is full, dropping message", message.GetStream())
+		return fmt.Errorf("memory queue for stream %s is full", message.GetStream())
+	}
 	return nil
 }
 
