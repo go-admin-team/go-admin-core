@@ -3,7 +3,7 @@ package antd
 import (
 	"fmt"
 
-	resp "github.com/go-admin-team/go-admin-core/sdk/pkg/response"
+	resp "github.com/ht-qukuai-yjingy/go-admin-core/sdk/pkg/response"
 )
 
 const (

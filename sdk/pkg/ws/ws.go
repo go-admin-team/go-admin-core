@@ -11,7 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 
-	"github.com/go-admin-team/go-admin-core/sdk/pkg"
+	"github.com/ht-qukuai-yjingy/go-admin-core/sdk/pkg"
 )
 
 // Manager 所有 websocket 信息

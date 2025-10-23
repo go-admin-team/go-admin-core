@@ -4,12 +4,12 @@ import (
 	"io"
 	"os"
 
-	"github.com/go-admin-team/go-admin-core/debug/writer"
-	"github.com/go-admin-team/go-admin-core/logger"
-	"github.com/go-admin-team/go-admin-core/plugins/logger/zap"
-	"github.com/go-admin-team/go-admin-core/sdk/pkg"
+	"github.com/ht-qukuai-yjingy/go-admin-core/debug/writer"
+	"github.com/ht-qukuai-yjingy/go-admin-core/logger"
+	"github.com/ht-qukuai-yjingy/go-admin-core/plugins/logger/zap"
+	"github.com/ht-qukuai-yjingy/go-admin-core/sdk/pkg"
 
-	log "github.com/go-admin-team/go-admin-core/logger"
+	log "github.com/ht-qukuai-yjingy/go-admin-core/logger"
 )
 
 // SetupLogger 日志 cap 单位为kb

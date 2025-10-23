@@ -6,8 +6,8 @@ import (
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
 	gormAdapter "github.com/casbin/gorm-adapter/v3"
-	"github.com/go-admin-team/go-admin-core/logger"
-	"github.com/go-admin-team/go-admin-core/sdk"
+	"github.com/ht-qukuai-yjingy/go-admin-core/logger"
+	"github.com/ht-qukuai-yjingy/go-admin-core/sdk"
 	"gorm.io/gorm"
 )
 

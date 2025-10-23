@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-admin-team/go-admin-core/config"
-	"github.com/go-admin-team/go-admin-core/config/source/file"
+	"github.com/ht-qukuai-yjingy/go-admin-core/config"
+	"github.com/ht-qukuai-yjingy/go-admin-core/config/source/file"
 )
 
 func TestConfig(t *testing.T) {

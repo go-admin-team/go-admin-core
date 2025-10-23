@@ -1,8 +1,8 @@
 package runtime
 
 import (
-	"github.com/go-admin-team/go-admin-core/storage"
-	"github.com/go-admin-team/go-admin-core/storage/queue"
+	"github.com/ht-qukuai-yjingy/go-admin-core/storage"
+	"github.com/ht-qukuai-yjingy/go-admin-core/storage/queue"
 	"reflect"
 	"testing"
 )

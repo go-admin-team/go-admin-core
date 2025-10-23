@@ -1,9 +1,9 @@
-module github.com/go-admin-team/go-admin-core/plugins/logger/logrus
+module github.com/ht-qukuai-yjingy/go-admin-core/plugins/logger/logrus
 
 go 1.18
 
 require (
-	github.com/go-admin-team/go-admin-core v1.3.11
+	github.com/ht-qukuai-yjingy/go-admin-core v1.3.11
 	github.com/sirupsen/logrus v1.8.0
 )
 
@@ -12,4 +12,4 @@ require (
 	golang.org/x/sys v0.0.0-20210603081109-ebe580a85c40 // indirect
 )
 
-//replace github.com/go-admin-team/go-admin-core => ../../../
+//replace github.com/ht-qukuai-yjingy/go-admin-core => ../../../

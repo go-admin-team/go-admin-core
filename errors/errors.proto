@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package errors;
 
-option go_package = "github.com/go-admin-team/go-admin-core/errors";
+option go_package = "github.com/ht-qukuai-yjingy/go-admin-core/errors";
 
 message Error {
   // Success if request is success

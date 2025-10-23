@@ -1,6 +1,6 @@
 package runtime
 
-import "github.com/go-admin-team/go-admin-core/storage"
+import "github.com/ht-qukuai-yjingy/go-admin-core/storage"
 
 // NewQueue 创建对应上下文队列
 func NewQueue(prefix string, queue storage.AdapterQueue) storage.AdapterQueue {

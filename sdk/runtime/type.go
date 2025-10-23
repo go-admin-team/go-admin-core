@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/casbin/casbin/v2"
-	"github.com/go-admin-team/go-admin-core/logger"
-	"github.com/go-admin-team/go-admin-core/storage"
+	"github.com/ht-qukuai-yjingy/go-admin-core/logger"
+	"github.com/ht-qukuai-yjingy/go-admin-core/storage"
 	"github.com/robfig/cron/v3"
 	"gorm.io/gorm"
 )

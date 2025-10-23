@@ -2,7 +2,7 @@ package antd
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/go-admin-team/go-admin-core/sdk/pkg"
+	"github.com/ht-qukuai-yjingy/go-admin-core/sdk/pkg"
 	"net/http"
 )
 
