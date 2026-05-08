@@ -10,6 +10,8 @@
 |endswith/iendswith|以…结束|content=world|
 |in|in查询|status[]=0&status[]=1|
 |isnull|isnull查询|startTime=1|
+|json_contains|JSON 数组精确包含值（MySQL `JSON_CONTAINS` / Postgres `@>`）|agentCode=ai-001|
+|json_contains_or_null|JSON 数组三态白名单：NULL/空数组=全部命中；非空=按值匹配|agentCode=ai-001|
 |order|排序|sort=asc/sort=desc|
 
 e.g.
