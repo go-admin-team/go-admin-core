@@ -4,8 +4,65 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/gin-gonic/gin/binding"
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+// uriJSONReq 复现根因 DTO：同含 uri（id）与 json（recallMode required）。
+type uriJSONReq struct {
+	Id         int64  `uri:"id" json:"-"`
+	RecallMode string `json:"recallMode" binding:"required"`
+	Weight     int    `json:"weight"`
+}
+
+type pureJSONReq struct {
+	Name string `json:"name" binding:"required"`
+}
+
+type pureURIReq struct {
+	Id int64 `uri:"id"`
+}
+
+type formURIReq struct {
+	Id   int64  `uri:"id"`
+	Page string `form:"page"`
+}
+
+// TestGetBindingForGinDeterministicOrder 锁死 binding 返回顺序：
+// body 类（JSON/Form 等）恒在前，uri（nil）恒在最后。
+// 旧实现用 map[uint8]binding + for range 返回，遍历顺序随机，此用例会间歇性失败；
+// 修复后跨多次调用顺序恒定。每个用例额外用全新类型（无缓存）跑足够多次以触发 map 随机。
+func TestGetBindingForGinDeterministicOrder(t *testing.T) {
+	Convey("uri+json 混合：JSON 必在前、uri(nil) 必在最后", t, func() {
+		for i := 0; i < 500; i++ {
+			list := constructor.GetBindingForGin(&uriJSONReq{})
+			So(len(list), ShouldEqual, 2)
+			So(list[0], ShouldEqual, binding.JSON)
+			So(list[1], ShouldBeNil)
+		}
+	})
+
+	Convey("纯 json：仅返回 [JSON]，无 nil 尾项", t, func() {
+		list := constructor.GetBindingForGin(&pureJSONReq{})
+		So(len(list), ShouldEqual, 1)
+		So(list[0], ShouldEqual, binding.JSON)
+	})
+
+	Convey("纯 uri：仅返回 [nil]", t, func() {
+		list := constructor.GetBindingForGin(&pureURIReq{})
+		So(len(list), ShouldEqual, 1)
+		So(list[0], ShouldBeNil)
+	})
+
+	Convey("form+uri 混合：Form 在前、uri(nil) 在最后", t, func() {
+		for i := 0; i < 500; i++ {
+			list := constructor.GetBindingForGin(&formURIReq{})
+			So(len(list), ShouldEqual, 2)
+			So(list[0], ShouldEqual, binding.Form)
+			So(list[1], ShouldBeNil)
+		}
+	})
+}
 
 type Pagination struct {
 	PageIndex int `form:"pageIndex"`
