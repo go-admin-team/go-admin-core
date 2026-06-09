@@ -207,15 +207,32 @@ func (e *Application) GetRouter() []Router {
 	return e.setRouter()
 }
 
-// setRouter 设置路由表
+// setRouter 设置路由表（并发安全）
 func (e *Application) setRouter() []Router {
 	switch e.engine.(type) {
 	case *gin.Engine:
+		// 每次按当前 engine 路由全量重建，避免重复 append 累积：
+		// GetRouter 会被多次调用（启动 -a 同步 + 运行时手动「同步接口」），原写法把全量路由
+		// 反复追加进 e.routers，使路由表成倍膨胀、含大量重复项（下游 SaveSysApi 因此处理冗余、
+		// 消息体膨胀，FirstOrCreate 幂等故不影响正确性，但每次同步成本随调用次数线性增长）。
+		//
+		// 并发安全：engine.Routes() 遍历与 list 构建在锁外完成（gin 路由注册完成后 Routes() 只读、
+		// 本身并发安全），仅 e.routers 赋值瞬间持写锁，避免长时间占用 e.mux 阻塞 config 等读路径。
+		// 返回本次构建的局部快照（而非 e.routers 字段），即便随后被其他 goroutine 覆盖，调用方
+		// 持有的快照底层数组也不会被改写，可在锁外安全遍历——消除原先「写 e.routers 与读返回值」
+		// 之间的 data race。
 		routers := e.engine.(*gin.Engine).Routes()
+		list := make([]Router, 0, len(routers))
 		for _, router := range routers {
-			e.routers = append(e.routers, Router{RelativePath: router.Path, Handler: router.Handler, HttpMethod: router.Method})
+			list = append(list, Router{RelativePath: router.Path, Handler: router.Handler, HttpMethod: router.Method})
 		}
+		e.mux.Lock()
+		e.routers = list
+		e.mux.Unlock()
+		return list
 	}
+	e.mux.RLock()
+	defer e.mux.RUnlock()
 	return e.routers
 }
 
