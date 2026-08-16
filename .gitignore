@@ -18,7 +18,6 @@
 /.idea
 
 /plugins/logger/zap/testdata/*
-*.sum
 
 .DS_Store
 
