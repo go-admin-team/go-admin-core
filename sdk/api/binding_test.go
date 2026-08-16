@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/gin-gonic/gin/binding"
@@ -93,14 +92,14 @@ type SysUserOrder struct {
 
 func TestResolve(t *testing.T) {
 	// Only pass t into top-level Convey calls
-	Convey("Given some integer with a starting value", t, func() {
+	Convey("a generated-shape search DTO resolves to Form", t, func() {
 
 		d := &SysUserSearch{}
 
 		list := constructor.GetBindingForGin(d)
-		for _, binding := range list {
-			fmt.Printf("%v /n", binding)
-		}
 
+		// This test used to print the result and assert nothing, so it passed
+		// no matter what was resolved — which is why issue #72 went unnoticed.
+		So(list, ShouldContain, binding.Form)
 	})
 }
