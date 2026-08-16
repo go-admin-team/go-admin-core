@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"fmt"
+	"io"
 
 	"net/http"
 
@@ -52,9 +53,22 @@ func (e *Api) GetLogger() *logger.Helper {
 	return GetRequestLogger(e.Context)
 }
 
+// validate mirrors gin's internal binding.validate. binding.Validator is a
+// public, assignable variable, and setting it to nil is the documented way to
+// disable validation globally, so it must not be dereferenced unchecked.
+func validate(obj interface{}) error {
+	if binding.Validator == nil {
+		return nil
+	}
+	return binding.Validator.ValidateStruct(obj)
+}
+
 // Bind 参数校验
 func (e *Api) Bind(d interface{}, bindings ...binding.Binding) *Api {
 	var err error
+	// gin validates the binding tags at the end of every binding stage, so one
+	// completed stage means validation has already run.
+	var validated bool
 	if len(bindings) == 0 {
 		bindings = constructor.GetBindingForGin(d)
 	}
@@ -64,7 +78,9 @@ func (e *Api) Bind(d interface{}, bindings ...binding.Binding) *Api {
 		} else {
 			err = e.Context.ShouldBindWith(d, bindings[i])
 		}
-		if err != nil && err.Error() == "EOF" {
+		if err != nil && errors.Is(err, io.EOF) {
+			// A request may legitimately carry no body while the struct still
+			// binds from the uri or the query string.
 			e.Logger.Warn("request body is not present anymore. ")
 			err = nil
 			continue
@@ -72,6 +88,15 @@ func (e *Api) Bind(d interface{}, bindings ...binding.Binding) *Api {
 		if err != nil {
 			e.AddError(err)
 			break
+		}
+		validated = true
+	}
+
+	// Every stage was skipped, so the binding tags were never checked and
+	// required would be bypassed entirely (issue #81).
+	if !validated && e.Errors == nil {
+		if err = validate(d); err != nil {
+			e.AddError(err)
 		}
 	}
 	//vd.SetErrorFactory(func(failPath, msg string) error {
