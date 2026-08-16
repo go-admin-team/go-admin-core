@@ -1,6 +1,0 @@
-{"level":"info","logger":"go-admin","msg":"test message from caller_test.go","time":"2026-01-30 01:55:58.167"}
-{"level":"info","logger":"go-admin","msg":"test message from caller_test.go","time":"2026-01-30 01:56:51.446"}
-{"caller":"caller_test.go:22","level":"info","logger":"go-admin","msg":"test message from caller_test.go","time":"2026-01-30 01:57:25.234"}
-{"caller":"caller_test.go:22","level":"info","logger":"go-admin","msg":"test message from caller_test.go","time":"2026-01-30 01:57:31.752"}
-{"caller":"logger/caller_test.go:22","level":"info","logger":"go-admin","msg":"test message from caller_test.go","time":"2026-01-30 02:09:03.301"}
-{"caller":"logger/caller_test.go:22","level":"info","logger":"go-admin","msg":"test message from caller_test.go","time":"2026-01-30 02:16:32.356"}
