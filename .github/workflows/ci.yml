@@ -13,6 +13,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  language:
+    name: english-only
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Check added Go code and commit messages
+        run: scripts/check-language.sh origin/${{ github.base_ref || 'main' }}
+
   build:
     name: build / vet / race
     runs-on: ubuntu-latest
