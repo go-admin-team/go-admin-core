@@ -16,6 +16,13 @@
 - **Production-Ready Config** - Built-in best practices (async + sampling + sanitization)
 - **Concurrency Safe** - Verified with Race Detector, zero data races
 
+### 🔐 JWT Authentication
+
+- **Gin middleware** - Login, refresh and identity handling for Gin applications
+- **Bounded token lifetime** - `MaxRefresh` caps how long a token may be renewed
+  for, measured from its original issuance
+- **Configurable** - `Timeout` and `MaxRefresh` are both driven by configuration
+
 ### 🚀 Other Components
 
 - [x] Cache component (memory support)
@@ -23,7 +30,7 @@
 - [x] Configuration management (multiple data sources)
 - [x] Log writer (file rotation support)
 
-> **Latest Version:** Go 1.25.1 | 119 dependencies upgraded | 35 unit tests + 30+ performance benchmarks
+> **Latest Version:** Go 1.25 | 35 unit tests + 30+ performance benchmarks
 
 ---
 
@@ -35,7 +42,7 @@
 go get -u github.com/go-admin-team/go-admin-core
 ```
 
-**System Requirements:** Go 1.25.1 or higher
+**System Requirements:** Go 1.25 or higher (see the `go` directive in `go.mod`)
 
 ### Basic Logging
 
@@ -173,12 +180,16 @@ go test ./logger -race
 ## 📦 Main Dependencies
 
 ```go
-github.com/casbin/casbin/v2         v2.135.0
+github.com/casbin/casbin/v3         v3.8.1
 github.com/gin-gonic/gin            v1.11.0
+github.com/golang-jwt/jwt/v5        v5.3.0
 gorm.io/gorm                        v1.31.1
-github.com/sirupsen/logrus          v1.9.3
+github.com/sirupsen/logrus          v1.9.4
 golang.org/x/crypto                 v0.47.0
 ```
+
+Versions above reflect `go.mod` at the time of writing; that file is the source
+of truth.
 
 ---
 
@@ -187,10 +198,20 @@ golang.org/x/crypto                 v0.47.0
 We welcome Issues and Pull Requests!
 
 1. Fork this repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+2. Create your feature branch from `main` (`git checkout -b feature/AmazingFeature`)
 3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+5. Open a Pull Request **against `main`**
+
+> **Branches:** `main` is the only active branch and the source of every release.
+> `master` and `dev` are historical and no longer accept changes — `master` in
+> particular has not moved since 2022 and was never part of the release lineage.
+
+### Reporting a vulnerability
+
+Please do not open a public issue for security problems. Use
+[private vulnerability reporting](https://github.com/go-admin-team/go-admin-core/security/advisories/new)
+instead.
 
 ---
 
