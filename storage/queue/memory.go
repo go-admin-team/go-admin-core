@@ -1,6 +1,8 @@
 package queue
 
 import (
+	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -61,10 +63,21 @@ func (m *Memory) Append(message storage.Messager) error {
 		q = m.makeQueue()
 		m.queue.Store(message.GetStream(), q)
 	}
-	go func(gm storage.Messager, gq queue) {
-		gm.SetID(uuid.New().String())
-		gq <- gm
-	}(memoryMessage, q)
+	// 不再为每条消息起 goroutine 投递。
+	//
+	// 原实现中，队列满时 goroutine 会阻塞在 channel 写入上且永不退出；
+	// 只要生产速度长期高于消费速度，goroutine 就会无上限累积，最终 OOM。
+	// 日志走的正是这条队列，高频写日志的服务尤其容易触发。
+	//
+	// 改为非阻塞投递：队列满时立即丢弃该消息并返回错误，由调用方决定如何
+	// 处理，而不是把压力转成不可见的 goroutine 泄漏。
+	memoryMessage.SetID(uuid.New().String())
+	select {
+	case q <- memoryMessage:
+	default:
+		log.Printf("memory queue for stream %s is full, dropping message", message.GetStream())
+		return fmt.Errorf("memory queue for stream %s is full", message.GetStream())
+	}
 	return nil
 }
 
@@ -110,7 +123,7 @@ func (m *Memory) Run() {
 	}
 	m.running = true
 	m.mutex.Unlock()
-	
+
 	m.wait.Add(1)
 	m.wait.Wait()
 }
@@ -118,7 +131,7 @@ func (m *Memory) Run() {
 func (m *Memory) Shutdown() {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-	
+
 	// 只有在运行状态才调用 Done()
 	if m.running {
 		m.running = false
