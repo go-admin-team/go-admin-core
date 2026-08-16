@@ -25,23 +25,36 @@ var constructor = &bindConstructor{}
 // 导致所有「同含 uri+json 且 json 字段有 required」的 PUT/POST 接口约 50% 概率间歇性参数校验失败。
 var bindingOrder = []uint8{json, xml, yaml, form, query}
 
+// The cache holds the finished []binding.Binding rather than the raw []uint8
+// from resolveType: the raw form contains many duplicates once embedded structs
+// are walked, so caching it would mean de-duplicating on every request. Keys are
+// reflect.Type, not its string form, so identically named types in different
+// packages cannot collide.
 type bindConstructor struct {
-	cache map[string][]uint8
-	mux   sync.Mutex
+	cache sync.Map // reflect.Type → []binding.Binding
 }
 
 func (e *bindConstructor) GetBindingForGin(d interface{}) []binding.Binding {
-	name := reflect.TypeOf(d).String()
-	bs := e.getBinding(name)
-	if bs == nil {
-		//重新构建
-		bs = e.resolve(d)
-		e.setBinding(name, bs) // 顺手修复：旧实现 resolve 后从未写缓存，每次请求都重复 reflect
+	t := reflect.TypeOf(d)
+	if v, ok := e.cache.Load(t); ok {
+		return v.([]binding.Binding)
 	}
+
+	gbs := e.build(t)
+	e.cache.Store(t, gbs)
+	return gbs
+}
+
+// build resolves a type into a de-duplicated, ordered binder list. It runs only
+// on a cache miss.
+func (e *bindConstructor) build(t reflect.Type) []binding.Binding {
+	bs := e.resolveType(t.Elem())
+
 	seen := make(map[uint8]bool, len(bs))
 	for _, b := range bs {
 		seen[b] = true
 	}
+
 	gbs := make([]binding.Binding, 0, len(seen))
 	for _, b := range bindingOrder {
 		if !seen[b] {
@@ -66,14 +79,42 @@ func (e *bindConstructor) GetBindingForGin(d interface{}) []binding.Binding {
 	return gbs
 }
 
-func (e *bindConstructor) resolve(d interface{}) []uint8 {
+// resolveElem unwraps pointers, slices, arrays and maps, then resolves the
+// struct type underneath.
+func (e *bindConstructor) resolveElem(t reflect.Type) []uint8 {
+	for {
+		switch t.Kind() {
+		case reflect.Ptr, reflect.Slice, reflect.Array, reflect.Map:
+			t = t.Elem()
+		case reflect.Struct:
+			return e.resolveType(t)
+		default:
+			return nil
+		}
+	}
+}
+
+// resolveType resolves binders from a type; shared by resolve and by the
+// recursion into embedded structs.
+func (e *bindConstructor) resolveType(qType reflect.Type) []uint8 {
 	bs := make([]uint8, 0)
-	qType := reflect.TypeOf(d).Elem()
 	var tag reflect.StructTag
 	var ok bool
 
 	for i := 0; i < qType.NumField(); i++ {
-		tag = qType.Field(i).Tag
+		field := qType.Field(i)
+
+		// Fields of an anonymously embedded struct bind as if they were declared
+		// on the outer struct, so their tags must be resolved too. Generated
+		// search DTOs have exactly this shape: pagination and ordering are
+		// grouped into embedded structs, so without recursion a DTO with no
+		// direct fields resolves to an empty binder list and pageIndex and the
+		// ordering parameters are silently ignored (issue #72).
+		if field.Anonymous {
+			bs = append(bs, e.resolveElem(field.Type)...)
+		}
+
+		tag = field.Tag
 		if _, ok = tag.Lookup("json"); ok {
 			bs = append(bs, json)
 		}
@@ -92,30 +133,18 @@ func (e *bindConstructor) resolve(d interface{}) []uint8 {
 		if _, ok = tag.Lookup("uri"); ok {
 			bs = append(bs, 0)
 		}
-		if t, ok := tag.Lookup("binding"); ok && strings.Index(t, "dive") > -1 {
-			qValue := reflect.ValueOf(d)
-			bs = append(bs, e.resolve(qValue.Field(i))...)
+		// dive means the element type must be resolved as well. The previous
+		// implementation passed a reflect.Value into resolve, which then called
+		// reflect.TypeOf(d).Elem() on it — that operates on the reflect.Value
+		// struct itself and panics, so this branch never worked. Recurse on the
+		// type instead.
+		if t, ok := tag.Lookup("binding"); ok && strings.Contains(t, "dive") {
+			bs = append(bs, e.resolveElem(field.Type)...)
 			continue
 		}
-		if t, ok := tag.Lookup("validate"); ok && strings.Index(t, "dive") > -1 {
-			qValue := reflect.ValueOf(d)
-			bs = append(bs, e.resolve(qValue.Field(i))...)
+		if t, ok := tag.Lookup("validate"); ok && strings.Contains(t, "dive") {
+			bs = append(bs, e.resolveElem(field.Type)...)
 		}
 	}
 	return bs
-}
-
-func (e *bindConstructor) getBinding(name string) []uint8 {
-	e.mux.Lock()
-	defer e.mux.Unlock()
-	return e.cache[name]
-}
-
-func (e *bindConstructor) setBinding(name string, bs []uint8) {
-	e.mux.Lock()
-	defer e.mux.Unlock()
-	if e.cache == nil {
-		e.cache = make(map[string][]uint8)
-	}
-	e.cache[name] = bs
 }
