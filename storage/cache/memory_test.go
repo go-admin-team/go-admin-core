@@ -1,19 +1,11 @@
 package cache
 
 import (
-	"sync"
 	"testing"
 	"time"
 )
 
 func TestMemory_Get(t *testing.T) {
-	type fields struct {
-		items   *sync.Map
-		queue   *sync.Map
-		wait    sync.WaitGroup
-		mutex   sync.RWMutex
-		PoolNum uint
-	}
 	type args struct {
 		key    string
 		value  string
@@ -21,14 +13,12 @@ func TestMemory_Get(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		want    string
 		wantErr bool
 	}{
 		{
 			"test01",
-			fields{},
 			args{
 				key:    "test",
 				value:  "test",
@@ -39,7 +29,6 @@ func TestMemory_Get(t *testing.T) {
 		},
 		{
 			"test02",
-			fields{},
 			args{
 				key:    "test",
 				value:  "test1",
