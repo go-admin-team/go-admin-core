@@ -16,6 +16,12 @@
 - **生产级配置** - 内置最佳实践配置（异步 + 采样 + 脱敏）
 - **并发安全** - Race Detector 验证通过，零数据竞争
 
+### 🔐 JWT 认证
+
+- **Gin 中间件** — 为 Gin 应用提供登录、续期与身份解析
+- **有界的令牌生命周期** — `MaxRefresh` 限定令牌可被续期的总时长，自首次签发起计算
+- **可配置** — `Timeout` 与 `MaxRefresh` 均由配置驱动
+
 ### 🚀 其他组件
 
 - [x] 缓存组件（支持 memory）
@@ -23,7 +29,7 @@
 - [x] 配置管理（支持多种数据源）
 - [x] 日志写入器（支持文件分割）
 
-> **最新版本:** Go 1.25.1 | 119 个依赖包已升级 | 35 个单元测试 + 30+ 性能基准测试
+> **最新版本:** Go 1.25 | 35 个单元测试 + 30+ 性能基准测试
 
 ---
 
@@ -35,7 +41,7 @@
 go get -u github.com/go-admin-team/go-admin-core
 ```
 
-**系统要求:** Go 1.25.1 或更高版本
+**系统要求:** Go 1.25 或更高版本（以 `go.mod` 中的 `go` 指令为准）
 
 ### 基础日志使用
 
@@ -173,12 +179,15 @@ go test ./logger -race
 ## 📦 主要依赖
 
 ```go
-github.com/casbin/casbin/v2         v2.135.0
+github.com/casbin/casbin/v3         v3.8.1
 github.com/gin-gonic/gin            v1.11.0
+github.com/golang-jwt/jwt/v5        v5.3.0
 gorm.io/gorm                        v1.31.1
-github.com/sirupsen/logrus          v1.9.3
+github.com/sirupsen/logrus          v1.9.4
 golang.org/x/crypto                 v0.47.0
 ```
+
+以上版本为撰写时 `go.mod` 的内容，该文件为准。
 
 ---
 
@@ -187,13 +196,35 @@ golang.org/x/crypto                 v0.47.0
 欢迎提交 Issue 和 Pull Request！
 
 1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+2. 基于 `main` 创建特性分支 (`git checkout -b feature/AmazingFeature`)
 3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
 4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 开启 Pull Request
+5. **向 `main` 开启 Pull Request**
+
+> **分支说明：** `main` 是唯一活跃的分支，也是所有发布版本的来源。
+> `master` 与 `dev` 均为历史分支，不再接受改动 —— 其中 `master` 自 2022 年
+> 起未再变动，且从未进入过发布线。
+
+### 漏洞报告
+
+安全问题请勿开公开 issue，改用
+[私密漏洞报告](https://github.com/go-admin-team/go-admin-core/security/advisories/new)。
 
 ---
 
 ## 📝 License
 
 Apache License 2.0 - 详见 [LICENSE](LICENSE) 文件
+
+---
+
+## 🔗 相关项目
+
+- [go-admin](https://github.com/go-admin-team/go-admin) - 基于 Gin + Vue + Element UI 的前后端分离权限管理系统
+- [go-admin-ui](https://github.com/go-admin-team/go-admin-ui) - go-admin 的前端项目
+
+---
+
+## ⭐ Star History
+
+如果这个项目对你有帮助，欢迎点一个 Star ⭐
