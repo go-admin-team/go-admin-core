@@ -69,7 +69,7 @@ func (e *Application) SetDbByTenant(tenant string, db *gorm.DB) {
 func (e *Application) SetDb(db *gorm.DB) {
 	e.mux.Lock()
 	defer e.mux.Unlock()
-	e.dbs[e.GetDefaultTenant()] = db
+	e.dbs[e.defaultTenantLocked()] = db
 }
 
 // GetDbByTenant 根据租户获取db
@@ -113,7 +113,7 @@ func (e *Application) SetAppByTenant(key string, app interface{}) {
 func (e *Application) SetApp(app interface{}) {
 	e.mux.Lock()
 	defer e.mux.Unlock()
-	e.app[e.GetDefaultTenant()] = app
+	e.app[e.defaultTenantLocked()] = app
 }
 
 // GetApp 获取所有map里的app数据
@@ -139,7 +139,7 @@ func (e *Application) SetCasbinExcludeByTenant(tenant string, list interface{}) 
 func (e *Application) SetCasbinExclude(list interface{}) {
 	e.mux.Lock()
 	defer e.mux.Unlock()
-	e.casbinExclude[e.GetDefaultTenant()] = list
+	e.casbinExclude[e.defaultTenantLocked()] = list
 }
 
 // GetCasbinExclude 获取所有map里的Exclude数据
@@ -169,7 +169,7 @@ func (e *Application) SetCasbinByTenant(tenant string, enforcer *casbin.SyncedEn
 func (e *Application) SetCasbin(enforcer *casbin.SyncedEnforcer) {
 	e.mux.Lock()
 	defer e.mux.Unlock()
-	e.casbins[e.GetDefaultTenant()] = enforcer
+	e.casbins[e.defaultTenantLocked()] = enforcer
 }
 
 // GetAllCasbin 获取所有租户的casbin (原GetCasbin改名)
@@ -277,6 +277,13 @@ func (e *Application) GetDefaultTenant() string {
 	return e.defaultTenant
 }
 
+// defaultTenantLocked returns the default tenant without taking e.mux.
+// Callers must already hold the lock; sync.RWMutex is not reentrant, so
+// calling GetDefaultTenant from a locked context deadlocks.
+func (e *Application) defaultTenantLocked() string {
+	return e.defaultTenant
+}
+
 // SetCrontabByTenant 设置对应租户的crontab
 func (e *Application) SetCrontabByTenant(key string, crontab *cron.Cron) {
 	e.mux.Lock()
@@ -288,7 +295,7 @@ func (e *Application) SetCrontabByTenant(key string, crontab *cron.Cron) {
 func (e *Application) SetCrontab(crontab *cron.Cron) {
 	e.mux.Lock()
 	defer e.mux.Unlock()
-	e.crontab[e.GetDefaultTenant()] = crontab
+	e.crontab[e.defaultTenantLocked()] = crontab
 }
 
 // GetAllCrontab 获取所有租户的定时任务 (原GetCrontab改名)
@@ -375,7 +382,7 @@ func (e *Application) SetLockerAdapter(c storage.AdapterLocker) {
 func (e *Application) SetHandler(routerGroup func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)) {
 	e.mux.Lock()
 	defer e.mux.Unlock()
-	e.handler[e.GetDefaultTenant()] = append(e.handler[e.GetDefaultTenant()], routerGroup)
+	e.handler[e.defaultTenantLocked()] = append(e.handler[e.defaultTenantLocked()], routerGroup)
 }
 
 func (e *Application) SetHandlerByTenant(tenant string, routerGroup func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)) {
@@ -393,7 +400,7 @@ func (e *Application) GetAllHandler() map[string][]func(r *gin.RouterGroup, hand
 func (e *Application) GetHandler() []func(r *gin.RouterGroup, hand ...*gin.HandlerFunc) {
 	e.mux.Lock()
 	defer e.mux.Unlock()
-	return e.handler[e.GetDefaultTenant()]
+	return e.handler[e.defaultTenantLocked()]
 }
 
 func (e *Application) GetHandlerByTenant(tenant string) []func(r *gin.RouterGroup, hand ...*gin.HandlerFunc) {
@@ -450,7 +457,7 @@ func (e *Application) GetConfigByTenant(tenant string) map[string]interface{} {
 func (e *Application) GetConfig() map[string]interface{} {
 	e.mux.Lock()
 	defer e.mux.Unlock()
-	return e.configs[e.GetDefaultTenant()]
+	return e.configs[e.defaultTenantLocked()]
 }
 
 //func (e *Application) GetConfigValue(key string) interface{} {

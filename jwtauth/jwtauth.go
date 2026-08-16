@@ -174,6 +174,13 @@ var (
 	// ErrWrongFormatOfExp field must be float64 format
 	ErrWrongFormatOfExp = errors.New("exp must be float64 format")
 
+	// ErrInvalidClaims indicates the token claims are not of the expected type
+	ErrInvalidClaims = errors.New("invalid token claims")
+
+	// ErrMissingOrigIatField missing orig_iat field in token, so the refresh
+	// window cannot be evaluated
+	ErrMissingOrigIatField = errors.New("missing orig_iat field")
+
 	// ErrInvalidAuthHeader indicates auth header is invalid, could for example have the wrong Realm name
 	ErrInvalidAuthHeader = errors.New("auth header is invalid")
 
@@ -443,7 +450,11 @@ func (mw *GinJWTMiddleware) GetClaimsFromJWT(c *gin.Context) (MapClaims, error) 
 	}
 
 	claims := MapClaims{}
-	for key, value := range token.Claims.(jwt.MapClaims) {
+	mapClaims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, ErrInvalidClaims
+	}
+	for key, value := range mapClaims {
 		claims[key] = value
 	}
 
@@ -580,9 +591,18 @@ func (mw *GinJWTMiddleware) CheckIfTokenExpire(c *gin.Context) (jwt.MapClaims, e
 		return nil, err
 	}
 
-	claims := token.Claims.(jwt.MapClaims)
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, ErrInvalidClaims
+	}
 
-	origIat := int64(claims["orig_iat"].(float64))
+	// A validly signed token minted elsewhere may carry no orig_iat. Treat it
+	// as non-refreshable instead of panicking on the type assertion.
+	rawIat, ok := claims["orig_iat"].(float64)
+	if !ok {
+		return nil, ErrMissingOrigIatField
+	}
+	origIat := int64(rawIat)
 
 	if origIat < mw.TimeFunc().Add(-mw.MaxRefresh).Unix() {
 		return nil, ErrExpiredToken
@@ -668,7 +688,10 @@ func (mw *GinJWTMiddleware) ParseToken(c *gin.Context) (*jwt.Token, error) {
 		if len(token) > 0 {
 			break
 		}
-		parts := strings.Split(strings.TrimSpace(method), ":")
+		parts := strings.SplitN(strings.TrimSpace(method), ":", 2)
+		if len(parts) < 2 {
+			continue
+		}
 		k := strings.TrimSpace(parts[0])
 		v := strings.TrimSpace(parts[1])
 		switch k {
@@ -730,7 +753,13 @@ func ExtractClaims(c *gin.Context) MapClaims {
 		return make(MapClaims)
 	}
 
-	return claims.(MapClaims)
+	// Another middleware may have written a different type under this key.
+	typed, ok := claims.(MapClaims)
+	if !ok {
+		return make(MapClaims)
+	}
+
+	return typed
 }
 
 // ExtractClaimsFromToken help to extract the JWT claims from token
@@ -740,7 +769,11 @@ func ExtractClaimsFromToken(token *jwt.Token) MapClaims {
 	}
 
 	claims := MapClaims{}
-	for key, value := range token.Claims.(jwt.MapClaims) {
+	mapClaims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return claims
+	}
+	for key, value := range mapClaims {
 		claims[key] = value
 	}
 

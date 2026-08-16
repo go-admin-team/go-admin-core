@@ -11,25 +11,17 @@ import (
 )
 
 func TestMemory_Append(t *testing.T) {
-	type fields struct {
-		items *sync.Map
-		queue *sync.Map
-		wait  sync.WaitGroup
-		mutex sync.RWMutex
-	}
 	type args struct {
 		name    string
 		message storage.Messager
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		wantErr bool
 	}{
 		{
 			"test01",
-			fields{},
 			args{
 				name: "test",
 				message: &Message{
@@ -55,24 +47,16 @@ func TestMemory_Append(t *testing.T) {
 
 func TestMemory_Register(t *testing.T) {
 	log.SetFlags(19)
-	type fields struct {
-		items *sync.Map
-		queue *sync.Map
-		wait  sync.WaitGroup
-		mutex sync.RWMutex
-	}
 	type args struct {
 		name string
 		f    storage.ConsumerFunc
 	}
 	tests := []struct {
 		name   string
-		fields fields
 		args   args
 	}{
 		{
 			"test01",
-			fields{},
 			args{
 				name: "test",
 				f: func(message storage.Messager) error {

@@ -273,14 +273,11 @@ var WebsocketManager = Manager{
 // WsClient gin 处理 websocket handler
 func (manager *Manager) WsClient(c *gin.Context) {
 
-	ctx, cancel := context.WithCancel(context.Background())
-
 	upGrader := websocket.Upgrader{
 		// cross origin domain
 		CheckOrigin: func(r *http.Request) bool {
 			return true
 		},
-		// 处理 Sec-WebSocket-Protocol Header
 		Subprotocols: []string{c.GetHeader("Sec-WebSocket-Protocol")},
 	}
 
@@ -289,6 +286,10 @@ func (manager *Manager) WsClient(c *gin.Context) {
 		log.Printf("websocket connect error: %s", c.Param("channel"))
 		return
 	}
+
+	// Created after a successful handshake: on the failure path above the
+	// cancel func would never run, leaking the context.
+	ctx, cancel := context.WithCancel(context.Background())
 
 	fmt.Println("token: ", c.Query("token"))
 
