@@ -1,6 +1,6 @@
 module github.com/go-admin-team/go-admin-core
 
-go 1.25.0
+go 1.25.13
 
 require (
 	dario.cat/mergo v1.0.2
@@ -103,7 +103,7 @@ require (
 	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/sync v0.21.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
-	golang.org/x/text v0.38.0 // indirect
+	golang.org/x/text v0.39.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gorm.io/driver/postgres v1.6.0 // indirect
 	gorm.io/driver/sqlserver v1.6.3 // indirect
