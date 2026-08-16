@@ -539,7 +539,16 @@ func (mw *GinJWTMiddleware) RefreshToken(c *gin.Context) (string, time.Time, err
 
 	expire := mw.TimeFunc().Add(mw.Timeout)
 	newClaims["exp"] = expire.Unix()
-	newClaims["orig_iat"] = mw.TimeFunc().Unix()
+
+	// orig_iat 保持首次签发时的值，不随续期更新。
+	//
+	// CheckIfTokenExpire 用 orig_iat 判断是否超出 MaxRefresh 上限；此处若重置
+	// 它，上限的计时起点会随每次续期后移，MaxRefresh 永远无法到达 —— token
+	// 可被无限续期，泄露后等同于永久访问权（issue go-admin-team/go-admin#820）。
+	//
+	// 上面的拷贝循环已将 orig_iat 带入 newClaims，且 CheckIfTokenExpire 会在
+	// 缺失该字段时直接返回错误，因此此处无需再赋值。
+
 	tokenString, err := mw.signedString(newToken)
 
 	if err != nil {
