@@ -24,8 +24,8 @@
 
 ### 🚀 其他组件
 
-- [x] 缓存组件（支持 memory）
-- [x] 队列组件（支持 memory）
+- [x] 缓存组件（支持 memory、Redis）——见 [docs/storage](docs/storage/README.md)
+- [x] 队列组件（支持 memory、Redis streams）——见 [docs/storage](docs/storage/README.md)
 - [x] 配置管理（支持多种数据源）
 - [x] 日志写入器（支持文件分割）
 

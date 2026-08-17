@@ -25,8 +25,8 @@
 
 ### 🚀 Other Components
 
-- [x] Cache component (memory support)
-- [x] Queue component (memory support)
+- [x] Cache component (memory and Redis) — see [docs/storage](docs/storage/README.md)
+- [x] Queue component (memory and Redis streams) — see [docs/storage](docs/storage/README.md)
 - [x] Configuration management (multiple data sources)
 - [x] Log writer (file rotation support)
 
