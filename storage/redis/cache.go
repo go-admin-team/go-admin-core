@@ -1,7 +1,9 @@
-// Package redis implements storage.Cache on top of Redis.
+// Package redis implements storage.Cache and storage.Queue on top of Redis.
 //
-// It lives in its own package so that importing storage/cache does not drag in
-// the Redis client. Only applications that actually use Redis pay for it.
+// It lives in its own package so that importing storage or storage/cache does
+// not drag in the Redis client. Note that sdk/config imports it unconditionally
+// in order to build whichever backend the configuration selects, so an
+// application using the SDK links the client whether or not it is configured.
 package redis
 
 import (
@@ -38,19 +40,16 @@ func New(client goredis.UniversalClient) *Cache {
 // redis://user:password@localhost:6379/0. The returned Cache owns the
 // connection and closes it.
 func Open(ctx context.Context, url string) (*Cache, error) {
-	opts, err := goredis.ParseURL(url)
+	client, err := dial(ctx, url)
 	if err != nil {
 		return nil, err
 	}
-
-	client := goredis.NewClient(opts)
-	if err := client.Ping(ctx).Err(); err != nil {
-		_ = client.Close()
-		return nil, err
-	}
-
 	return &Cache{client: client, owned: true}, nil
 }
+
+// String identifies the backend, which is what the deprecated AdapterCache
+// interface reports through storage.LegacyAdapter.
+func (c *Cache) String() string { return "redis" }
 
 // check reports whether the cache may still be used. The context is examined
 // first, so a caller that gave up is never told something else went wrong.

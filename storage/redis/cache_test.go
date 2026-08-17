@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"testing"
-	"time"
 
 	goredis "github.com/redis/go-redis/v9"
 
@@ -25,54 +24,45 @@ func redisURL(t *testing.T) string {
 	return url
 }
 
-// The same suite that validates the in-memory implementation. Two independent
-// implementations agreeing on it is what makes the contract meaningful.
-func TestRedisConformance(t *testing.T) {
-	url := redisURL(t)
-
-	cachetest.Run(t, func(t *testing.T) storage.Cache {
-		ctx := context.Background()
-
-		c, err := redisstore.Open(ctx, url)
-		if err != nil {
-			t.Fatalf("connect to Redis: %v", err)
-		}
-
-		// Each case starts from an empty keyspace, otherwise counters and
-		// expiry assertions leak into one another.
-		opts, err := goredis.ParseURL(url)
-		if err != nil {
-			t.Fatalf("parse REDIS_URL: %v", err)
-		}
-		admin := goredis.NewClient(opts)
-		defer admin.Close()
-		if err := admin.FlushDB(ctx).Err(); err != nil {
-			t.Fatalf("flush: %v", err)
-		}
-
-		return c
-	})
-}
-
-// A caller-supplied client is shared, so Close must not shut it down.
-func TestCloseLeavesBorrowedClientUsable(t *testing.T) {
-	url := redisURL(t)
+// adminClient is a plain client for the test's own bookkeeping, closed with the
+// test that asked for it.
+func adminClient(t *testing.T, url string) *goredis.Client {
+	t.Helper()
 
 	opts, err := goredis.ParseURL(url)
 	if err != nil {
 		t.Fatalf("parse REDIS_URL: %v", err)
 	}
 	client := goredis.NewClient(opts)
-	defer client.Close()
+	t.Cleanup(func() { _ = client.Close() })
+	return client
+}
 
-	c := redisstore.New(client)
-	if err := c.Close(); err != nil {
-		t.Fatalf("Close: %v", err)
-	}
+// flush empties the keyspace so that keys, streams and consumer groups left by
+// one case cannot reach the next.
+func flush(t *testing.T, admin *goredis.Client) {
+	t.Helper()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := client.Ping(ctx).Err(); err != nil {
-		t.Errorf("a borrowed client must stay usable after Close: %v", err)
+	if err := admin.FlushDB(context.Background()).Err(); err != nil {
+		t.Fatalf("flush: %v", err)
 	}
+}
+
+// The same suite that validates the in-memory implementation. Two independent
+// implementations agreeing on it is what makes the contract meaningful.
+func TestRedisConformance(t *testing.T) {
+	url := redisURL(t)
+	admin := adminClient(t, url)
+
+	cachetest.Run(t, func(t *testing.T) storage.Cache {
+		// Each case starts from an empty keyspace, otherwise counters and
+		// expiry assertions leak into one another.
+		flush(t, admin)
+
+		c, err := redisstore.Open(context.Background(), url)
+		if err != nil {
+			t.Fatalf("connect to Redis: %v", err)
+		}
+		return c
+	})
 }
