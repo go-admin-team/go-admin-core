@@ -68,7 +68,7 @@ func (e Queue) Open() (storage.Queue, error) {
 	}), nil
 }
 
-// Setup 启用顺序 redis > 其他 > memory
+// Setup builds the queue adapter. Order: redis > memory.
 //
 // Deprecated: use Open, which returns the current contract.
 //

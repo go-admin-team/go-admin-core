@@ -36,7 +36,7 @@ func (e Cache) Open() (storage.Cache, error) {
 	return redisstore.New(client), nil
 }
 
-// Setup 构造cache 顺序 redis > 其他 > memory
+// Setup builds the cache adapter. Order: redis > memory.
 //
 // Deprecated: use Open, which returns the current contract. This returns the
 // older AdapterCache so that existing call sites keep working; storage.Cache
