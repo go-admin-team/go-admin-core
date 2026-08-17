@@ -1345,6 +1345,10 @@ func (e *Server) String() string
 ## github.com/go-admin-team/go-admin-core/storage
 const (
 	PrefixKey = "__host"
+var (
+	ErrQueueClosed = errors.New("storage: queue closed")
+	ErrTopicAlreadySubscribed = errors.New("storage: topic already subscribed")
+	ErrNoHandler = errors.New("storage: no handler for topic")
 var ErrCacheClosed = errors.New("storage: cache closed")
 var ErrCacheMiss = errors.New("storage: cache miss")
 type AdapterCache interface {
@@ -1375,6 +1379,12 @@ type Cache interface {
 	io.Closer
 func WithPrefix(c Cache, prefix string) Cache
 type ConsumerFunc func(Messager) error
+type Handler func(ctx context.Context, msg Message) error
+type Message struct {
+	ID string
+	Topic string
+	Values map[string]interface{}
+	Attempts int
 type Messager interface {
 	SetID(string)
 	SetStream(string)
@@ -1386,6 +1396,11 @@ type Messager interface {
 	SetPrefix(string)
 	SetErrorCount(count int)
 	GetErrorCount() int
+type Queue interface {
+	Publish(ctx context.Context, msg Message) error
+	Subscribe(topic string, h Handler) error
+	Start(ctx context.Context) error
+	io.Closer
 
 ## github.com/go-admin-team/go-admin-core/storage/cache
 type MemCache struct {
@@ -1423,9 +1438,17 @@ func (m *Message) SetValues(values map[string]interface{})
 
 ## github.com/go-admin-team/go-admin-core/storage/cachetest
 func Run(t *testing.T, newCache Factory)
+func RunQueue(t *testing.T, newQueue QueueFactory)
 type Factory func(t *testing.T) storage.Cache
+type QueueFactory func(t *testing.T) storage.Queue
 
 ## github.com/go-admin-team/go-admin-core/storage/queue
+type MemQueue struct {
+func NewMemQueue(size int) *MemQueue
+func (q *MemQueue) Close() error
+func (q *MemQueue) Publish(ctx context.Context, msg storage.Message) error
+func (q *MemQueue) Start(ctx context.Context) error
+func (q *MemQueue) Subscribe(topic string, h storage.Handler) error
 type Memory struct {
 	PoolNum uint
 func NewMemory(poolNum uint) *Memory
