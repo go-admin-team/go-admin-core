@@ -33,7 +33,8 @@ func RunQueue(t *testing.T, newQueue QueueFactory) {
 		{"AttemptsStartAtOne", testAttemptsStartAtOne},
 		{"StartReturnsOnContextCancel", testStartReturnsOnContextCancel},
 		{"SubscribeAfterStartIsRejected", testSubscribeAfterStartIsRejected},
-		{"SubscribeErrorPrecedence", testSubscribeErrorPrecedence},
+		{"BadArgumentOutranksState", testBadArgumentOutranksState},
+		{"ClosedOutranksStarted", testClosedOutranksStarted},
 		{"SecondStartIsRejected", testSecondStartIsRejected},
 		{"CloseIsIdempotent", testQueueCloseIsIdempotent},
 		{"PublishAfterCloseFails", testPublishAfterCloseFails},
@@ -67,10 +68,9 @@ func started(t *testing.T, q storage.Queue) func() {
 	}
 }
 
-// subscribe and publish fail the test on error. No case below is about a
-// failing Subscribe or Publish, so an error there means a broken backend
-// rather than the thing under test, and it should be reported where it
-// happens instead of surfacing later as a timeout.
+// subscribe and publish fail where the error happens. No case below is about
+// a failing Subscribe or Publish, so one would otherwise surface as a timeout
+// somewhere else.
 func subscribe(t *testing.T, q storage.Queue, topic string, h storage.Handler) {
 	t.Helper()
 	if err := q.Subscribe(topic, h); err != nil {
@@ -132,34 +132,38 @@ func (c *collector) await(t *testing.T, n int) []storage.Message {
 	return out
 }
 
-// running returns a queue with "orders" subscribed and Start proven to be past
-// its guard. The awaited delivery is the barrier: without it, a Subscribe or
-// Start issued next races the one already in flight and either may win.
-func running(t *testing.T, newQueue QueueFactory) (storage.Queue, *collector) {
+// subscribed returns a running queue with topic delivered to the collector. It
+// does not prove Start is past its guard; use running where that matters.
+func subscribed(t *testing.T, newQueue QueueFactory, topic string) (storage.Queue, *collector) {
 	t.Helper()
 
 	q := newQueue(t)
 	t.Cleanup(func() { _ = q.Close() })
 
 	c := newCollector()
-	subscribe(t, q, "orders", c.handle)
+	subscribe(t, q, topic, c.handle)
 	// Cleanup is LIFO, so the queue stops before it is closed.
 	t.Cleanup(started(t, q))
-
-	publish(t, q, storage.Message{Topic: "orders"})
-	c.await(t, 1)
 
 	return q, c
 }
 
-func testDeliversPublishedMessage(t *testing.T, newQueue QueueFactory) {
-	q := newQueue(t)
-	defer q.Close()
+// running additionally waits for one delivery, which is the barrier a case
+// needs before issuing a second Start or a late Subscribe: without it the two
+// race and either may win. The collector is not returned because the barrier
+// message is already in it.
+func running(t *testing.T, newQueue QueueFactory) storage.Queue {
+	t.Helper()
 
-	c := newCollector()
-	subscribe(t, q, "orders", c.handle)
-	stop := started(t, q)
-	defer stop()
+	q, c := subscribed(t, newQueue, "orders")
+	publish(t, q, storage.Message{Topic: "orders"})
+	c.await(t, 1)
+
+	return q
+}
+
+func testDeliversPublishedMessage(t *testing.T, newQueue QueueFactory) {
+	q, c := subscribed(t, newQueue, "orders")
 
 	publish(t, q, storage.Message{Topic: "orders"})
 
@@ -167,13 +171,7 @@ func testDeliversPublishedMessage(t *testing.T, newQueue QueueFactory) {
 }
 
 func testPreservesValues(t *testing.T, newQueue QueueFactory) {
-	q := newQueue(t)
-	defer q.Close()
-
-	c := newCollector()
-	subscribe(t, q, "orders", c.handle)
-	stop := started(t, q)
-	defer stop()
+	q, c := subscribed(t, newQueue, "orders")
 
 	publish(t, q, storage.Message{
 		Topic:  "orders",
@@ -187,13 +185,7 @@ func testPreservesValues(t *testing.T, newQueue QueueFactory) {
 }
 
 func testAssignsID(t *testing.T, newQueue QueueFactory) {
-	q := newQueue(t)
-	defer q.Close()
-
-	c := newCollector()
-	subscribe(t, q, "orders", c.handle)
-	stop := started(t, q)
-	defer stop()
+	q, c := subscribed(t, newQueue, "orders")
 
 	publish(t, q, storage.Message{Topic: "orders"})
 
@@ -255,13 +247,7 @@ func testRejectsNilHandler(t *testing.T, newQueue QueueFactory) {
 // Only strings are promised to survive; a broker-backed queue has to serialise
 // the payload and an in-process one does not.
 func testStringValuesRoundTrip(t *testing.T, newQueue QueueFactory) {
-	q := newQueue(t)
-	defer q.Close()
-
-	c := newCollector()
-	subscribe(t, q, "orders", c.handle)
-	stop := started(t, q)
-	defer stop()
+	q, c := subscribed(t, newQueue, "orders")
 
 	publish(t, q, storage.Message{
 		Topic:  "orders",
@@ -280,17 +266,9 @@ func testStringValuesRoundTrip(t *testing.T, newQueue QueueFactory) {
 // A message with no values is still a message, and some backends cannot store
 // an entry that carries no field at all.
 func testEmptyPayloadIsDelivered(t *testing.T, newQueue QueueFactory) {
-	q := newQueue(t)
-	defer q.Close()
+	q, c := subscribed(t, newQueue, "orders")
 
-	c := newCollector()
-	subscribe(t, q, "orders", c.handle)
-	stop := started(t, q)
-	defer stop()
-
-	if err := q.Publish(context.Background(), storage.Message{Topic: "orders"}); err != nil {
-		t.Fatalf("Publish with no values: %v", err)
-	}
+	publish(t, q, storage.Message{Topic: "orders"})
 
 	if got := c.await(t, 1)[0]; len(got.Values) != 0 {
 		t.Errorf("an empty payload must stay empty, got %#v", got.Values)
@@ -301,7 +279,7 @@ func testEmptyPayloadIsDelivered(t *testing.T, newQueue QueueFactory) {
 // backend can see the subscription, while nothing reads it. Rejecting the
 // subscription is what keeps that from becoming a silent backlog.
 func testSubscribeAfterStartIsRejected(t *testing.T, newQueue QueueFactory) {
-	q, _ := running(t, newQueue)
+	q := running(t, newQueue)
 
 	err := q.Subscribe("late", func(context.Context, storage.Message) error { return nil })
 	if !errors.Is(err, storage.ErrQueueAlreadyStarted) {
@@ -312,18 +290,23 @@ func testSubscribeAfterStartIsRejected(t *testing.T, newQueue QueueFactory) {
 // Two rules are broken at once here. The contract fixes which error wins, so
 // that a caller switching backend does not get a different answer — the
 // implementations disagreed on exactly this before it was pinned.
-func testSubscribeErrorPrecedence(t *testing.T, newQueue QueueFactory) {
-	q, _ := running(t, newQueue)
+func testBadArgumentOutranksState(t *testing.T, newQueue QueueFactory) {
+	q := running(t, newQueue)
 
 	if err := q.Subscribe("late", nil); !errors.Is(err, storage.ErrNilHandler) {
 		t.Errorf("a nil handler on a started queue: got %v, want ErrNilHandler", err)
 	}
+}
 
-	// Closed outranks started, because it is the terminal state and the one a
-	// caller has to act on.
+// Closed outranks started: it is the terminal state, and the one a caller has
+// to act on.
+func testClosedOutranksStarted(t *testing.T, newQueue QueueFactory) {
+	q := running(t, newQueue)
+
 	if err := q.Close(); err != nil {
 		t.Fatalf("Close: %v", err)
 	}
+
 	err := q.Subscribe("late", func(context.Context, storage.Message) error { return nil })
 	if !errors.Is(err, storage.ErrQueueClosed) {
 		t.Errorf("Subscribe on a started, closed queue: got %v, want ErrQueueClosed", err)
@@ -333,7 +316,7 @@ func testSubscribeErrorPrecedence(t *testing.T, newQueue QueueFactory) {
 // Start is not restartable; a second call must say so rather than running a
 // second read loop against the same handlers.
 func testSecondStartIsRejected(t *testing.T, newQueue QueueFactory) {
-	q, _ := running(t, newQueue)
+	q := running(t, newQueue)
 
 	// Already cancelled, so an implementation that wrongly runs a second read
 	// loop fails the assertion instead of hanging the suite.
@@ -356,13 +339,7 @@ func testPublishWithoutHandlerFails(t *testing.T, newQueue QueueFactory) {
 }
 
 func testAttemptsStartAtOne(t *testing.T, newQueue QueueFactory) {
-	q := newQueue(t)
-	defer q.Close()
-
-	c := newCollector()
-	subscribe(t, q, "orders", c.handle)
-	stop := started(t, q)
-	defer stop()
+	q, c := subscribed(t, newQueue, "orders")
 
 	publish(t, q, storage.Message{Topic: "orders"})
 

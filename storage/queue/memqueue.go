@@ -27,7 +27,6 @@ type MemQueue struct {
 	// inFlight tracks deliveries so Close can wait for them.
 	inFlight sync.WaitGroup
 
-	// started is guarded by mu, matching the Redis implementation.
 	started  bool
 	stopOnce sync.Once
 	stop     chan struct{}
@@ -53,8 +52,6 @@ func NewMemQueue(size int) *MemQueue {
 }
 
 func (q *MemQueue) Subscribe(topic string, h storage.Handler) error {
-	// The order is the contract's and matches the Redis implementation, so both
-	// backends answer alike when more than one rule is broken at once.
 	if h == nil {
 		return storage.ErrNilHandler
 	}
@@ -64,9 +61,6 @@ func (q *MemQueue) Subscribe(topic string, h storage.Handler) error {
 	if q.closed {
 		return storage.ErrQueueClosed
 	}
-	// Read under the lock rather than atomically, matching the Redis
-	// implementation, where the check and Start's topic snapshot have to be one
-	// step.
 	if q.started {
 		return storage.ErrQueueAlreadyStarted
 	}

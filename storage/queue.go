@@ -21,9 +21,8 @@ var (
 	// ErrNilHandler reports a subscription with nothing to deliver to.
 	ErrNilHandler = errors.New("storage: nil handler")
 
-	// ErrQueueAlreadyStarted reports that the queue is running. Start freezes
-	// both the run state and the set of topics, so it covers a second Start and
-	// a Subscribe that arrived too late to be read.
+	// ErrQueueAlreadyStarted reports a second call to Start, or a Subscribe
+	// that arrived too late to take effect.
 	ErrQueueAlreadyStarted = errors.New("storage: queue already started")
 )
 
@@ -69,10 +68,11 @@ type Queue interface {
 	// Start, because an implementation may fix its set of topics there and a
 	// late subscription would then let Publish succeed with nothing reading it.
 	//
-	// Where more than one rule is broken at once the errors are reported in
-	// this order, so that every implementation answers alike: ErrNilHandler,
-	// ErrQueueClosed, ErrQueueAlreadyStarted, ErrTopicAlreadySubscribed. A
-	// closed queue is reported first because that state is terminal.
+	// Where more than one rule is broken at once, every implementation has to
+	// answer alike: a bad argument outranks the queue's state, and among
+	// states the terminal one outranks the rest. So ErrNilHandler, then
+	// ErrQueueClosed, then ErrQueueAlreadyStarted, then
+	// ErrTopicAlreadySubscribed.
 	Subscribe(topic string, h Handler) error
 
 	// Start begins consuming and blocks until ctx is done or an unrecoverable

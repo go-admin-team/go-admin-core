@@ -166,24 +166,33 @@ func TestClientsAreNotSharedAcrossIdentities(t *testing.T) {
 	base := goredis.Options{Network: "tcp", Addr: "localhost:6379", Username: "app"}
 	key := cfg.clientKey(&base)
 
-	differs := func(name string, mutate func(*RedisOptions, *goredis.Options)) {
+	differs := func(name string, mutate func(*goredis.Options)) {
 		t.Helper()
-		c, o := cfg, base
-		mutate(&c, &o)
-		if c.clientKey(&o) == key {
+		o := base
+		mutate(&o)
+		if cfg.clientKey(&o) == key {
 			t.Errorf("a differing %s must not reuse the same client", name)
 		}
 	}
 
-	differs("password", func(_ *RedisOptions, o *goredis.Options) { o.Password = "secret" })
-	differs("username", func(_ *RedisOptions, o *goredis.Options) { o.Username = "other" })
-	differs("db", func(_ *RedisOptions, o *goredis.Options) { o.DB = 1 })
-	differs("tls", func(_ *RedisOptions, o *goredis.Options) { o.TLSConfig = &tls.Config{} })
-	// The certificate files never reach goredis.Options, so a key built only
-	// from those would miss them entirely.
-	differs("ca file", func(c *RedisOptions, _ *goredis.Options) {
-		c.Tls = &Tls{Cert: "a.pem", Key: "a.key", Ca: "corp.pem"}
-	})
+	differs("password", func(o *goredis.Options) { o.Password = "secret" })
+	differs("username", func(o *goredis.Options) { o.Username = "other" })
+	differs("db", func(o *goredis.Options) { o.DB = 1 })
+	// An empty config is the point: with no ServerName or skip-verify set, only
+	// the enabled flag separates "TLS with every default" from no TLS at all.
+	differs("tls", func(o *goredis.Options) { o.TLSConfig = &tls.Config{} })
+
+	// The certificate files never reach goredis.Options, so a key built from
+	// those alone would miss them. They count only when no url is set, because
+	// GetRedisOptions ignores the tls section in that case.
+	withCerts := RedisOptions{Tls: &Tls{Cert: "a.pem", Key: "a.key", Ca: "corp.pem"}}
+	if withCerts.clientKey(&base) == key {
+		t.Error("a differing ca file must not reuse the same client")
+	}
+	withCerts.URL = "redis://localhost:6379/0"
+	if withCerts.clientKey(&base) != key {
+		t.Error("a tls section that a url makes ineffective must not split the destination")
+	}
 
 	// The same inputs still have to agree, or nothing would ever be reused.
 	same := base

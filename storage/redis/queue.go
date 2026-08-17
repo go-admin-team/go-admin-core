@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 	"sync"
@@ -120,8 +121,8 @@ type Queue struct {
 	// inFlight tracks deliveries so Close can wait for them.
 	inFlight sync.WaitGroup
 
-	// started is guarded by mu, not atomic: marking the queue started and
-	// freezing its topic set have to be one step.
+	// started is guarded by mu because marking the queue started and freezing
+	// its topic set have to be one step.
 	started bool
 
 	// stopCtx is cancelled by Close, so a running Start unblocks even when its
@@ -182,11 +183,6 @@ func (q *Queue) Subscribe(topic string, h storage.Handler) error {
 		q.mu.Unlock()
 		return storage.ErrQueueClosed
 	}
-	// Checked under the same lock Start uses to freeze the topic set. An atomic
-	// read here would leave the original race: this call could pass the guard,
-	// Start could then snapshot without the topic, and only afterwards would
-	// the handler be registered — a consumer group Publish accepts and nothing
-	// reads.
 	if q.started {
 		q.mu.Unlock()
 		return storage.ErrQueueAlreadyStarted
@@ -213,6 +209,25 @@ func (q *Queue) Subscribe(topic string, h storage.Handler) error {
 	q.groups[topic] = struct{}{}
 	q.mu.Unlock()
 	return nil
+}
+
+// begin marks the queue started and returns the topics it will serve. The two
+// happen under one lock, so a Subscribe cannot slip between them and register
+// a topic the read loop will never look at.
+func (q *Queue) begin() ([]string, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	if q.started {
+		return nil, storage.ErrQueueAlreadyStarted
+	}
+	q.started = true
+
+	topics := make([]string, 0, len(q.handlers))
+	for t := range q.handlers {
+		topics = append(topics, t)
+	}
+	return topics, nil
 }
 
 // ensureGroup creates the consumer group, treating an existing one as success.
@@ -287,20 +302,10 @@ func (q *Queue) Publish(ctx context.Context, msg storage.Message) error {
 }
 
 func (q *Queue) Start(ctx context.Context) error {
-	// Marking the queue started and reading the topics it will serve happen
-	// under one lock, so a Subscribe cannot slip between them and register a
-	// topic this loop will never read.
-	q.mu.Lock()
-	if q.started {
-		q.mu.Unlock()
-		return storage.ErrQueueAlreadyStarted
+	topics, err := q.begin()
+	if err != nil {
+		return err
 	}
-	q.started = true
-	topics := make([]string, 0, len(q.handlers))
-	for t := range q.handlers {
-		topics = append(topics, t)
-	}
-	q.mu.Unlock()
 
 	// Registered first so that it runs last: the cancel below has to happen
 	// before this Wait, otherwise returning on a read error would block here
@@ -315,7 +320,11 @@ func (q *Queue) Start(ctx context.Context) error {
 
 	if len(topics) == 0 {
 		// XREADGROUP needs at least one stream, so there is nothing to do but
-		// wait for the caller to give up.
+		// wait for the caller to give up. Said out loud, because a queue that
+		// consumes nothing is almost always a wiring mistake — Subscribe has to
+		// happen before Start, and a caller that starts first gets silence.
+		slog.Warn("queue: started with no subscriptions, nothing will be consumed",
+			"group", q.opts.Group)
 		<-ctx.Done()
 		return nil
 	}
@@ -526,9 +535,6 @@ func decodeValues(in map[string]interface{}) map[string]interface{} {
 
 	out := make(map[string]interface{}, len(in))
 	for k, v := range in {
-		// A stream field arrives as a string, because the client reads it with
-		// ReadString. Anything else did not come from this package, so it is
-		// passed through as it is rather than being turned into an empty one.
 		s, ok := v.(string)
 		if !ok {
 			out[k] = v

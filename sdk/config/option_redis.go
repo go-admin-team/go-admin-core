@@ -71,17 +71,13 @@ func (e RedisOptions) GetRedisOptions() (*goredis.Options, error) {
 // quickly instead of hanging it.
 const setupTimeout = 5 * time.Second
 
-// clients memoises connections by destination. Cache and queue are configured
-// and built separately but normally point at one server, and without this each
-// would open its own pool, doubling the connection count a managed Redis sees
-// and paying a second handshake before the process can serve anything.
+// clients memoises connections by destination, so that a cache and a queue
+// naming one server share a pool instead of opening two.
 //
-// Nothing evicts from it, because the client is handed to interfaces that have
-// no shutdown of their own and a caller may still hold it. A configuration
-// reload runs Setup again, so changing credentials adds an entry and leaves the
-// previous client open for the life of the process. That is bounded by how many
-// distinct destinations have been configured, and closing the old one would
-// break whoever still holds it.
+// Nothing evicts from it: the client is handed to interfaces with no shutdown
+// of their own, and a caller may still hold it. A configuration reload runs
+// Setup again, so changing credentials adds an entry and leaves the previous
+// client open for the life of the process.
 var clients struct {
 	sync.Mutex
 	byKey map[clientKey]*goredis.Client
@@ -128,22 +124,18 @@ func (e RedisOptions) Client(ctx context.Context) (*goredis.Client, error) {
 // reporting it. Pool size is deliberately absent, so tuning it does not split
 // one server into two pools.
 type clientKey struct {
-	// From the resolved options, so that a url and the equivalent fields name
-	// the same connection.
+	// Taken from the resolved options, so that a url and the equivalent fields
+	// name the same connection.
 	network, addr, username, password string
 	db                                int
 
-	// tls.Config is not comparable, so the parts that decide which peer is
-	// trusted are taken from the configuration that produced it. Certificate
-	// files are compared by path: they are read once at startup.
-	tls      bool
-	certFile string
-	keyFile  string
-	caFile   string
-
-	// Set by ParseURL for rediss:// and by ?skip_verify.
-	serverName         string
-	insecureSkipVerify bool
+	// tls.Config is not comparable, so the key carries the parts that decide
+	// which peer is trusted. Certificates are compared by path, which means a
+	// rotation that keeps the path will not be noticed until a restart.
+	tls                       bool
+	serverName                string
+	insecureSkipVerify        bool
+	certFile, keyFile, caFile string
 }
 
 func (e RedisOptions) clientKey(o *goredis.Options) clientKey {
@@ -159,7 +151,9 @@ func (e RedisOptions) clientKey(o *goredis.Options) clientKey {
 		k.serverName = o.TLSConfig.ServerName
 		k.insecureSkipVerify = o.TLSConfig.InsecureSkipVerify
 	}
-	if e.Tls != nil {
+	// GetRedisOptions ignores the tls section when a url is set, so folding it
+	// in there would split one destination into two for no reason.
+	if e.URL == "" && e.Tls != nil {
 		k.certFile, k.keyFile, k.caFile = e.Tls.Cert, e.Tls.Key, e.Tls.Ca
 	}
 	return k
