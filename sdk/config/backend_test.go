@@ -162,31 +162,32 @@ func TestOneServerYieldsOneClient(t *testing.T) {
 // Sharing must not extend across credentials or transport: a config with the
 // wrong password reusing a working client would make the mistake invisible.
 func TestClientsAreNotSharedAcrossIdentities(t *testing.T) {
-	base := &goredis.Options{Network: "tcp", Addr: "localhost:6379", Username: "app", DB: 0}
+	var cfg RedisOptions
+	base := goredis.Options{Network: "tcp", Addr: "localhost:6379", Username: "app"}
+	key := cfg.clientKey(&base)
 
-	withPassword := *base
-	withPassword.Password = "secret"
-
-	otherDB := *base
-	otherDB.DB = 1
-
-	withTLS := *base
-	withTLS.TLSConfig = &tls.Config{ServerName: "cache.example.com", MinVersion: tls.VersionTLS12}
-
-	key := cacheKey(base)
-	for name, o := range map[string]*goredis.Options{
-		"password": &withPassword,
-		"db":       &otherDB,
-		"tls":      &withTLS,
-	} {
-		if cacheKey(o) == key {
+	differs := func(name string, mutate func(*RedisOptions, *goredis.Options)) {
+		t.Helper()
+		c, o := cfg, base
+		mutate(&c, &o)
+		if c.clientKey(&o) == key {
 			t.Errorf("a differing %s must not reuse the same client", name)
 		}
 	}
 
+	differs("password", func(_ *RedisOptions, o *goredis.Options) { o.Password = "secret" })
+	differs("username", func(_ *RedisOptions, o *goredis.Options) { o.Username = "other" })
+	differs("db", func(_ *RedisOptions, o *goredis.Options) { o.DB = 1 })
+	differs("tls", func(_ *RedisOptions, o *goredis.Options) { o.TLSConfig = &tls.Config{} })
+	// The certificate files never reach goredis.Options, so a key built only
+	// from those would miss them entirely.
+	differs("ca file", func(c *RedisOptions, _ *goredis.Options) {
+		c.Tls = &Tls{Cert: "a.pem", Key: "a.key", Ca: "corp.pem"}
+	})
+
 	// The same inputs still have to agree, or nothing would ever be reused.
-	again := *base
-	if cacheKey(&again) != key {
+	same := base
+	if cfg.clientKey(&same) != key {
 		t.Error("identical options must produce the same key")
 	}
 }

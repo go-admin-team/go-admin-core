@@ -120,7 +120,10 @@ type Queue struct {
 	// inFlight tracks deliveries so Close can wait for them.
 	inFlight sync.WaitGroup
 
-	started atomic.Bool
+	// started is guarded by mu, not atomic: marking the queue started and
+	// freezing its topic set have to be one step.
+	started bool
+
 	// stopCtx is cancelled by Close, so a running Start unblocks even when its
 	// own context is still live.
 	stopCtx    context.Context
@@ -174,17 +177,19 @@ func (q *Queue) Subscribe(topic string, h storage.Handler) error {
 		return storage.ErrNilHandler
 	}
 
-	// Start fixes the set of streams it reads, so a topic registered afterwards
-	// would have a consumer group — making Publish succeed — with nothing here
-	// ever reading it.
-	if q.started.Load() {
-		return storage.ErrQueueAlreadyStarted
-	}
-
 	q.mu.Lock()
 	if q.closed {
 		q.mu.Unlock()
 		return storage.ErrQueueClosed
+	}
+	// Checked under the same lock Start uses to freeze the topic set. An atomic
+	// read here would leave the original race: this call could pass the guard,
+	// Start could then snapshot without the topic, and only afterwards would
+	// the handler be registered — a consumer group Publish accepts and nothing
+	// reads.
+	if q.started {
+		q.mu.Unlock()
+		return storage.ErrQueueAlreadyStarted
 	}
 	if _, exists := q.handlers[topic]; exists {
 		q.mu.Unlock()
@@ -282,9 +287,20 @@ func (q *Queue) Publish(ctx context.Context, msg storage.Message) error {
 }
 
 func (q *Queue) Start(ctx context.Context) error {
-	if !q.started.CompareAndSwap(false, true) {
+	// Marking the queue started and reading the topics it will serve happen
+	// under one lock, so a Subscribe cannot slip between them and register a
+	// topic this loop will never read.
+	q.mu.Lock()
+	if q.started {
+		q.mu.Unlock()
 		return storage.ErrQueueAlreadyStarted
 	}
+	q.started = true
+	topics := make([]string, 0, len(q.handlers))
+	for t := range q.handlers {
+		topics = append(topics, t)
+	}
+	q.mu.Unlock()
 
 	// Registered first so that it runs last: the cancel below has to happen
 	// before this Wait, otherwise returning on a read error would block here
@@ -297,7 +313,6 @@ func (q *Queue) Start(ctx context.Context) error {
 	defer cancel()
 	defer context.AfterFunc(q.stopCtx, cancel)()
 
-	topics := q.topics()
 	if len(topics) == 0 {
 		// XREADGROUP needs at least one stream, so there is nothing to do but
 		// wait for the caller to give up.
@@ -351,17 +366,6 @@ func (q *Queue) Start(ctx context.Context) error {
 			}
 		}
 	}
-}
-
-func (q *Queue) topics() []string {
-	q.mu.RLock()
-	defer q.mu.RUnlock()
-
-	out := make([]string, 0, len(q.handlers))
-	for t := range q.handlers {
-		out = append(out, t)
-	}
-	return out
 }
 
 // reclaimLoop retries deliveries that were never acknowledged, which is how a

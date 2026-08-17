@@ -27,7 +27,8 @@ type MemQueue struct {
 	// inFlight tracks deliveries so Close can wait for them.
 	inFlight sync.WaitGroup
 
-	started  atomic.Bool
+	// started is guarded by mu, matching the Redis implementation.
+	started  bool
 	stopOnce sync.Once
 	stop     chan struct{}
 }
@@ -52,11 +53,10 @@ func NewMemQueue(size int) *MemQueue {
 }
 
 func (q *MemQueue) Subscribe(topic string, h storage.Handler) error {
-	// Rejected for the same reason a stream-backed queue has to reject it: the
-	// contract fixes the set of topics at Start, and an implementation that
-	// quietly accepted a late one would hide the difference.
-	if q.started.Load() {
-		return storage.ErrQueueAlreadyStarted
+	// The order is the contract's and matches the Redis implementation, so both
+	// backends answer alike when more than one rule is broken at once.
+	if h == nil {
+		return storage.ErrNilHandler
 	}
 
 	q.mu.Lock()
@@ -64,8 +64,11 @@ func (q *MemQueue) Subscribe(topic string, h storage.Handler) error {
 	if q.closed {
 		return storage.ErrQueueClosed
 	}
-	if h == nil {
-		return storage.ErrNilHandler
+	// Read under the lock rather than atomically, matching the Redis
+	// implementation, where the check and Start's topic snapshot have to be one
+	// step.
+	if q.started {
+		return storage.ErrQueueAlreadyStarted
 	}
 	if _, exists := q.handlers[topic]; exists {
 		return storage.ErrTopicAlreadySubscribed
@@ -107,9 +110,13 @@ func (q *MemQueue) Publish(ctx context.Context, msg storage.Message) error {
 }
 
 func (q *MemQueue) Start(ctx context.Context) error {
-	if !q.started.CompareAndSwap(false, true) {
+	q.mu.Lock()
+	if q.started {
+		q.mu.Unlock()
 		return storage.ErrQueueAlreadyStarted
 	}
+	q.started = true
+	q.mu.Unlock()
 	for {
 		select {
 		case msg := <-q.messages:

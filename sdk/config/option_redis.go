@@ -2,12 +2,9 @@ package config
 
 import (
 	"context"
-	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/hex"
 	"errors"
-	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -79,11 +76,15 @@ const setupTimeout = 5 * time.Second
 // would open its own pool, doubling the connection count a managed Redis sees
 // and paying a second handshake before the process can serve anything.
 //
-// Nothing evicts from it. The interfaces these clients are handed to have no
-// shutdown of their own, so they live as long as the process either way.
+// Nothing evicts from it, because the client is handed to interfaces that have
+// no shutdown of their own and a caller may still hold it. A configuration
+// reload runs Setup again, so changing credentials adds an entry and leaves the
+// previous client open for the life of the process. That is bounded by how many
+// distinct destinations have been configured, and closing the old one would
+// break whoever still holds it.
 var clients struct {
 	sync.Mutex
-	byTarget map[string]*goredis.Client
+	byKey map[clientKey]*goredis.Client
 }
 
 // Client connects and verifies the server answers, so that a wrong address
@@ -97,11 +98,11 @@ func (e RedisOptions) Client(ctx context.Context) (*goredis.Client, error) {
 		return nil, err
 	}
 
-	target := cacheKey(o)
+	key := e.clientKey(o)
 
 	clients.Lock()
 	defer clients.Unlock()
-	if c, ok := clients.byTarget[target]; ok {
+	if c, ok := clients.byKey[key]; ok {
 		return c, nil
 	}
 
@@ -111,38 +112,57 @@ func (e RedisOptions) Client(ctx context.Context) (*goredis.Client, error) {
 		return nil, err
 	}
 
-	if clients.byTarget == nil {
-		clients.byTarget = make(map[string]*goredis.Client)
+	if clients.byKey == nil {
+		clients.byKey = make(map[clientKey]*goredis.Client)
 	}
-	clients.byTarget[target] = client
+	clients.byKey[key] = client
 	return client, nil
 }
 
-// cacheKey identifies a connection by everything that decides where a command
+// clientKey identifies a connection by everything that decides where a command
 // lands and who it is issued as.
 //
 // Credentials and transport belong in it, not just the address: sharing a
-// client across two configs that differ only in password would make the wrong
-// one appear to work, which hides the misconfiguration instead of reporting it.
-// The result is hashed so no secret is held as a map key.
-func cacheKey(o *goredis.Options) string {
-	h := sha256.New()
-	fmt.Fprintf(h, "%s\x00%s\x00%s\x00%s\x00%d\x00", o.Network, o.Addr, o.Username, o.Password, o.DB)
+// client between two configurations that differ only in password would make
+// the wrong one appear to work, hiding the misconfiguration rather than
+// reporting it. Pool size is deliberately absent, so tuning it does not split
+// one server into two pools.
+type clientKey struct {
+	// From the resolved options, so that a url and the equivalent fields name
+	// the same connection.
+	network, addr, username, password string
+	db                                int
 
-	if o.TLSConfig == nil {
-		fmt.Fprint(h, "notls")
-		return hex.EncodeToString(h.Sum(nil))
-	}
+	// tls.Config is not comparable, so the parts that decide which peer is
+	// trusted are taken from the configuration that produced it. Certificate
+	// files are compared by path: they are read once at startup.
+	tls      bool
+	certFile string
+	keyFile  string
+	caFile   string
 
-	fmt.Fprintf(h, "tls\x00%s\x00%t\x00", o.TLSConfig.ServerName, o.TLSConfig.InsecureSkipVerify)
-	// The certificates themselves, not how many there are: two configurations
-	// presenting a different identity must not share a connection.
-	for _, cert := range o.TLSConfig.Certificates {
-		for _, der := range cert.Certificate {
-			h.Write(der)
-		}
+	// Set by ParseURL for rediss:// and by ?skip_verify.
+	serverName         string
+	insecureSkipVerify bool
+}
+
+func (e RedisOptions) clientKey(o *goredis.Options) clientKey {
+	k := clientKey{
+		network:  o.Network,
+		addr:     o.Addr,
+		username: o.Username,
+		password: o.Password,
+		db:       o.DB,
+		tls:      o.TLSConfig != nil,
 	}
-	return hex.EncodeToString(h.Sum(nil))
+	if o.TLSConfig != nil {
+		k.serverName = o.TLSConfig.ServerName
+		k.insecureSkipVerify = o.TLSConfig.InsecureSkipVerify
+	}
+	if e.Tls != nil {
+		k.certFile, k.keyFile, k.caFile = e.Tls.Cert, e.Tls.Key, e.Tls.Ca
+	}
+	return k
 }
 
 // connect dials with the boot timeout applied.
