@@ -2,7 +2,6 @@ package queue
 
 import (
 	"context"
-	"errors"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -28,12 +27,16 @@ type MemQueue struct {
 	// inFlight tracks deliveries so Close can wait for them.
 	inFlight sync.WaitGroup
 
-	startOnce sync.Once
-	stopOnce  sync.Once
-	stop      chan struct{}
+	started  atomic.Bool
+	stopOnce sync.Once
+	stop     chan struct{}
 }
 
 var _ storage.Queue = (*MemQueue)(nil)
+
+// String identifies the backend, which is what the deprecated AdapterQueue
+// interface reports through storage.LegacyQueueAdapter.
+func (q *MemQueue) String() string { return "memory" }
 
 // NewMemQueue returns a queue buffering up to size messages. A size of zero or
 // less uses the default.
@@ -55,7 +58,7 @@ func (q *MemQueue) Subscribe(topic string, h storage.Handler) error {
 		return storage.ErrQueueClosed
 	}
 	if h == nil {
-		return errors.New("storage: nil handler")
+		return storage.ErrNilHandler
 	}
 	if _, exists := q.handlers[topic]; exists {
 		return storage.ErrTopicAlreadySubscribed
@@ -97,10 +100,8 @@ func (q *MemQueue) Publish(ctx context.Context, msg storage.Message) error {
 }
 
 func (q *MemQueue) Start(ctx context.Context) error {
-	var ran bool
-	q.startOnce.Do(func() { ran = true })
-	if !ran {
-		return errors.New("storage: queue already started")
+	if !q.started.CompareAndSwap(false, true) {
+		return storage.ErrQueueAlreadyStarted
 	}
 	for {
 		select {

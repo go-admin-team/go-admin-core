@@ -17,6 +17,12 @@ var (
 
 	// ErrNoHandler reports a message published to a topic nobody consumes.
 	ErrNoHandler = errors.New("storage: no handler for topic")
+
+	// ErrNilHandler reports a subscription with nothing to deliver to.
+	ErrNilHandler = errors.New("storage: nil handler")
+
+	// ErrQueueAlreadyStarted reports a second call to Start.
+	ErrQueueAlreadyStarted = errors.New("storage: queue already started")
 )
 
 // Message is a queued message.
@@ -32,6 +38,13 @@ type Message struct {
 	// Topic routes the message to a handler.
 	Topic string
 
+	// Values carries the payload.
+	//
+	// Only string values are guaranteed to arrive unchanged. Everything else is
+	// undefined across implementations, because a broker-backed queue has to
+	// serialise the map and an in-process one does not: the Redis queue returns
+	// a published int as a float64, the memory queue returns the int. Use
+	// strings, or encode the payload yourself.
 	Values map[string]interface{}
 
 	// Attempts counts deliveries of this message, starting at 1. A handler can

@@ -23,6 +23,8 @@ func RunQueue(t *testing.T, newQueue QueueFactory) {
 	}{
 		{"DeliversPublishedMessage", testDeliversPublishedMessage},
 		{"PreservesValues", testPreservesValues},
+		{"StringValuesRoundTrip", testStringValuesRoundTrip},
+		{"EmptyPayloadIsDelivered", testEmptyPayloadIsDelivered},
 		{"AssignsID", testAssignsID},
 		{"RoutesByTopic", testRoutesByTopic},
 		{"RejectsDuplicateSubscription", testRejectsDuplicateSubscription},
@@ -30,6 +32,7 @@ func RunQueue(t *testing.T, newQueue QueueFactory) {
 		{"PublishWithoutHandlerFails", testPublishWithoutHandlerFails},
 		{"AttemptsStartAtOne", testAttemptsStartAtOne},
 		{"StartReturnsOnContextCancel", testStartReturnsOnContextCancel},
+		{"SecondStartIsRejected", testSecondStartIsRejected},
 		{"CloseIsIdempotent", testQueueCloseIsIdempotent},
 		{"PublishAfterCloseFails", testPublishAfterCloseFails},
 	}
@@ -207,8 +210,80 @@ func testRejectsNilHandler(t *testing.T, newQueue QueueFactory) {
 	q := newQueue(t)
 	defer q.Close()
 
-	if err := q.Subscribe("orders", nil); err == nil {
-		t.Error("Subscribe with a nil handler must be rejected")
+	err := q.Subscribe("orders", nil)
+	if !errors.Is(err, storage.ErrNilHandler) {
+		t.Errorf("got %v, want ErrNilHandler", err)
+	}
+}
+
+// Only strings are promised to survive; a broker-backed queue has to serialise
+// the payload and an in-process one does not.
+func testStringValuesRoundTrip(t *testing.T, newQueue QueueFactory) {
+	q := newQueue(t)
+	defer q.Close()
+
+	c := newCollector()
+	_ = q.Subscribe("orders", c.handle)
+	stop := started(t, q)
+	defer stop()
+
+	_ = q.Publish(context.Background(), storage.Message{
+		Topic:  "orders",
+		Values: map[string]interface{}{"id": "42", "note": ""},
+	})
+
+	got := c.await(t, 1)[0]
+	if got.Values["id"] != "42" {
+		t.Errorf("id: got %#v, want the string 42", got.Values["id"])
+	}
+	if got.Values["note"] != "" {
+		t.Errorf("an empty string is a legal value, got %#v", got.Values["note"])
+	}
+}
+
+// A message with no values is still a message, and some backends cannot store
+// an entry that carries no field at all.
+func testEmptyPayloadIsDelivered(t *testing.T, newQueue QueueFactory) {
+	q := newQueue(t)
+	defer q.Close()
+
+	c := newCollector()
+	_ = q.Subscribe("orders", c.handle)
+	stop := started(t, q)
+	defer stop()
+
+	if err := q.Publish(context.Background(), storage.Message{Topic: "orders"}); err != nil {
+		t.Fatalf("Publish with no values: %v", err)
+	}
+
+	if got := c.await(t, 1)[0]; len(got.Values) != 0 {
+		t.Errorf("an empty payload must stay empty, got %#v", got.Values)
+	}
+}
+
+// Start is not restartable; a second call must say so rather than running a
+// second read loop against the same handlers.
+func testSecondStartIsRejected(t *testing.T, newQueue QueueFactory) {
+	q := newQueue(t)
+	defer q.Close()
+
+	c := newCollector()
+	_ = q.Subscribe("orders", c.handle)
+	stop := started(t, q)
+	defer stop()
+
+	// A delivered message proves the first Start is past the guard. Without
+	// this, the two calls race and either one may be the one that wins.
+	_ = q.Publish(context.Background(), storage.Message{Topic: "orders"})
+	c.await(t, 1)
+
+	// Already cancelled, so an implementation that wrongly runs a second read
+	// loop fails the assertion instead of hanging the suite.
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	if err := q.Start(ctx); !errors.Is(err, storage.ErrQueueAlreadyStarted) {
+		t.Errorf("second Start: got %v, want ErrQueueAlreadyStarted", err)
 	}
 }
 
