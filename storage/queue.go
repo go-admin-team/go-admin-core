@@ -21,7 +21,8 @@ var (
 	// ErrNilHandler reports a subscription with nothing to deliver to.
 	ErrNilHandler = errors.New("storage: nil handler")
 
-	// ErrQueueAlreadyStarted reports a second call to Start.
+	// ErrQueueAlreadyStarted reports a second call to Start, or a Subscribe
+	// that arrived too late to take effect.
 	ErrQueueAlreadyStarted = errors.New("storage: queue already started")
 )
 
@@ -63,8 +64,11 @@ type Queue interface {
 	// ErrNoHandler is returned rather than dropping the message silently.
 	Publish(ctx context.Context, msg Message) error
 
-	// Subscribe registers the handler for a topic. It must be called before
-	// Start, and returns ErrTopicAlreadySubscribed if the topic is taken.
+	// Subscribe registers the handler for a topic. It returns
+	// ErrTopicAlreadySubscribed if the topic is taken, ErrNilHandler if there
+	// is nothing to deliver to, and ErrQueueAlreadyStarted once Start has been
+	// called: an implementation may fix its set of topics at that point, so a
+	// late subscription would accept messages that are never delivered.
 	Subscribe(topic string, h Handler) error
 
 	// Start begins consuming and blocks until ctx is done or an unrecoverable

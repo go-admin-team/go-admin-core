@@ -52,6 +52,13 @@ func NewMemQueue(size int) *MemQueue {
 }
 
 func (q *MemQueue) Subscribe(topic string, h storage.Handler) error {
+	// Rejected for the same reason a stream-backed queue has to reject it: the
+	// contract fixes the set of topics at Start, and an implementation that
+	// quietly accepted a late one would hide the difference.
+	if q.started.Load() {
+		return storage.ErrQueueAlreadyStarted
+	}
+
 	q.mu.Lock()
 	defer q.mu.Unlock()
 	if q.closed {

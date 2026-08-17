@@ -2,8 +2,10 @@ package config
 
 import (
 	"context"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -95,9 +97,7 @@ func (e RedisOptions) Client(ctx context.Context) (*goredis.Client, error) {
 		return nil, err
 	}
 
-	// Everything that decides which keyspace a command lands in. Two configs
-	// differing only in pool size share a client; differing in db do not.
-	target := fmt.Sprintf("%s|%s|%s|%d", o.Network, o.Addr, o.Username, o.DB)
+	target := cacheKey(o)
 
 	clients.Lock()
 	defer clients.Unlock()
@@ -116,6 +116,33 @@ func (e RedisOptions) Client(ctx context.Context) (*goredis.Client, error) {
 	}
 	clients.byTarget[target] = client
 	return client, nil
+}
+
+// cacheKey identifies a connection by everything that decides where a command
+// lands and who it is issued as.
+//
+// Credentials and transport belong in it, not just the address: sharing a
+// client across two configs that differ only in password would make the wrong
+// one appear to work, which hides the misconfiguration instead of reporting it.
+// The result is hashed so no secret is held as a map key.
+func cacheKey(o *goredis.Options) string {
+	h := sha256.New()
+	fmt.Fprintf(h, "%s\x00%s\x00%s\x00%s\x00%d\x00", o.Network, o.Addr, o.Username, o.Password, o.DB)
+
+	if o.TLSConfig == nil {
+		fmt.Fprint(h, "notls")
+		return hex.EncodeToString(h.Sum(nil))
+	}
+
+	fmt.Fprintf(h, "tls\x00%s\x00%t\x00", o.TLSConfig.ServerName, o.TLSConfig.InsecureSkipVerify)
+	// The certificates themselves, not how many there are: two configurations
+	// presenting a different identity must not share a connection.
+	for _, cert := range o.TLSConfig.Certificates {
+		for _, der := range cert.Certificate {
+			h.Write(der)
+		}
+	}
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 // connect dials with the boot timeout applied.

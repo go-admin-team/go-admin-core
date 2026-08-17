@@ -32,6 +32,7 @@ func RunQueue(t *testing.T, newQueue QueueFactory) {
 		{"PublishWithoutHandlerFails", testPublishWithoutHandlerFails},
 		{"AttemptsStartAtOne", testAttemptsStartAtOne},
 		{"StartReturnsOnContextCancel", testStartReturnsOnContextCancel},
+		{"SubscribeAfterStartIsRejected", testSubscribeAfterStartIsRejected},
 		{"SecondStartIsRejected", testSecondStartIsRejected},
 		{"CloseIsIdempotent", testQueueCloseIsIdempotent},
 		{"PublishAfterCloseFails", testPublishAfterCloseFails},
@@ -223,14 +224,19 @@ func testStringValuesRoundTrip(t *testing.T, newQueue QueueFactory) {
 	defer q.Close()
 
 	c := newCollector()
-	_ = q.Subscribe("orders", c.handle)
+	if err := q.Subscribe("orders", c.handle); err != nil {
+		t.Fatalf("Subscribe: %v", err)
+	}
 	stop := started(t, q)
 	defer stop()
 
-	_ = q.Publish(context.Background(), storage.Message{
+	err := q.Publish(context.Background(), storage.Message{
 		Topic:  "orders",
 		Values: map[string]interface{}{"id": "42", "note": ""},
 	})
+	if err != nil {
+		t.Fatalf("Publish: %v", err)
+	}
 
 	got := c.await(t, 1)[0]
 	if got.Values["id"] != "42" {
@@ -261,6 +267,32 @@ func testEmptyPayloadIsDelivered(t *testing.T, newQueue QueueFactory) {
 	}
 }
 
+// A topic registered after Start would be accepted by Publish, because the
+// backend can see the subscription, while nothing reads it. Rejecting the
+// subscription is what keeps that from becoming a silent backlog.
+func testSubscribeAfterStartIsRejected(t *testing.T, newQueue QueueFactory) {
+	q := newQueue(t)
+	defer q.Close()
+
+	c := newCollector()
+	if err := q.Subscribe("orders", c.handle); err != nil {
+		t.Fatalf("Subscribe: %v", err)
+	}
+	stop := started(t, q)
+	defer stop()
+
+	// As above, a delivered message proves Start is running.
+	if err := q.Publish(context.Background(), storage.Message{Topic: "orders"}); err != nil {
+		t.Fatalf("Publish: %v", err)
+	}
+	c.await(t, 1)
+
+	err := q.Subscribe("late", func(context.Context, storage.Message) error { return nil })
+	if !errors.Is(err, storage.ErrQueueAlreadyStarted) {
+		t.Errorf("Subscribe after Start: got %v, want ErrQueueAlreadyStarted", err)
+	}
+}
+
 // Start is not restartable; a second call must say so rather than running a
 // second read loop against the same handlers.
 func testSecondStartIsRejected(t *testing.T, newQueue QueueFactory) {
@@ -268,13 +300,17 @@ func testSecondStartIsRejected(t *testing.T, newQueue QueueFactory) {
 	defer q.Close()
 
 	c := newCollector()
-	_ = q.Subscribe("orders", c.handle)
+	if err := q.Subscribe("orders", c.handle); err != nil {
+		t.Fatalf("Subscribe: %v", err)
+	}
 	stop := started(t, q)
 	defer stop()
 
 	// A delivered message proves the first Start is past the guard. Without
 	// this, the two calls race and either one may be the one that wins.
-	_ = q.Publish(context.Background(), storage.Message{Topic: "orders"})
+	if err := q.Publish(context.Background(), storage.Message{Topic: "orders"}); err != nil {
+		t.Fatalf("Publish: %v", err)
+	}
 	c.await(t, 1)
 
 	// Already cancelled, so an implementation that wrongly runs a second read

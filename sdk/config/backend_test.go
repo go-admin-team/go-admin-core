@@ -2,9 +2,12 @@ package config
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"os"
 	"testing"
+
+	goredis "github.com/redis/go-redis/v9"
 )
 
 // The default must stay in memory. A deployment that never mentions Redis has
@@ -153,5 +156,37 @@ func TestOneServerYieldsOneClient(t *testing.T) {
 	}
 	if first != second {
 		t.Error("two configs naming one server must share a client")
+	}
+}
+
+// Sharing must not extend across credentials or transport: a config with the
+// wrong password reusing a working client would make the mistake invisible.
+func TestClientsAreNotSharedAcrossIdentities(t *testing.T) {
+	base := &goredis.Options{Network: "tcp", Addr: "localhost:6379", Username: "app", DB: 0}
+
+	withPassword := *base
+	withPassword.Password = "secret"
+
+	otherDB := *base
+	otherDB.DB = 1
+
+	withTLS := *base
+	withTLS.TLSConfig = &tls.Config{ServerName: "cache.example.com", MinVersion: tls.VersionTLS12}
+
+	key := cacheKey(base)
+	for name, o := range map[string]*goredis.Options{
+		"password": &withPassword,
+		"db":       &otherDB,
+		"tls":      &withTLS,
+	} {
+		if cacheKey(o) == key {
+			t.Errorf("a differing %s must not reuse the same client", name)
+		}
+	}
+
+	// The same inputs still have to agree, or nothing would ever be reused.
+	again := *base
+	if cacheKey(&again) != key {
+		t.Error("identical options must produce the same key")
 	}
 }

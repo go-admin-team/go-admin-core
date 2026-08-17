@@ -174,6 +174,13 @@ func (q *Queue) Subscribe(topic string, h storage.Handler) error {
 		return storage.ErrNilHandler
 	}
 
+	// Start fixes the set of streams it reads, so a topic registered afterwards
+	// would have a consumer group — making Publish succeed — with nothing here
+	// ever reading it.
+	if q.started.Load() {
+		return storage.ErrQueueAlreadyStarted
+	}
+
 	q.mu.Lock()
 	if q.closed {
 		q.mu.Unlock()
