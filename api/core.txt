@@ -1345,6 +1345,8 @@ func (e *Server) String() string
 ## github.com/go-admin-team/go-admin-core/storage
 const (
 	PrefixKey = "__host"
+var ErrCacheClosed = errors.New("storage: cache closed")
+var ErrCacheMiss = errors.New("storage: cache miss")
 type AdapterCache interface {
 	String() string
 	Get(key string) (string, error)
@@ -1355,6 +1357,7 @@ type AdapterCache interface {
 	Increase(key string) error
 	Decrease(key string) error
 	Expire(key string, dur time.Duration) error
+func LegacyAdapter(c Cache) AdapterCache
 type AdapterLocker interface {
 	String() string
 type AdapterQueue interface {
@@ -1363,6 +1366,14 @@ type AdapterQueue interface {
 	Register(name string, f ConsumerFunc)
 	Run()
 	Shutdown()
+type Cache interface {
+	Get(ctx context.Context, key string) (string, error)
+	Set(ctx context.Context, key, val string, ttl time.Duration) error
+	Del(ctx context.Context, keys ...string) error
+	Incr(ctx context.Context, key string, delta int64) (int64, error)
+	Expire(ctx context.Context, key string, ttl time.Duration) error
+	io.Closer
+func WithPrefix(c Cache, prefix string) Cache
 type ConsumerFunc func(Messager) error
 type Messager interface {
 	SetID(string)
@@ -1377,6 +1388,15 @@ type Messager interface {
 	GetErrorCount() int
 
 ## github.com/go-admin-team/go-admin-core/storage/cache
+type MemCache struct {
+func NewMemCache() *MemCache
+func NewMemCacheWithSweep(interval time.Duration) *MemCache
+func (m *MemCache) Close() error
+func (m *MemCache) Del(ctx context.Context, keys ...string) error
+func (m *MemCache) Expire(ctx context.Context, key string, ttl time.Duration) error
+func (m *MemCache) Get(ctx context.Context, key string) (string, error)
+func (m *MemCache) Incr(ctx context.Context, key string, delta int64) (int64, error)
+func (m *MemCache) Set(ctx context.Context, key, val string, ttl time.Duration) error
 type Memory struct {
 func NewMemory() *Memory
 func NewMemoryWithCleanupInterval(interval time.Duration) *Memory
@@ -1400,6 +1420,10 @@ func (m *Message) SetID(id string)
 func (m *Message) SetPrefix(prefix string)
 func (m *Message) SetStream(stream string)
 func (m *Message) SetValues(values map[string]interface{})
+
+## github.com/go-admin-team/go-admin-core/storage/cachetest
+func Run(t *testing.T, newCache Factory)
+type Factory func(t *testing.T) storage.Cache
 
 ## github.com/go-admin-team/go-admin-core/storage/queue
 type Memory struct {

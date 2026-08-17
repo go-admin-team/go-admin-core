@@ -8,6 +8,13 @@ const (
 	PrefixKey = "__host"
 )
 
+// AdapterCache is the original cache contract.
+//
+// Deprecated: use Cache. This interface cannot report a miss (Get returns an
+// empty string and a nil error for both an absent key and a stored empty
+// string), carries no context, has no Close, and its Hash family shares one
+// flat key space with ordinary keys. Wrap a Cache with LegacyAdapter to keep
+// existing call sites working. To be removed in v2.0.0.
 type AdapterCache interface {
 	String() string
 	Get(key string) (string, error)
