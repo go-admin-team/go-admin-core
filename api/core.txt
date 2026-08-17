@@ -1,0 +1,1549 @@
+# Exported API of github.com/go-admin-team/go-admin-core
+# Regenerate with: make api-snapshot
+
+## github.com/go-admin-team/go-admin-core/captcha
+func DriverDigitFunc() (id, b64s, answer string, err error)
+func DriverStringFunc() (id, b64s, answer string, err error)
+func NewCacheStore(cache storage.AdapterCache, expiration int) base64Captcha.Store
+func SetStore(s base64Captcha.Store)
+func Verify(id, code string, clear bool) bool
+
+## github.com/go-admin-team/go-admin-core/casbin
+func Setup(db *gorm.DB, _ string) *casbin.SyncedEnforcer
+type Logger struct {
+func (l *Logger) EnableLog(enable bool)
+func (l *Logger) IsEnabled() bool
+func (l *Logger) LogEnforce(matcher string, request []interface{}, result bool, explains [][]string)
+func (l *Logger) LogModel(model [][]string)
+func (l *Logger) LogPolicy(policy map[string][][]string)
+func (l *Logger) LogRole(roles []string)
+
+## github.com/go-admin-team/go-admin-core/config
+func Bytes() []byte
+func Get(path ...string) reader.Value
+func Load(source ...source.Source) error
+func LoadFile(path string) error
+func Map() map[string]interface{}
+func Scan(v interface{}) error
+func Sync() error
+type Config interface {
+	reader.Values
+	Init(opts ...Option) error
+	Options() Options
+	Close() error
+	Load(source ...source.Source) error
+	Sync() error
+	Watch(path ...string) (Watcher, error)
+var (
+	DefaultConfig Config
+func NewConfig(opts ...Option) (Config, error)
+type Entity interface {
+	OnChange()
+type Option func(o *Options)
+func WithEntity(e Entity) Option
+func WithLoader(l loader.Loader) Option
+func WithReader(r reader.Reader) Option
+func WithSource(s source.Source) Option
+type Options struct {
+	Loader loader.Loader
+	Reader reader.Reader
+	Source []source.Source
+	Context context.Context
+	Entity Entity
+type Watcher interface {
+	Next() (reader.Value, error)
+	Stop() error
+func Watch(path ...string) (Watcher, error)
+
+## github.com/go-admin-team/go-admin-core/config/encoder
+type Encoder interface {
+	Encode(interface{}) ([]byte, error)
+	Decode([]byte, interface{}) error
+	String() string
+
+## github.com/go-admin-team/go-admin-core/config/encoder/json
+func NewEncoder() encoder.Encoder
+
+## github.com/go-admin-team/go-admin-core/config/encoder/toml
+func NewEncoder() encoder.Encoder
+
+## github.com/go-admin-team/go-admin-core/config/encoder/xml
+func NewEncoder() encoder.Encoder
+
+## github.com/go-admin-team/go-admin-core/config/encoder/yaml
+func NewEncoder() encoder.Encoder
+
+## github.com/go-admin-team/go-admin-core/config/loader
+type Loader interface {
+	Close() error
+	Load(...source.Source) error
+	Snapshot() (*Snapshot, error)
+	Sync() error
+	Watch(...string) (Watcher, error)
+	String() string
+type Option func(o *Options)
+type Options struct {
+	Reader reader.Reader
+	Source []source.Source
+	Context context.Context
+type Snapshot struct {
+	ChangeSet *source.ChangeSet
+	Version string
+func Copy(s *Snapshot) *Snapshot
+type Watcher interface {
+	Next() (*Snapshot, error)
+	Stop() error
+
+## github.com/go-admin-team/go-admin-core/config/loader/memory
+func NewLoader(opts ...loader.Option) loader.Loader
+func WithReader(r reader.Reader) loader.Option
+func WithSource(s source.Source) loader.Option
+
+## github.com/go-admin-team/go-admin-core/config/reader
+func ReplaceEnvVars(raw []byte) ([]byte, error)
+type Option func(o *Options)
+func WithEncoder(e encoder.Encoder) Option
+type Options struct {
+	Encoding map[string]encoder.Encoder
+func NewOptions(opts ...Option) Options
+type Reader interface {
+	Merge(...*source.ChangeSet) (*source.ChangeSet, error)
+	Values(*source.ChangeSet) (Values, error)
+	String() string
+type Value interface {
+	Bool(def bool) bool
+	Int(def int) int
+	String(def string) string
+	Float64(def float64) float64
+	Duration(def time.Duration) time.Duration
+	StringSlice(def []string) []string
+	StringMap(def map[string]string) map[string]string
+	Scan(val interface{}) error
+	Bytes() []byte
+type Values interface {
+	Bytes() []byte
+	Get(path ...string) Value
+	Set(val interface{}, path ...string)
+	Del(path ...string)
+	Map() map[string]interface{}
+	Scan(v interface{}) error
+
+## github.com/go-admin-team/go-admin-core/config/reader/json
+func NewReader(opts ...reader.Option) reader.Reader
+
+## github.com/go-admin-team/go-admin-core/config/secrets
+type DecryptOption func(*DecryptOptions)
+func SenderPublicKey(key []byte) DecryptOption
+type DecryptOptions struct {
+	SenderPublicKey []byte
+type EncryptOption func(*EncryptOptions)
+func RecipientPublicKey(key []byte) EncryptOption
+type EncryptOptions struct {
+	RecipientPublicKey []byte
+type Option func(*Options)
+func Key(k []byte) Option
+func PrivateKey(key []byte) Option
+func PublicKey(key []byte) Option
+type Options struct {
+	Key []byte
+	PrivateKey []byte
+	PublicKey []byte
+	Context context.Context
+type Secrets interface {
+	Init(...Option) error
+	Options() Options
+	Decrypt([]byte, ...DecryptOption) ([]byte, error)
+	Encrypt([]byte, ...EncryptOption) ([]byte, error)
+	String() string
+
+## github.com/go-admin-team/go-admin-core/config/secrets/box
+func NewSecrets(opts ...secrets.Option) secrets.Secrets
+
+## github.com/go-admin-team/go-admin-core/config/secrets/secretbox
+func NewSecrets(opts ...secrets.Option) secrets.Secrets
+
+## github.com/go-admin-team/go-admin-core/config/source
+var (
+	ErrWatcherStopped = errors.New("watcher stopped")
+type ChangeSet struct {
+	Data      []byte
+	Checksum  string
+	Format    string
+	Source    string
+	Timestamp time.Time
+func (c *ChangeSet) Sum() string
+type Option func(o *Options)
+func WithEncoder(e encoder.Encoder) Option
+type Options struct {
+	Encoder encoder.Encoder
+	Context context.Context
+func NewOptions(opts ...Option) Options
+type Source interface {
+	Read() (*ChangeSet, error)
+	Write(*ChangeSet) error
+	Watch() (Watcher, error)
+	String() string
+type Watcher interface {
+	Next() (*ChangeSet, error)
+	Stop() error
+func NewNoopWatcher() (Watcher, error)
+
+## github.com/go-admin-team/go-admin-core/config/source/env
+var (
+	DefaultPrefixes = []string{}
+func NewSource(opts ...source.Option) source.Source
+func WithPrefix(p ...string) source.Option
+func WithStrippedPrefix(p ...string) source.Option
+
+## github.com/go-admin-team/go-admin-core/config/source/file
+var (
+	DefaultPath = "config.json"
+func NewSource(opts ...source.Option) source.Source
+func WithPath(filePath string) source.Option
+
+## github.com/go-admin-team/go-admin-core/config/source/flag
+func IncludeUnset(b bool) source.Option
+func NewSource(opts ...source.Option) source.Source
+
+## github.com/go-admin-team/go-admin-core/config/source/memory
+func NewSource(opts ...source.Option) source.Source
+func WithChangeSet(cs *source.ChangeSet) source.Option
+func WithJSON(d []byte) source.Option
+func WithYAML(d []byte) source.Option
+
+## github.com/go-admin-team/go-admin-core/errors
+const (
+	Silent       = "0"
+	MessageWarn  = "1"
+	MessageError = "2"
+	Notification = "4"
+	Page         = "9"
+var File_errors_proto protoreflect.FileDescriptor
+func Equal(err1 error, err2 error) bool
+func New(id, domain string, code ErrorCoder) error
+type Error struct {
+	Success bool `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	ErrorCode string `protobuf:"bytes,2,opt,name=errorCode,proto3" json:"errorCode,omitempty"`
+	ErrorMessage string `protobuf:"bytes,3,opt,name=errorMessage,proto3" json:"errorMessage,omitempty"`
+	ShowType string `protobuf:"bytes,4,opt,name=showType,proto3" json:"showType,omitempty"`
+	TraceId string `protobuf:"bytes,5,opt,name=traceId,proto3" json:"traceId,omitempty"`
+	Domain string `protobuf:"bytes,6,opt,name=domain,proto3" json:"domain,omitempty"`
+func FromError(err error) *Error
+func Parse(errStr string) *Error
+func (*Error) Descriptor() ([]byte, []int)
+func (e *Error) Error() string
+func (x *Error) GetDomain() string
+func (x *Error) GetErrorCode() string
+func (x *Error) GetErrorMessage() string
+func (x *Error) GetShowType() string
+func (x *Error) GetSuccess() bool
+func (x *Error) GetTraceId() string
+func (*Error) ProtoMessage()
+func (x *Error) ProtoReflect() protoreflect.Message
+func (x *Error) Reset()
+func (x *Error) String() string
+type ErrorCode int32
+const (
+	OK                  ErrorCode = http.StatusOK
+	BadRequest          ErrorCode = http.StatusBadRequest
+	Unauthorized        ErrorCode = http.StatusUnauthorized
+	Forbidden           ErrorCode = http.StatusForbidden
+	NotFound            ErrorCode = http.StatusNotFound
+	MethodNotAllowed    ErrorCode = http.StatusMethodNotAllowed
+	Timeout             ErrorCode = http.StatusRequestTimeout
+	Conflict            ErrorCode = http.StatusConflict
+	InternalServerError ErrorCode = http.StatusInternalServerError
+func (e ErrorCode) Code() int32
+func (i ErrorCode) String() string
+type ErrorCoder interface {
+	String() string
+	Code() int32
+
+## github.com/go-admin-team/go-admin-core/jwtauth
+const JwtPayloadKey = "JWT_PAYLOAD"
+var (
+	ErrMissingSecretKey = errors.New("secret key is required")
+	ErrForbidden = errors.New("you don't have permission to access this resource")
+	ErrMissingAuthenticatorFunc = errors.New("ginJWTMiddleware.Authenticator func is undefined")
+	ErrMissingLoginValues = errors.New("missing Username or Password or Code")
+	ErrFailedAuthentication = errors.New("incorrect Username or Password")
+	ErrFailedTokenCreation = errors.New("failed to create JWT Token")
+	ErrExpiredToken = errors.New("token is expired")
+	ErrEmptyAuthHeader = errors.New("auth header is empty")
+	ErrMissingExpField = errors.New("missing exp field")
+	ErrWrongFormatOfExp = errors.New("exp must be float64 format")
+	ErrInvalidClaims = errors.New("invalid token claims")
+	ErrMissingOrigIatField = errors.New("missing orig_iat field")
+	ErrInvalidAuthHeader = errors.New("auth header is invalid")
+	ErrEmptyQueryToken = errors.New("query token is empty")
+	ErrEmptyCookieToken = errors.New("cookie token is empty")
+	ErrEmptyParamToken = errors.New("parameter token is empty")
+	ErrInvalidSigningAlgorithm = errors.New("invalid signing algorithm")
+	ErrInvalidVerificationode = errors.New("验证码错误")
+	ErrNoPrivKeyFile = errors.New("private key file unreadable")
+	ErrNoPubKeyFile = errors.New("public key file unreadable")
+	ErrInvalidPrivKey = errors.New("private key invalid")
+	ErrInvalidPubKey = errors.New("public key invalid")
+	IdentityKey = "identity"
+	NiceKey      = "nice"
+	DataScopeKey = "datascope"
+	RKey = "r"
+	RoleIdKey = "roleid"
+	RoleKey = "rolekey"
+	RoleNameKey = "rolename"
+	DeptId = "deptId"
+	DeptName = "deptName"
+func GetToken(c *gin.Context) string
+type GinJWTMiddleware struct {
+	Realm string
+	SigningAlgorithm string
+	Key []byte
+	Timeout time.Duration
+	MaxRefresh time.Duration
+	Authenticator func(c *gin.Context) (interface{}, error)
+	Authorizator func(data interface{}, c *gin.Context) bool
+	PayloadFunc func(data interface{}) MapClaims
+	Unauthorized func(*gin.Context, int, string)
+	LoginResponse func(*gin.Context, int, string, time.Time)
+	AntdLoginResponse func(*gin.Context, int, string, time.Time)
+	RefreshResponse func(*gin.Context, int, string, time.Time)
+	IdentityHandler func(*gin.Context) interface{}
+	IdentityKey string
+	NiceKey string
+	DataScopeKey string
+	RKey string
+	RoleIdKey string
+	RoleKey string
+	RoleNameKey string
+	TokenLookup string
+	TokenHeadName string
+	TimeFunc func() time.Time
+	HTTPStatusMessageFunc func(e error, c *gin.Context) string
+	PrivKeyFile string
+	PubKeyFile string
+	SendCookie bool
+	SecureCookie bool
+	CookieHTTPOnly bool
+	CookieDomain string
+	SendAuthorization bool
+	DisabledAbort bool
+	CookieName string
+func New(m *GinJWTMiddleware) (*GinJWTMiddleware, error)
+func (mw *GinJWTMiddleware) CheckIfTokenExpire(c *gin.Context) (jwt.MapClaims, error)
+func (mw *GinJWTMiddleware) GetClaimsFromJWT(c *gin.Context) (MapClaims, error)
+func (mw *GinJWTMiddleware) LoginHandler(c *gin.Context)
+func (mw *GinJWTMiddleware) MiddlewareFunc() gin.HandlerFunc
+func (mw *GinJWTMiddleware) MiddlewareInit() error
+func (mw *GinJWTMiddleware) ParseToken(c *gin.Context) (*jwt.Token, error)
+func (mw *GinJWTMiddleware) ParseTokenString(token string) (*jwt.Token, error)
+func (mw *GinJWTMiddleware) RefreshHandler(c *gin.Context)
+func (mw *GinJWTMiddleware) RefreshToken(c *gin.Context) (string, time.Time, error)
+func (mw *GinJWTMiddleware) TokenGenerator(data interface{}) (string, time.Time, error)
+type MapClaims map[string]interface{}
+func ExtractClaims(c *gin.Context) MapClaims
+func ExtractClaimsFromToken(token *jwt.Token) MapClaims
+
+## github.com/go-admin-team/go-admin-core/jwtauth/user
+func ExtractClaims(c *gin.Context) jwt.MapClaims
+func Get(c *gin.Context, key string) interface{}
+func GetDeptId(c *gin.Context) int
+func GetDeptName(c *gin.Context) string
+func GetRoleId(c *gin.Context) int
+func GetRoleName(c *gin.Context) string
+func GetUserId(c *gin.Context) int
+func GetUserIdStr(c *gin.Context) string
+func GetUserName(c *gin.Context) string
+
+## github.com/go-admin-team/go-admin-core/logger
+const (
+	Reset = "\033[0m"
+	Red         = "\033[31m"
+	Green       = "\033[32m"
+	Yellow      = "\033[33m"
+	Blue        = "\033[34m" // Caller 路径、GORM 路径
+	Magenta     = "\033[35m"
+	Cyan        = "\033[36m"
+	White       = "\033[37m"
+	Gray        = "\033[90m" // 次要信息
+	BrightWhite = "\033[97m" // DEBUG 级别
+	BlueBold    = "\033[34;1m" // GORM rows 计数
+	MagentaBold = "\033[35;1m"
+	RedBold     = "\033[31;1m" // FATAL/PANIC
+	YellowBold  = "\033[33;1m"
+	GreenBold   = "\033[32;1m"
+	CyanBold    = "\033[36;1m"
+var DefaultAsyncConfig = AsyncConfig{
+	BufferSize:    10000,
+	FlushInterval: 100 * time.Millisecond,
+	DropPolicy:    "drop",
+	OnDropped:     nil,
+var DefaultSamplingConfig = SamplingConfig{
+	Initial:    10,
+	Thereafter: 100,
+	Tick:       time.Second,
+var DefaultSanitizerConfig = SanitizerConfig{
+	Enabled: true,
+	Rules:   DefaultSanitizerRules,
+var DefaultSanitizerRules = []SanitizerRule{
+	{
+		FieldPattern: "phone",
+		Strategy:     "mask",
+		MaskChar:     "*",
+		KeepPrefix:   3,
+		KeepSuffix:   4,
+	},
+	{
+		FieldPattern: "idcard",
+		Strategy:     "mask",
+		MaskChar:     "*",
+		KeepPrefix:   3,
+		KeepSuffix:   4,
+	},
+	{
+		FieldPattern: "id_card",
+		Strategy:     "mask",
+		MaskChar:     "*",
+		KeepPrefix:   3,
+		KeepSuffix:   4,
+	},
+	{
+		FieldPattern: "password",
+		Strategy:     "remove",
+	},
+	{
+		FieldPattern: "passwd",
+		Strategy:     "remove",
+	},
+	{
+		FieldPattern: "token",
+		Strategy:     "hash",
+	},
+	{
+		FieldPattern: "*_token",
+		Strategy:     "hash",
+	},
+	{
+		FieldPattern: "api_key",
+		Strategy:     "hash",
+	},
+	{
+		FieldPattern: "apikey",
+		Strategy:     "hash",
+	},
+	{
+		FieldPattern: "email",
+		Strategy:     "mask",
+		MaskChar:     "*",
+		KeepPrefix:   4,
+		KeepSuffix:   12,
+	},
+func Debug(args ...interface{})
+func Debugf(template string, args ...interface{})
+func Error(args ...interface{})
+func Errorf(template string, args ...interface{})
+func Fatal(args ...interface{})
+func Fatalf(template string, args ...interface{})
+func Info(args ...interface{})
+func Infof(template string, args ...interface{})
+func Init(opts ...Option) error
+func ListAdapters() []string
+func Log(level Level, v ...interface{})
+func Logf(level Level, format string, v ...interface{})
+func NewContext(ctx context.Context, l *Helper) context.Context
+func RegisterAdapter(name string, factory AdapterFactory)
+func SetMasker(fn Masker)
+func String() string
+func Trace(args ...interface{})
+func Tracef(template string, args ...interface{})
+func V(lvl Level, log Logger) bool
+func Warn(args ...interface{})
+func Warnf(template string, args ...interface{})
+type AdapterConfig struct {
+	Type string `json:"type" yaml:"type"`
+	Zap *ZapConfig `json:"zap,omitempty" yaml:"zap,omitempty"`
+	Zerolog *ZerologConfig `json:"zerolog,omitempty" yaml:"zerolog,omitempty"`
+	Logrus *LogrusConfig `json:"logrus,omitempty" yaml:"logrus,omitempty"`
+type AdapterFactory func(opts ...Option) Logger
+func GetAdapter(name string) (AdapterFactory, error)
+type AsyncConfig struct {
+	BufferSize int
+	FlushInterval time.Duration
+	OnDropped func(level Level, msg string)
+	DropPolicy string
+type AsyncPluginConfig struct {
+	Enabled bool `json:"enabled" yaml:"enabled"`
+	BufferSize int `json:"bufferSize" yaml:"bufferSize"`
+	FlushInterval time.Duration `json:"flushInterval" yaml:"flushInterval"`
+	DropOnFull bool `json:"dropOnFull" yaml:"dropOnFull"`
+type CallerHook struct {
+func NewCallerHook(skip int) *CallerHook
+func (h *CallerHook) Fire(entry *logrus.Entry) error
+func (h *CallerHook) Levels() []logrus.Level
+type Config struct {
+	Core CoreConfig `json:"core" yaml:"core"`
+	Adapter AdapterConfig `json:"adapter" yaml:"adapter"`
+	Output OutputConfig `json:"output" yaml:"output"`
+	Plugins PluginsConfig `json:"plugins" yaml:"plugins"`
+func DefaultConfig() *Config
+func FromLegacyConfig(legacy *LegacyConfig) *Config
+func (c *Config) Validate() error
+type ConsoleConfig struct {
+	Enabled bool `json:"enabled" yaml:"enabled"`
+	Color bool `json:"color" yaml:"color"`
+	Level string `json:"level" yaml:"level"`
+type ConsoleFormatter struct {
+	TimestampFormat string
+	ForceColors     bool
+func (f *ConsoleFormatter) Format(entry *logrus.Entry) ([]byte, error)
+type CoreConfig struct {
+	Level string `json:"level" yaml:"level"`
+	EnableCaller bool `json:"enableCaller" yaml:"enableCaller"`
+	CallerSkip int `json:"callerSkip" yaml:"callerSkip"`
+	EnableStacktrace bool `json:"enableStacktrace" yaml:"enableStacktrace"`
+	Name string `json:"name" yaml:"name"`
+	Fields map[string]interface{} `json:"fields" yaml:"fields"`
+type ElasticsearchHook struct {
+func NewElasticsearchHook(client interface{}, index string) *ElasticsearchHook
+func (h *ElasticsearchHook) Fire(entry *logrus.Entry) error
+func (h *ElasticsearchHook) Levels() []logrus.Level
+type Field struct {
+	Key    string
+	Type   FieldType
+	Int64  int64       // 存储 int、bool、duration、time
+	String string      // 存储 string
+	Any    interface{} // 存储 error、复杂类型
+func Any(key string, val interface{}) Field
+func Bool(key string, val bool) Field
+func ClientIP(val string) Field
+func Duration(key string, val time.Duration) Field
+func FieldError(err error) Field
+func FieldString(key string, val string) Field
+func Int(key string, val int) Field
+func Int64(key string, val int64) Field
+func Latency(val time.Duration) Field
+func Method(val string) Field
+func RequestID(val string) Field
+func StatusCode(val int) Field
+func Time(key string, val time.Time) Field
+func TraceID(val string) Field
+func URI(val string) Field
+func UserID(val int64) Field
+type FieldType uint8
+const (
+	FieldTypeAny FieldType = iota
+	FieldTypeString
+	FieldTypeInt
+	FieldTypeBool
+	FieldTypeDuration
+	FieldTypeTime
+	FieldTypeError
+type FileConfig struct {
+	Enabled bool `json:"enabled" yaml:"enabled"`
+	Path string `json:"path" yaml:"path"`
+	Level string `json:"level" yaml:"level"`
+	MaxSize int `json:"maxSize" yaml:"maxSize"`
+	MaxAge int `json:"maxAge" yaml:"maxAge"`
+	MaxBackups int `json:"maxBackups" yaml:"maxBackups"`
+	Compress bool `json:"compress" yaml:"compress"`
+	LocalTime bool `json:"localTime" yaml:"localTime"`
+type Helper struct {
+	Logger
+func FromContext(ctx context.Context) *Helper
+func NewHelper(log Logger) *Helper
+func (h *Helper) Debug(args ...interface{})
+func (h *Helper) Debugf(template string, args ...interface{})
+func (h *Helper) Debugw(msg string, keysAndValues ...interface{})
+func (h *Helper) Error(args ...interface{})
+func (h *Helper) Errorf(template string, args ...interface{})
+func (h *Helper) Errorw(msg string, keysAndValues ...interface{})
+func (h *Helper) Fatal(args ...interface{})
+func (h *Helper) Fatalf(template string, args ...interface{})
+func (h *Helper) Info(args ...interface{})
+func (h *Helper) Infof(template string, args ...interface{})
+func (h *Helper) Infow(msg string, keysAndValues ...interface{})
+func (h *Helper) Trace(args ...interface{})
+func (h *Helper) Tracef(template string, args ...interface{})
+func (h *Helper) Warn(args ...interface{})
+func (h *Helper) Warnf(template string, args ...interface{})
+func (h *Helper) Warnw(msg string, keysAndValues ...interface{})
+func (h *Helper) WithError(err error) *Helper
+func (h *Helper) WithFields(fields map[string]interface{}) *Helper
+type LegacyConfig struct {
+	Path      string `json:"path" yaml:"path"`
+	Stdout    string `json:"stdout" yaml:"stdout"`
+	Level     string `json:"level" yaml:"level"`
+	EnabledDB bool   `json:"enableddb" yaml:"enableddb"`
+type Level int8
+const (
+	TraceLevel Level = iota - 2
+	DebugLevel
+	InfoLevel
+	WarnLevel
+	ErrorLevel
+	FatalLevel
+func GetLevel(levelStr string) (Level, error)
+func (l Level) Enabled(lvl Level) bool
+func (l Level) LevelForGorm() int
+func (l Level) String() string
+type Logger interface {
+	Init(options ...Option) error
+	Options() Options
+	Fields(fields map[string]interface{}) Logger
+	Log(level Level, v ...interface{})
+	Logf(level Level, format string, v ...interface{})
+	String() string
+var (
+	DefaultLogger Logger
+func Fields(fields map[string]interface{}) Logger
+func NewAsyncLogger(logger Logger, config AsyncConfig) Logger
+func NewDevelopmentLogger() Logger
+func NewFromConfig(cfg *Config) (Logger, error)
+func NewLogger(opts ...Option) Logger
+func NewLogrusLogger(opts ...Option) Logger
+func NewProductionLogger(logPath string) Logger
+func NewSamplingLogger(logger Logger, config SamplingConfig) Logger
+func NewSanitizerLogger(logger Logger, config SanitizerConfig) Logger
+func NewTestLogger() Logger
+func NewZapLogger(opts ...Option) Logger
+func SetupLogger(cfg interface{}) Logger
+type LogrusConfig struct {
+	Formatter string `json:"formatter" yaml:"formatter"`
+type Masker func(string) string
+func GetMasker() Masker
+type MetricsHook struct {
+func NewMetricsHook() *MetricsHook
+func (h *MetricsHook) Fire(entry *logrus.Entry) error
+func (h *MetricsHook) Levels() []logrus.Level
+type MetricsPluginConfig struct {
+	Enabled bool `json:"enabled" yaml:"enabled"`
+	Namespace string `json:"namespace" yaml:"namespace"`
+	Subsystem string `json:"subsystem" yaml:"subsystem"`
+type NetworkConfig struct {
+	Type string `json:"type" yaml:"type"`
+	Endpoints []string `json:"endpoints" yaml:"endpoints"`
+	Topic string `json:"topic" yaml:"topic"`
+	Index string `json:"index" yaml:"index"`
+	BufferSize int `json:"bufferSize" yaml:"bufferSize"`
+	FlushInterval time.Duration `json:"flushInterval" yaml:"flushInterval"`
+type Option func(*Options)
+func SetOption(k, v interface{}) Option
+func WithAsync(config AsyncConfig) Option
+func WithCallerSkipCount(c int) Option
+func WithEnableCaller(enabled bool) Option
+func WithEncoder(encoder string) Option
+func WithFields(fields map[string]interface{}) Option
+func WithLevel(level Level) Option
+func WithName(name string) Option
+func WithOutput(out io.Writer) Option
+func WithPath(path string) Option
+func WithRotation(maxSize, maxAge, maxBackups int, compress bool) Option
+func WithSampling(config SamplingConfig) Option
+func WithSanitizer(config SanitizerConfig) Option
+func WithStdout(enabled bool) Option
+type Options struct {
+	Level Level
+	Fields map[string]interface{}
+	Out io.Writer
+	CallerSkipCount int
+	Context context.Context
+	Name string
+	Path string
+	Stdout bool
+	Encoder string
+	EnableCaller bool
+	MaxSize int
+	MaxAge int
+	MaxBackups int
+	Compress bool
+	LocalTime bool
+func DefaultOptions() Options
+type OutputConfig struct {
+	Console *ConsoleConfig `json:"console,omitempty" yaml:"console,omitempty"`
+	File *FileConfig `json:"file,omitempty" yaml:"file,omitempty"`
+	Network *NetworkConfig `json:"network,omitempty" yaml:"network,omitempty"`
+	Format string `json:"format" yaml:"format"`
+	Encoding string `json:"encoding" yaml:"encoding"`
+type PluginsConfig struct {
+	Sampling *SamplingPluginConfig `json:"sampling,omitempty" yaml:"sampling,omitempty"`
+	Metrics *MetricsPluginConfig `json:"metrics,omitempty" yaml:"metrics,omitempty"`
+	Tracing *TracingPluginConfig `json:"tracing,omitempty" yaml:"tracing,omitempty"`
+	Sanitize *SanitizePluginConfig `json:"sanitize,omitempty" yaml:"sanitize,omitempty"`
+	Async *AsyncPluginConfig `json:"async,omitempty" yaml:"async,omitempty"`
+type SamplingConfig struct {
+	Initial int
+	Thereafter int
+	Tick time.Duration
+type SamplingPluginConfig struct {
+	Enabled bool `json:"enabled" yaml:"enabled"`
+	Initial int `json:"initial" yaml:"initial"`
+	Thereafter int `json:"thereafter" yaml:"thereafter"`
+	Tick time.Duration `json:"tick" yaml:"tick"`
+	ExcludeLevels []string `json:"excludeLevels" yaml:"excludeLevels"`
+type SanitizePluginConfig struct {
+	Enabled bool `json:"enabled" yaml:"enabled"`
+	Rules []SanitizeRule `json:"rules" yaml:"rules"`
+type SanitizeRule struct {
+	FieldPattern string `json:"fieldPattern" yaml:"fieldPattern"`
+	Strategy string `json:"strategy" yaml:"strategy"`
+	MaskChar string `json:"maskChar" yaml:"maskChar"`
+type SanitizerConfig struct {
+	Enabled bool
+	Rules []SanitizerRule
+	CustomMatcher func(fieldName string) *SanitizerRule
+type SanitizerRule struct {
+	FieldPattern string
+	Strategy string
+	MaskChar string
+	KeepPrefix int
+	KeepSuffix int
+type SentryHook struct {
+func NewSentryHook() *SentryHook
+func (h *SentryHook) Fire(entry *logrus.Entry) error
+func (h *SentryHook) Levels() []logrus.Level
+type TracingPluginConfig struct {
+	Enabled bool `json:"enabled" yaml:"enabled"`
+	Provider string `json:"provider" yaml:"provider"`
+	AutoExtract bool `json:"autoExtract" yaml:"autoExtract"`
+type ZapConfig struct {
+	Development bool `json:"development" yaml:"development"`
+	DisableCaller bool `json:"disableCaller" yaml:"disableCaller"`
+	DisableStacktrace bool `json:"disableStacktrace" yaml:"disableStacktrace"`
+	Sampling *ZapSamplingConfig `json:"sampling,omitempty" yaml:"sampling,omitempty"`
+type ZapSamplingConfig struct {
+	Initial    int `json:"initial" yaml:"initial"`
+	Thereafter int `json:"thereafter" yaml:"thereafter"`
+type ZerologConfig struct {
+	TimeFormat string `json:"timeFormat" yaml:"timeFormat"`
+
+## github.com/go-admin-team/go-admin-core/logger/writer
+type FileWriter struct {
+	FilenameFunc func(*FileWriter) string
+func NewFileWriter(opts ...Option) (*FileWriter, error)
+func (p *FileWriter) Write(data []byte) (n int, err error)
+type Option func(*Options)
+func WithCap(n uint) Option
+func WithPath(s string) Option
+func WithSuffix(s string) Option
+type Options struct {
+
+## github.com/go-admin-team/go-admin-core/observability/audit
+var (
+	DefaultSize = newaudit.DefaultSize
+	DefaultFormat = newaudit.DefaultFormat
+func JSONFormat(r Record) string
+func TextFormat(r Record) string
+type FormatFunc = newaudit.FormatFunc
+type Log = newaudit.Log
+type Option = newaudit.Option
+func Format(f FormatFunc) Option
+func Name(n string) Option
+func Size(s int) Option
+type Options = newaudit.Options
+type ReadOption = newaudit.ReadOption
+func Count(c int) ReadOption
+func Since(s time.Time) ReadOption
+type ReadOptions = newaudit.ReadOptions
+type Record = newaudit.Record
+type Stream = newaudit.Stream
+
+## github.com/go-admin-team/go-admin-core/observe/audit
+var (
+	DefaultSize = 256
+	DefaultFormat = TextFormat
+func JSONFormat(r Record) string
+func TextFormat(r Record) string
+type FormatFunc func(Record) string
+type Log interface {
+	Read(...ReadOption) ([]Record, error)
+	Write(Record) error
+	Stream() (Stream, error)
+type Option func(*Options)
+func Format(f FormatFunc) Option
+func Name(n string) Option
+func Size(s int) Option
+type Options struct {
+	Name string
+	Size int
+	Format FormatFunc
+type ReadOption func(*ReadOptions)
+func Count(c int) ReadOption
+func Since(s time.Time) ReadOption
+type ReadOptions struct {
+	Since time.Time
+	Count int
+	Stream bool
+type Record struct {
+	Timestamp time.Time `json:"timestamp"`
+	Metadata map[string]string `json:"metadata"`
+	Message interface{} `json:"message"`
+type Stream interface {
+	Chan() <-chan Record
+	Stop() error
+
+## github.com/go-admin-team/go-admin-core/response
+var Default = &response{}
+func Custum(c *gin.Context, data gin.H)
+func Error(c *gin.Context, code int, err error, msg string)
+func OK(c *gin.Context, data interface{}, msg string)
+func PageOK(c *gin.Context, result interface{}, count int, pageIndex int, pageSize int, msg string)
+type Page struct {
+	Count     int `json:"count"`
+	PageIndex int `json:"pageIndex"`
+	PageSize  int `json:"pageSize"`
+type Response struct {
+	RequestId string `protobuf:"bytes,1,opt,name=requestId,proto3" json:"requestId,omitempty"`
+	Code      int32  `protobuf:"varint,2,opt,name=code,proto3" json:"code,omitempty"`
+	Msg       string `protobuf:"bytes,3,opt,name=msg,proto3" json:"msg,omitempty"`
+	Status    string `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
+type Responses interface {
+	SetCode(int32)
+	SetTraceID(string)
+	SetMsg(string)
+	SetData(interface{})
+	SetSuccess(bool)
+	Clone() Responses
+
+## github.com/go-admin-team/go-admin-core/response/antd
+const (
+	Silent       = "0"
+	MessageWarn  = "1"
+	MessageError = "2"
+	Notification = "4"
+	Page         = "9"
+func Custum(c *gin.Context, data gin.H)
+func Error(c *gin.Context, errCode string, errMsg string, showType string)
+func ListOK(c *gin.Context, result interface{}, total int, current int, pageSize int)
+func OK(c *gin.Context, data interface{})
+func PageOK(c *gin.Context, result interface{}, total int, current int, pageSize int)
+func UpFileOK(c *gin.Context, data interface{})
+type ListData struct {
+	List     interface{} `json:"list,omitempty"` // response data
+	Total    int         `json:"total,omitempty"`
+	Current  int         `json:"current,omitempty"`
+	PageSize int         `json:"pageSize,omitempty"`
+type Pages struct {
+	Response
+	Data     interface{} `json:"data,omitempty"` // response data
+	Total    int         `json:"total,omitempty"`
+	Current  int         `json:"current,omitempty"`
+	PageSize int         `json:"pageSize,omitempty"`
+type Response struct {
+	Success      bool   `json:"success,omitempty"`      // if request is success
+	ErrorCode    string `json:"errorCode,omitempty"`    // code for errorType
+	ErrorMessage string `json:"errorMessage,omitempty"` // message display to user
+	ShowType     string `json:"showType,omitempty"`     // error display type： 0 silent; 1 message.warn; 2 message.error; 4 notification; 9 page
+	TraceId      string `json:"traceId,omitempty"`      // Convenient for back-end Troubleshooting: unique request ID
+	Host         string `json:"host,omitempty"`         // onvenient for backend Troubleshooting: host of current access server
+	Status       string `json:"status,omitempty"`
+
+## github.com/go-admin-team/go-admin-core/sdk
+var Runtime runtime.Runtime = runtime.NewConfig()
+
+## github.com/go-admin-team/go-admin-core/sdk/api
+var DefaultLanguage = "zh-CN"
+func GetRequestLogger(c *gin.Context) *logger.Helper
+func SetRequestLogger(c *gin.Context)
+type Api struct {
+	Context *gin.Context
+	Logger  *logger.Helper
+	Orm     *gorm.DB
+	Errors  error
+	Cache   storage.AdapterCache
+func (e *Api) AddError(err error)
+func (e *Api) Bind(d interface{}, bindings ...binding.Binding) *Api
+func (e *Api) Custom(data gin.H)
+func (e *Api) Error(code int, err error, msg string)
+func (e *Api) GetLogger() *logger.Helper
+func (e *Api) GetOrm() (*gorm.DB, error)
+func (e *Api) MakeContext(c *gin.Context) *Api
+func (e *Api) MakeOrm() *Api
+func (e *Api) MakeService(c *service.Service) *Api
+func (e *Api) OK(data interface{}, msg string)
+func (e *Api) PageOK(result interface{}, count int, pageIndex int, pageSize int, msg string)
+func (e Api) Translate(form, to interface{})
+
+## github.com/go-admin-team/go-admin-core/sdk/config
+var (
+	DatabaseConfig  = new(Database)
+	DatabasesConfig = make(map[string]*Database)
+var ApplicationConfig = new(Application)
+var CacheConfig = new(Cache)
+var GenConfig = new(Gen)
+var JwtConfig = new(Jwt)
+var LoggerConfig = new(Logger)
+var QueueConfig = new(Queue)
+var SslConfig = new(Ssl)
+func Setup(s source.Source,
+	fs ...func())
+type Application struct {
+	ReadTimeout   int
+	WriterTimeout int
+	Host          string
+	Port          int64
+	Name          string
+	Mode          string
+	DemoMsg       string
+	EnableDP      bool
+	TenantMode int `yaml:"tenantMode"`
+type Cache struct {
+	Memory interface{}
+func (e Cache) Setup() (storage.AdapterCache, error)
+type Config struct {
+	Application *Application          `yaml:"application"`
+	Ssl         *Ssl                  `yaml:"ssl"`
+	Logger      *Logger               `yaml:"logger"`
+	Jwt         *Jwt                  `yaml:"jwt"`
+	Database    *Database             `yaml:"database"`
+	Databases   *map[string]*Database `yaml:"databases"`
+	Gen         *Gen                  `yaml:"gen"`
+	Cache       *Cache                `yaml:"cache"`
+	Queue       *Queue                `yaml:"queue"`
+	Extend      interface{}           `yaml:"extend"`
+func GetConfig() *Config
+type DBResolverConfig struct {
+	Sources  []string
+	Replicas []string
+	Policy   string
+	Tables   []string
+type Database struct {
+	Driver          string
+	Source          string
+	ConnMaxIdleTime int
+	ConnMaxLifeTime int
+	MaxIdleConns    int
+	MaxOpenConns    int
+	Registers       []DBResolverConfig
+type Gen struct {
+	DBName    string
+	FrontPath string
+type Jwt struct {
+	Secret string
+	Timeout int64
+	MaxRefresh int64
+type Logger struct {
+	Type         string          `yaml:"type"`
+	Adapter      string          `yaml:"adapter"`
+	Path         string          `yaml:"path"`
+	Level        string          `yaml:"level"`
+	Stdout       string          `yaml:"stdout"`
+	Encoder      string          `yaml:"encoder"`
+	EnableCaller bool            `yaml:"enableCaller"`
+	EnabledDB    bool            `yaml:"enableddb"`
+	Cap          uint            `yaml:"cap"`
+	Rotation     *RotationConfig `yaml:"rotation"`
+func (e Logger) Setup()
+type Queue struct {
+	Memory *QueueMemory
+func (e Queue) Empty() bool
+func (e Queue) Setup() (storage.AdapterQueue, error)
+type QueueMemory struct {
+	PoolSize uint
+type RotationConfig struct {
+	MaxSize    int  `yaml:"maxSize"`
+	MaxAge     int  `yaml:"maxAge"`
+	MaxBackups int  `yaml:"maxBackups"`
+	Compress   bool `yaml:"compress"`
+type Settings struct {
+	Settings Config `yaml:"settings"`
+var (
+	ExtendConfig interface{}
+func (e *Settings) Init()
+func (e *Settings) OnChange()
+type Ssl struct {
+	KeyStr string
+	Pem    string
+	Enable bool
+	Domain string
+
+## github.com/go-admin-team/go-admin-core/sdk/pkg
+const (
+	TextBlack = iota + 30
+	TextRed
+	TextGreen
+	TextYellow
+	TextBlue
+	TextMagenta
+	TextCyan
+	TextWhite
+const (
+	TrafficKey = "X-Request-Id"
+	LoggerKey  = "_go-admin-logger-request"
+func Assert(condition bool, msg string, code ...int)
+func Black(msg string) string
+func Blue(msg string) string
+func CompareHashAndPassword(e string, p string) (bool, error)
+func Cyan(msg string) string
+func FileCreate(content bytes.Buffer, name string)
+func FileMonitoringById(ctx context.Context, filePth string, id string, group string, hookfn func(context.Context, string, string, []byte))
+func GenerateMsgIDFromContext(c *gin.Context) string
+func GenerateRandomKey16() string
+func GenerateRandomKey20() string
+func GenerateRandomKey6() string
+func Get(url string) (string, error)
+func GetCurrentPath() string
+func GetCurrentTime() time.Time
+func GetCurrentTimeStr() string
+func GetFileSize(filename string) int64
+func GetLocalHost() string
+func GetLocation(ip, key string) string
+func GetOrm(c *gin.Context) (*gorm.DB, error)
+func Green(msg string) string
+func HasError(err error, msg string, code ...int)
+func IdsStrToIdsIntGroup(key string, c *gin.Context) []int
+func IdsStrToIdsIntGroupStr(keys string) []int
+func Int64ToString(e int64) string
+func IntToString(e int) string
+func Magenta(msg string) string
+func PathCreate(dir string) error
+func PathExist(addr string) bool
+func Post(url string, data interface{}, contentType string) ([]byte, error)
+func Red(msg string) string
+func Round(f float64, n int) float64
+func SetColor(msg string, conf, bg, text int) string
+func SetPassword(password string, salt string) (verify string, err error)
+func StringToInt(e string) (int, error)
+func StructToJsonStr(e interface{}) (string, error)
+func Translate(form, to interface{})
+func UIntToString(e uint) string
+func White(msg string) string
+func Yellow(msg string) string
+type Ids struct {
+	Ids []int
+type Mode string
+const (
+	ModeDev  Mode = "dev"     //开发模式
+	ModeTest Mode = "test"    //测试模式
+	ModeProd Mode = "prod"    //生产模式
+	Mysql         = "mysql"   //mysql数据库标识
+	Sqlite        = "sqlite3" //sqlite
+func (e Mode) String() string
+type ReplaceHelper struct {
+	Root    string //路径
+	OldText string //需要替换的文本
+	NewText string //新的文本
+func (h *ReplaceHelper) DoWork() error
+
+## github.com/go-admin-team/go-admin-core/sdk/pkg/captcha
+func DriverDigitFunc() (id, b64s, answer string, err error)
+func DriverStringFunc() (id, b64s, answer string, err error)
+func SetStore(s base64Captcha.Store)
+func Verify(id, code string, clear bool) bool
+
+## github.com/go-admin-team/go-admin-core/sdk/pkg/casbin
+func Setup(db *gorm.DB, tableName string) *casbin.SyncedEnforcer
+type Logger = newcasbin.Logger
+
+## github.com/go-admin-team/go-admin-core/sdk/pkg/cronjob
+func NewWithSeconds() *cron.Cron
+
+## github.com/go-admin-team/go-admin-core/sdk/pkg/jwtauth
+func GetToken(c *gin.Context) string
+type GinJWTMiddleware = newjwtauth.GinJWTMiddleware
+func New(m *GinJWTMiddleware) (*GinJWTMiddleware, error)
+type MapClaims = newjwtauth.MapClaims
+func ExtractClaims(c *gin.Context) MapClaims
+func ExtractClaimsFromToken(token *jwt.Token) MapClaims
+
+## github.com/go-admin-team/go-admin-core/sdk/pkg/logger
+func SetupLogger(opts ...logger.Option) logger.Logger
+
+## github.com/go-admin-team/go-admin-core/sdk/pkg/response
+func Custum(c *gin.Context, data gin.H)
+func Error(c *gin.Context, code int, err error, msg string)
+func OK(c *gin.Context, data interface{}, msg string)
+func PageOK(c *gin.Context, result interface{}, count int, pageIndex int, pageSize int, msg string)
+
+## github.com/go-admin-team/go-admin-core/sdk/pkg/table
+func Crc16Hash(src string) string
+func Crc32Hash(src string) string
+func Crc8Hash(src string) string
+func CreateSubTable(f func(string) string)
+func DynamicTable(f func(string) string, baseTable, fieldValue string) func(db *gorm.DB) *gorm.DB
+
+## github.com/go-admin-team/go-admin-core/sdk/pkg/utils
+func Base64ToImage(imageBase64 string) ([]byte, error)
+func CheckExist(src string) bool
+func CheckPermission(src string) bool
+func GetCurrentTimeStamp() int64
+func GetDirFiles(dir string) ([]string, error)
+func GetExt(fileName string) string
+func GetImgType(p string) (string, error)
+func GetSize(f multipart.File) (int, error)
+func GetType(p string) (string, error)
+func GetUUID() string
+func Hmac(data string) string
+func IsNotExistMkDir(src string) error
+func IsStringEmpty(str string) bool
+func MkDir(src string) error
+func Open(name string, flag int, perm os.FileMode) (*os.File, error)
+func PathExists(path string) bool
+func RemoveRepByMap(slc []string) []string
+type APIException struct {
+	Code      int         `json:"code"`
+	Success   bool        `json:"success"`
+	Msg       string      `json:"msg"`
+	Timestamp int64       `json:"timestamp"`
+	Result    interface{} `json:"result"`
+func AuthError(message string) *APIException
+func NotFound() *APIException
+func ParameterError(message string) *APIException
+func ResponseJson(message string, data interface{}, success bool) *APIException
+func ServerError() *APIException
+func UnknownError(message string) *APIException
+func (e *APIException) Error() string
+type JSONTime struct {
+	time.Time
+func (t JSONTime) MarshalJSON() ([]byte, error)
+func (t *JSONTime) Scan(v interface{}) error
+func (t JSONTime) Value() (driver.Value, error)
+
+## github.com/go-admin-team/go-admin-core/sdk/pkg/ws
+var WebsocketManager = Manager{
+	Group:            make(map[string]map[string]*Client),
+	Register:         make(chan *Client, 128),
+	UnRegister:       make(chan *Client, 128),
+	GroupMessage:     make(chan *GroupMessageData, 128),
+	Message:          make(chan *MessageData, 128),
+	BroadCastMessage: make(chan *BroadCastMessageData, 128),
+	groupCount:       0,
+	clientCount:      0,
+func SendAll(msg []byte)
+func SendGroup(group string, msg []byte)
+func SendOne(ctx context.Context, id string, group string, msg []byte)
+func WsLogout(id string, group string)
+type BroadCastMessageData struct {
+	Message []byte
+type Client struct {
+	Id, Group  string
+	Context    context.Context
+	CancelFunc context.CancelFunc
+	Socket     *websocket.Conn
+	Message    chan []byte
+func (c *Client) Read(cxt context.Context)
+func (c *Client) Write(cxt context.Context)
+type GroupMessageData struct {
+	Group   string
+	Message []byte
+type Manager struct {
+	Group map[string]map[string]*Client
+	Lock                 sync.Mutex
+	Register, UnRegister chan *Client
+	Message              chan *MessageData
+	GroupMessage         chan *GroupMessageData
+	BroadCastMessage     chan *BroadCastMessageData
+func (manager *Manager) Info() map[string]interface{}
+func (manager *Manager) LenClient() uint
+func (manager *Manager) LenGroup() uint
+func (manager *Manager) RegisterClient(client *Client)
+func (manager *Manager) Send(cxt context.Context, id string, group string, message []byte)
+func (manager *Manager) SendAll(message []byte)
+func (manager *Manager) SendAllService()
+func (manager *Manager) SendGroup(group string, message []byte)
+func (manager *Manager) SendGroupService()
+func (manager *Manager) SendService()
+func (manager *Manager) Start()
+func (manager *Manager) UnRegisterClient(client *Client)
+func (manager *Manager) UnWsClient(c *gin.Context)
+func (manager *Manager) WsClient(c *gin.Context)
+type MessageData struct {
+	Id, Group string
+	Context   context.Context
+	Message   []byte
+
+## github.com/go-admin-team/go-admin-core/sdk/runtime
+const DefaultTenant = "default"
+func NewCache(prefix string, store storage.AdapterCache, wxTokenStoreKey string) storage.AdapterCache
+func NewQueue(prefix string, q storage.AdapterQueue) storage.AdapterQueue
+type Application struct {
+func NewConfig() *Application
+func (e *Application) GetAllCasbin() map[string]*casbin.SyncedEnforcer
+func (e *Application) GetAllCrontab() map[string]*cron.Cron
+func (e *Application) GetAllDb() map[string]*gorm.DB
+func (e *Application) GetAllHandler() map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)
+func (e *Application) GetAllMiddleware() map[string]interface{}
+func (e *Application) GetApp() map[string]interface{}
+func (e *Application) GetAppByTenant(tenant string) interface{}
+func (e *Application) GetAppRouters() []func()
+func (e *Application) GetBefore() []func()
+func (e *Application) GetCacheAdapter() storage.AdapterCache
+func (e *Application) GetCacheAdapterPrefix(prefix string) storage.AdapterCache
+func (e *Application) GetCasbin() *casbin.SyncedEnforcer
+func (e *Application) GetCasbinByTenant(tenant string) *casbin.SyncedEnforcer
+func (e *Application) GetCasbinExclude() map[string]interface{}
+func (e *Application) GetCasbinExcludeByTenant(tenant string) interface{}
+func (e *Application) GetConfig() map[string]interface{}
+func (e *Application) GetConfigByTenant(tenant string) map[string]interface{}
+func (e *Application) GetConfigValue(key string) interface{}
+func (e *Application) GetConfigValueByTenant(tenant, key string) interface{}
+func (e *Application) GetCrontab() *cron.Cron
+func (e *Application) GetCrontabByTenant(tenant string) *cron.Cron
+func (e *Application) GetDb() *gorm.DB
+func (e *Application) GetDbByTenant(tenant string) *gorm.DB
+func (e *Application) GetDefaultTenant() string
+func (e *Application) GetEngine() http.Handler
+func (e *Application) GetHandler() []func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)
+func (e *Application) GetHandlerByTenant(tenant string) []func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)
+func (e *Application) GetLogger() logger.Logger
+func (e *Application) GetMemoryQueue(prefix string) storage.AdapterQueue
+func (e *Application) GetMiddleware(key string) interface{}
+func (e *Application) GetQueue() storage.AdapterQueue
+func (e *Application) GetQueueAdapter() storage.AdapterQueue
+func (e *Application) GetQueuePrefix(key string) storage.AdapterQueue
+func (e *Application) GetRouter() []Router
+func (e *Application) GetStreamMessage(id, stream string, value map[string]interface{}) (storage.Messager, error)
+func (e *Application) SetApp(app interface{})
+func (e *Application) SetAppByTenant(key string, app interface{})
+func (e *Application) SetAppRouters(appRouters func())
+func (e *Application) SetBefore(f func())
+func (e *Application) SetCacheAdapter(c storage.AdapterCache)
+func (e *Application) SetCasbin(enforcer *casbin.SyncedEnforcer)
+func (e *Application) SetCasbinByTenant(tenant string, enforcer *casbin.SyncedEnforcer)
+func (e *Application) SetCasbinExclude(list interface{})
+func (e *Application) SetCasbinExcludeByTenant(tenant string, list interface{})
+func (e *Application) SetConfigByTenant(tenant string, value map[string]interface{})
+func (e *Application) SetConfigValue(key string, value interface{})
+func (e *Application) SetConfigValueByTenant(tenant, key string, value interface{})
+func (e *Application) SetCrontab(crontab *cron.Cron)
+func (e *Application) SetCrontabByTenant(key string, crontab *cron.Cron)
+func (e *Application) SetDb(db *gorm.DB)
+func (e *Application) SetDbByTenant(tenant string, db *gorm.DB)
+func (e *Application) SetDefaultTenant(tenant string)
+func (e *Application) SetEngine(engine http.Handler)
+func (e *Application) SetHandler(routerGroup func(r *gin.RouterGroup, hand ...*gin.HandlerFunc))
+func (e *Application) SetHandlerByTenant(tenant string, routerGroup func(r *gin.RouterGroup, hand ...*gin.HandlerFunc))
+func (e *Application) SetLockerAdapter(c storage.AdapterLocker)
+func (e *Application) SetLogger(l logger.Logger)
+func (e *Application) SetMiddleware(key string, middleware interface{})
+func (e *Application) SetQueueAdapter(c storage.AdapterQueue)
+type Cache struct {
+func (e Cache) Connect() error
+func (e Cache) Decrease(key string) error
+func (e Cache) Del(key string) error
+func (e Cache) Expire(key string, dur time.Duration) error
+func (e Cache) Get(key string) (string, error)
+func (e Cache) HashDel(hk, key string) error
+func (e Cache) HashGet(hk, key string) (string, error)
+func (e Cache) Increase(key string) error
+func (e Cache) PutToken(token *oauth2.Token) error
+func (e Cache) Set(key string, val interface{}, expire int) error
+func (e *Cache) SetPrefix(prefix string)
+func (e *Cache) String() string
+func (e Cache) Token() (token *oauth2.Token, err error)
+type Config map[string]interface{}
+type Queue struct {
+func (e *Queue) Append(message storage.Messager) error
+func (e *Queue) Register(name string, f storage.ConsumerFunc)
+func (e *Queue) Run()
+func (e *Queue) Shutdown()
+func (e *Queue) String() string
+type Router struct {
+	HttpMethod, RelativePath, Handler string
+type Routers struct {
+	List []Router
+type Runtime interface {
+	SetDbByTenant(tenant string, db *gorm.DB)
+	SetDb(db *gorm.DB)
+	GetDbByTenant(tenant string) *gorm.DB
+	GetDb() *gorm.DB
+	GetAllDb() map[string]*gorm.DB
+	SetBefore(f func())
+	GetBefore() []func()
+	SetAppByTenant(tenant string, app interface{})
+	SetApp(app interface{})
+	GetApp() map[string]interface{}
+	GetAppByTenant(tenant string) interface{}
+	SetCasbinExcludeByTenant(tenant string, list interface{})
+	SetCasbinExclude(list interface{})
+	GetCasbinExclude() map[string]interface{}
+	GetCasbinExcludeByTenant(tenant string) interface{}
+	SetCasbinByTenant(tenant string, enforcer *casbin.SyncedEnforcer)
+	SetCasbin(enforcer *casbin.SyncedEnforcer)
+	GetAllCasbin() map[string]*casbin.SyncedEnforcer
+	GetCasbin() *casbin.SyncedEnforcer
+	GetCasbinByTenant(tenant string) *casbin.SyncedEnforcer
+	SetEngine(engine http.Handler)
+	GetEngine() http.Handler
+	GetRouter() []Router
+	SetLogger(logger logger.Logger)
+	GetLogger() logger.Logger
+	SetDefaultTenant(tenant string)
+	GetDefaultTenant() string
+	SetCrontabByTenant(tenant string, crontab *cron.Cron)
+	SetCrontab(crontab *cron.Cron)
+	GetCrontab() *cron.Cron
+	GetAllCrontab() map[string]*cron.Cron
+	GetCrontabByTenant(tenant string) *cron.Cron
+	SetMiddleware(string, interface{})
+	GetAllMiddleware() map[string]interface{}
+	GetMiddleware(string) interface{}
+	SetCacheAdapter(storage.AdapterCache)
+	GetCacheAdapter() storage.AdapterCache
+	GetCacheAdapterPrefix(string) storage.AdapterCache
+	GetMemoryQueue(string) storage.AdapterQueue
+	SetQueueAdapter(storage.AdapterQueue)
+	GetQueueAdapter() storage.AdapterQueue
+	GetQueuePrefix(string) storage.AdapterQueue
+	SetHandler(routerGroup func(r *gin.RouterGroup, hand ...*gin.HandlerFunc))
+	SetHandlerByTenant(tenant string, routerGroup func(r *gin.RouterGroup, hand ...*gin.HandlerFunc))
+	GetAllHandler() map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)
+	GetHandler() []func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)
+	GetHandlerByTenant(tenant string) []func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)
+	GetStreamMessage(id, stream string, value map[string]interface{}) (storage.Messager, error)
+	SetConfigByTenant(tenant string, value map[string]interface{})
+	SetConfigValueByTenant(tenant, key string, value interface{})
+	SetConfigValue(key string, value interface{})
+	GetConfigValueByTenant(tenant, key string) interface{}
+	GetConfigByTenant(tenant string) map[string]interface{}
+	GetConfig() map[string]interface{}
+	GetConfigValue(key string) interface{}
+	SetAppRouters(appRouters func())
+	GetAppRouters() []func()
+
+## github.com/go-admin-team/go-admin-core/sdk/service
+type Service struct {
+	Orm   *gorm.DB
+	Msg   string
+	MsgID string
+	Log   *logger.Helper
+	Error error
+	Cache storage.AdapterCache
+func (db *Service) AddError(err error) error
+
+## github.com/go-admin-team/go-admin-core/server
+type Manager interface {
+	Add(...Runnable)
+	Start(context.Context) error
+func New(opts ...Option) Manager
+type Option func(*options)
+type Runnable interface {
+	fmt.Stringer
+	Start(ctx context.Context) error
+	Attempt() bool
+type Server struct {
+func (e *Server) Add(r ...Runnable)
+func (e *Server) Start(ctx context.Context) (err error)
+
+## github.com/go-admin-team/go-admin-core/server/listener
+func New(name string, opts ...Option) server.Runnable
+func NewHealthz(opts ...Option) server.Runnable
+func NewMetrics(opts ...Option) server.Runnable
+func NewReadyz(opts ...Option) server.Runnable
+type Option func(*options)
+func WithAddr(s string) Option
+func WithCert(s string) Option
+func WithEndHook(f func()) Option
+func WithHandler(handler http.Handler) Option
+func WithKey(s string) Option
+func WithStartedHook(f func()) Option
+type Server struct {
+func (e *Server) Attempt() bool
+func (e *Server) Options(opts ...Option)
+func (e *Server) Shutdown(ctx context.Context) error
+func (e *Server) Start(ctx context.Context) error
+func (e *Server) String() string
+
+## github.com/go-admin-team/go-admin-core/storage
+const (
+	PrefixKey = "__host"
+type AdapterCache interface {
+	String() string
+	Get(key string) (string, error)
+	Set(key string, val interface{}, expire int) error
+	Del(key string) error
+	HashGet(hk, key string) (string, error)
+	HashDel(hk, key string) error
+	Increase(key string) error
+	Decrease(key string) error
+	Expire(key string, dur time.Duration) error
+type AdapterLocker interface {
+	String() string
+type AdapterQueue interface {
+	String() string
+	Append(message Messager) error
+	Register(name string, f ConsumerFunc)
+	Run()
+	Shutdown()
+type ConsumerFunc func(Messager) error
+type Messager interface {
+	SetID(string)
+	SetStream(string)
+	SetValues(map[string]interface{})
+	GetID() string
+	GetStream() string
+	GetValues() map[string]interface{}
+	GetPrefix() string
+	SetPrefix(string)
+	SetErrorCount(count int)
+	GetErrorCount() int
+
+## github.com/go-admin-team/go-admin-core/storage/cache
+type Memory struct {
+func NewMemory() *Memory
+func NewMemoryWithCleanupInterval(interval time.Duration) *Memory
+func (m *Memory) Close() error
+func (m *Memory) Decrease(key string) error
+func (m *Memory) Del(key string) error
+func (m *Memory) Expire(key string, dur time.Duration) error
+func (m *Memory) Get(key string) (string, error)
+func (m *Memory) HashDel(hk, key string) error
+func (m *Memory) HashGet(hk, key string) (string, error)
+func (m *Memory) Increase(key string) error
+func (m *Memory) Set(key string, val interface{}, expire int) error
+func (*Memory) String() string
+type Message struct {
+	queue.Message
+func (m *Message) GetID() string
+func (m *Message) GetPrefix() (prefix string)
+func (m *Message) GetStream() string
+func (m *Message) GetValues() map[string]interface{}
+func (m *Message) SetID(id string)
+func (m *Message) SetPrefix(prefix string)
+func (m *Message) SetStream(stream string)
+func (m *Message) SetValues(values map[string]interface{})
+
+## github.com/go-admin-team/go-admin-core/storage/queue
+type Memory struct {
+	PoolNum uint
+func NewMemory(poolNum uint) *Memory
+func (m *Memory) Append(message storage.Messager) error
+func (m *Memory) Register(name string, f storage.ConsumerFunc)
+func (m *Memory) Run()
+func (m *Memory) Shutdown()
+func (*Memory) String() string
+type Message struct {
+	ID         string
+	Stream     string
+	Values     map[string]interface{}
+	ErrorCount int
+func (m *Message) GetErrorCount() int
+func (m *Message) GetID() string
+func (m *Message) GetPrefix() (prefix string)
+func (m *Message) GetStream() string
+func (m *Message) GetValues() map[string]interface{}
+func (m *Message) SetErrorCount(count int)
+func (m *Message) SetID(id string)
+func (m *Message) SetPrefix(prefix string)
+func (m *Message) SetStream(stream string)
+func (m *Message) SetValues(values map[string]interface{})
+
+## github.com/go-admin-team/go-admin-core/tools/database
+type Configure interface {
+	Init(*gorm.Config, func(string) gorm.Dialector) (*gorm.DB, error)
+func NewConfigure(
+	dsn string,
+	maxIdleConns,
+	maxOpenConns,
+	connMaxIdleTime,
+	connMaxLifetime int,
+	registers []ResolverConfigure) Configure
+type DBConfig struct {
+func (e *DBConfig) Init(config *gorm.Config, open func(string) gorm.Dialector) (*gorm.DB, error)
+type DBResolverConfig struct {
+func (e *DBResolverConfig) Init(
+	register *dbresolver.DBResolver,
+	open func(string) gorm.Dialector) *dbresolver.DBResolver
+type ResolverConfigure interface {
+	Init(*dbresolver.DBResolver, func(string) gorm.Dialector) *dbresolver.DBResolver
+func NewResolverConfigure(sources, replicas []string, policy string, tables []string) ResolverConfigure
+
+## github.com/go-admin-team/go-admin-core/tools/gorm/gormlog
+const (
+	Reset       = "\033[0m"
+	Red         = "\033[31m"
+	Green       = "\033[32m"
+	Yellow      = "\033[33m"
+	Blue        = "\033[34m"
+	Magenta     = "\033[35m"
+	Cyan        = "\033[36m"
+	White       = "\033[37m"
+	BlueBold    = "\033[34;1m"
+	MagentaBold = "\033[35;1m"
+	RedBold     = "\033[31;1m"
+	YellowBold  = "\033[33;1m"
+func New(config logger.Config) logger.Interface
+
+## github.com/go-admin-team/go-admin-core/tools/gorm/logger
+func New(config logger.Config) logger.Interface
+
+## github.com/go-admin-team/go-admin-core/tools/language
+func ParseAcceptLanguage(languages string, supportedLanguages []string) []string
+
+## github.com/go-admin-team/go-admin-core/tools/poster
+func GetImage(src string) (m image.Image, err error)
+func GetQRImage(url string, level qrcode.RecoveryLevel, size int) (image.Image, error)
+func LoadTextType(path string) (*truetype.Font, error)
+func Merge(png draw.Image, merged *os.File) error
+func MergeImage(PNG draw.Image, image image.Image, imageBound image.Point)
+func NewMerged(path string) (*os.File, error)
+func NewPNG(X0 int, Y0 int, X1 int, Y1 int) *image.RGBA
+type DImage struct {
+	PNG draw.Image //合并到的PNG切片,可用image.NewrRGBA设置
+	X   int        //横坐标
+	Y   int        //纵坐标
+type DText struct {
+	PNG   draw.Image //合并到的PNG切片,可用image.NewrRGBA设置
+	Title string     //文字
+	X     int        //横坐标
+	Y     int        //纵坐标
+	Size  float64
+	R     uint8
+	G     uint8
+	B     uint8
+	A     uint8
+func NewDrawText(png draw.Image) *DText
+func (dtext *DText) MergeText(title string, tf *truetype.Font, x int, y int, rect image.Rectangle) error
+func (dtext *DText) SetColor(R uint8, G uint8, B uint8)
+type Pt struct {
+	X int
+	Y int
+type Rect struct {
+	X0 int
+	X1 int
+	Y0 int
+	Y1 int
+
+## github.com/go-admin-team/go-admin-core/tools/search
+const (
+	FromQueryTag = "search"
+	Mysql = "mysql"
+	Postgres = "postgres"
+func BuildJsonContainsClause(driver, column string, value interface{}) (string, []interface{})
+func BuildJsonContainsOrNullClause(driver, column string, value interface{}) (string, []interface{})
+func ResolveSearchQuery(driver string, q interface{}, condition Condition)
+type Condition interface {
+	SetWhere(k string, v []interface{})
+	SetOr(k string, v []interface{})
+	SetOrder(k string)
+	SetJoinOn(t, on string) Condition
+type GormCondition struct {
+	GormPublic
+	Join []*GormJoin
+func (e *GormCondition) SetJoinOn(t, on string) Condition
+type GormJoin struct {
+	Type   string
+	JoinOn string
+	GormPublic
+func (e *GormJoin) SetJoinOn(t, on string) Condition
+type GormPublic struct {
+	Where map[string][]interface{}
+	Order []string
+	Or    map[string][]interface{}
+func (e *GormPublic) SetOr(k string, v []interface{})
+func (e *GormPublic) SetOrder(k string)
+func (e *GormPublic) SetWhere(k string, v []interface{})
+
+## github.com/go-admin-team/go-admin-core/tools/transfer
+func Handler(handler http.Handler) gin.HandlerFunc
+
+## github.com/go-admin-team/go-admin-core/tools/utils
+const (
+	RequestIDKey = "x-request-id"
+	UsernameKey = "x-username"
+var Cols = []string{"", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"}
+func ConvertNumToChars(num int) (string, error)
+func GetHeaderFirst(ctx context.Context, key string) string
+func GetRequestID(ctx context.Context) string
+func GetUsername(ctx context.Context) string
+func NewRequestID() string
+func WriteXlsx(sheet string, records interface{}) *excelize.File
+
