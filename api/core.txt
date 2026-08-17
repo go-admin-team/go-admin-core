@@ -1450,6 +1450,17 @@ func (m *Message) SetPrefix(prefix string)
 func (m *Message) SetStream(stream string)
 func (m *Message) SetValues(values map[string]interface{})
 
+## github.com/go-admin-team/go-admin-core/storage/redis
+type Cache struct {
+func New(client goredis.UniversalClient) *Cache
+func Open(ctx context.Context, url string) (*Cache, error)
+func (c *Cache) Close() error
+func (c *Cache) Del(ctx context.Context, keys ...string) error
+func (c *Cache) Expire(ctx context.Context, key string, ttl time.Duration) error
+func (c *Cache) Get(ctx context.Context, key string) (string, error)
+func (c *Cache) Incr(ctx context.Context, key string, delta int64) (int64, error)
+func (c *Cache) Set(ctx context.Context, key, val string, ttl time.Duration) error
+
 ## github.com/go-admin-team/go-admin-core/tools/database
 type Configure interface {
 	Init(*gorm.Config, func(string) gorm.Dialector) (*gorm.DB, error)
