@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/spf13/cast"
@@ -28,7 +29,15 @@ type legacyAdapter struct {
 	inner Cache
 }
 
-func (l *legacyAdapter) String() string { return "legacy" }
+// String reports the backend's own identity where it has one. Operators read
+// this to tell what is actually running, so the bridge must not stand in front
+// of it.
+func (l *legacyAdapter) String() string {
+	if s, ok := l.inner.(fmt.Stringer); ok {
+		return s.String()
+	}
+	return "legacy"
+}
 
 func (l *legacyAdapter) Get(key string) (string, error) {
 	v, err := l.inner.Get(context.Background(), key)
