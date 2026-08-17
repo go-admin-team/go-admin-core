@@ -886,7 +886,9 @@ type Application struct {
 	EnableDP      bool
 	TenantMode int `yaml:"tenantMode"`
 type Cache struct {
+	Redis  *RedisOptions
 	Memory interface{}
+func (e Cache) Open() (storage.Cache, error)
 func (e Cache) Setup() (storage.AdapterCache, error)
 type Config struct {
 	Application *Application          `yaml:"application"`
@@ -933,11 +935,31 @@ type Logger struct {
 	Rotation     *RotationConfig `yaml:"rotation"`
 func (e Logger) Setup()
 type Queue struct {
+	Redis  *RedisQueue
 	Memory *QueueMemory
 func (e Queue) Empty() bool
+func (e Queue) Open() (storage.Queue, error)
 func (e Queue) Setup() (storage.AdapterQueue, error)
 type QueueMemory struct {
 	PoolSize uint
+type RedisOptions struct {
+	URL        string `yaml:"url" json:"url"`
+	Network    string `yaml:"network" json:"network"`
+	Addr       string `yaml:"addr" json:"addr"`
+	Username   string `yaml:"username" json:"username"`
+	Password   string `yaml:"password" json:"password"`
+	DB         int    `yaml:"db" json:"db"`
+	PoolSize   int    `yaml:"pool_size" json:"pool_size"`
+	MaxRetries int    `yaml:"max_retries" json:"max_retries"`
+	Tls        *Tls   `yaml:"tls" json:"tls"`
+func (e RedisOptions) Client(ctx context.Context) (*goredis.Client, error)
+func (e RedisOptions) GetRedisOptions() (*goredis.Options, error)
+type RedisQueue struct {
+	RedisOptions `yaml:",inline"`
+	Group       string `yaml:"group" json:"group"`
+	KeyPrefix   string `yaml:"key_prefix" json:"key_prefix"`
+	MaxAttempts int    `yaml:"max_attempts" json:"max_attempts"`
+	ClaimMinIdleSeconds int `yaml:"claim_min_idle_seconds" json:"claim_min_idle_seconds"`
 type RotationConfig struct {
 	MaxSize    int  `yaml:"maxSize"`
 	MaxAge     int  `yaml:"maxAge"`
@@ -954,6 +976,10 @@ type Ssl struct {
 	Pem    string
 	Enable bool
 	Domain string
+type Tls struct {
+	Cert string `yaml:"cert" json:"cert"`
+	Key  string `yaml:"key" json:"key"`
+	Ca   string `yaml:"ca" json:"ca"`
 
 ## github.com/go-admin-team/go-admin-core/sdk/pkg
 const (
@@ -1349,6 +1375,8 @@ var (
 	ErrQueueClosed = errors.New("storage: queue closed")
 	ErrTopicAlreadySubscribed = errors.New("storage: topic already subscribed")
 	ErrNoHandler = errors.New("storage: no handler for topic")
+	ErrNilHandler = errors.New("storage: nil handler")
+	ErrQueueAlreadyStarted = errors.New("storage: queue already started")
 var ErrCacheClosed = errors.New("storage: cache closed")
 var ErrCacheMiss = errors.New("storage: cache miss")
 type AdapterCache interface {
@@ -1370,6 +1398,7 @@ type AdapterQueue interface {
 	Register(name string, f ConsumerFunc)
 	Run()
 	Shutdown()
+func LegacyQueueAdapter(q Queue) AdapterQueue
 type Cache interface {
 	Get(ctx context.Context, key string) (string, error)
 	Set(ctx context.Context, key, val string, ttl time.Duration) error
@@ -1412,6 +1441,7 @@ func (m *MemCache) Expire(ctx context.Context, key string, ttl time.Duration) er
 func (m *MemCache) Get(ctx context.Context, key string) (string, error)
 func (m *MemCache) Incr(ctx context.Context, key string, delta int64) (int64, error)
 func (m *MemCache) Set(ctx context.Context, key, val string, ttl time.Duration) error
+func (c *MemCache) String() string
 type Memory struct {
 func NewMemory() *Memory
 func NewMemoryWithCleanupInterval(interval time.Duration) *Memory
@@ -1448,6 +1478,7 @@ func NewMemQueue(size int) *MemQueue
 func (q *MemQueue) Close() error
 func (q *MemQueue) Publish(ctx context.Context, msg storage.Message) error
 func (q *MemQueue) Start(ctx context.Context) error
+func (q *MemQueue) String() string
 func (q *MemQueue) Subscribe(topic string, h storage.Handler) error
 type Memory struct {
 	PoolNum uint
@@ -1483,6 +1514,23 @@ func (c *Cache) Expire(ctx context.Context, key string, ttl time.Duration) error
 func (c *Cache) Get(ctx context.Context, key string) (string, error)
 func (c *Cache) Incr(ctx context.Context, key string, delta int64) (int64, error)
 func (c *Cache) Set(ctx context.Context, key, val string, ttl time.Duration) error
+func (c *Cache) String() string
+type Queue struct {
+func NewQueue(client goredis.UniversalClient, opts QueueOptions) *Queue
+func OpenQueue(ctx context.Context, url string, opts QueueOptions) (*Queue, error)
+func (q *Queue) Close() error
+func (q *Queue) Publish(ctx context.Context, msg storage.Message) error
+func (q *Queue) Start(ctx context.Context) error
+func (q *Queue) String() string
+func (q *Queue) Subscribe(topic string, h storage.Handler) error
+type QueueOptions struct {
+	Group string
+	Consumer string
+	KeyPrefix string
+	MaxAttempts int
+	Block time.Duration
+	ClaimMinIdle time.Duration
+	Batch int64
 
 ## github.com/go-admin-team/go-admin-core/tools/database
 type Configure interface {
