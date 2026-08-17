@@ -5,7 +5,7 @@ GO ?= go
 # tests excluded from the race target.
 RACE_SKIP ?= TestConfigWatcherDirtyOverrite
 
-.PHONY: all build vet test test-race lint vuln tidy ci
+.PHONY: all build vet test test-race lint vuln tidy api-snapshot api-check ci
 
 all: ci
 
@@ -31,4 +31,12 @@ tidy:
 	$(GO) mod tidy
 	git diff --exit-code go.mod go.sum
 
-ci: build vet test-race
+api-snapshot:
+	scripts/api-snapshot.sh
+
+# Fails when the committed snapshot no longer matches the code, forcing API
+# changes to surface in the pull request diff.
+api-check: api-snapshot
+	git diff --exit-code api/
+
+ci: build vet test-race api-check

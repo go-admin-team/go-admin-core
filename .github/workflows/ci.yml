@@ -45,6 +45,9 @@ jobs:
       - name: Vet
         run: make vet
 
+      - name: Verify exported API snapshot
+        run: make api-check
+
       - name: Test with race detector
         run: make test-race
 
