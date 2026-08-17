@@ -526,8 +526,14 @@ func decodeValues(in map[string]interface{}) map[string]interface{} {
 
 	out := make(map[string]interface{}, len(in))
 	for k, v := range in {
-		// A stream field is always a string on the wire.
-		s, _ := v.(string)
+		// A stream field arrives as a string, because the client reads it with
+		// ReadString. Anything else did not come from this package, so it is
+		// passed through as it is rather than being turned into an empty one.
+		s, ok := v.(string)
+		if !ok {
+			out[k] = v
+			continue
+		}
 
 		var decoded interface{}
 		if err := json.Unmarshal([]byte(s), &decoded); err != nil {

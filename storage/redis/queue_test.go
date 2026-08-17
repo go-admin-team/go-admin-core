@@ -203,6 +203,53 @@ func TestReservedFieldNameIsNotSwallowed(t *testing.T) {
 	}
 }
 
+// A field written by something other than this package is not JSON, so it
+// cannot be decoded. It must reach the handler as the string Redis returned
+// rather than being dropped.
+func TestForeignFieldIsPassedThrough(t *testing.T) {
+	url := redisURL(t)
+	admin := adminClient(t, url)
+	flush(t, admin)
+
+	q, err := redisstore.OpenQueue(context.Background(), url, redisstore.QueueOptions{
+		Block: 100 * time.Millisecond,
+	})
+	if err != nil {
+		t.Fatalf("connect to Redis: %v", err)
+	}
+	defer q.Close()
+
+	got := make(chan storage.Message, 1)
+	if err := q.Subscribe("orders", func(_ context.Context, m storage.Message) error {
+		got <- m
+		return nil
+	}); err != nil {
+		t.Fatalf("Subscribe: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() { _ = q.Start(ctx) }()
+
+	// Written straight to the stream, bypassing Publish's JSON encoding.
+	err = admin.XAdd(context.Background(), &goredis.XAddArgs{
+		Stream: "orders",
+		Values: map[string]interface{}{"raw": "not json at all"},
+	}).Err()
+	if err != nil {
+		t.Fatalf("XADD: %v", err)
+	}
+
+	select {
+	case m := <-got:
+		if m.Values["raw"] != "not json at all" {
+			t.Errorf("a foreign field must survive, got %#v", m.Values["raw"])
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for the message")
+	}
+}
+
 // A caller-supplied client is shared, so Close must not shut it down.
 func TestCloseLeavesBorrowedClientUsable(t *testing.T) {
 	url := redisURL(t)
