@@ -1,9 +1,8 @@
 GO ?= go
 
 # Integration tests that need a live MySQL are guarded by testing.Short(),
-# so every target below runs with -short. See docs/known-issues.md for the
-# tests excluded from the race target.
-RACE_SKIP ?= TestConfigWatcherDirtyOverrite
+# so every target below runs with -short. Nothing is excluded from the race
+# target; anything that has to be would belong in docs/known-issues.md.
 
 .PHONY: all build vet test test-race lint vuln tidy api-snapshot api-check ci
 
@@ -19,7 +18,7 @@ test:
 	$(GO) test -short ./...
 
 test-race:
-	$(GO) test -short -race -timeout 600s -skip '$(RACE_SKIP)' ./...
+	$(GO) test -short -race -timeout 600s ./...
 
 lint:
 	$(GO) run honnef.co/go/tools/cmd/staticcheck@latest ./...
