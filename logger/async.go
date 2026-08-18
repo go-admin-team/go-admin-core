@@ -25,10 +25,10 @@ type AsyncConfig struct {
 
 // DefaultAsyncConfig 默认异步配置（生产环境推荐）
 var DefaultAsyncConfig = AsyncConfig{
-	BufferSize:    10000,            // 1万条缓冲
+	BufferSize:    10000,                  // ten thousand entries
 	FlushInterval: 100 * time.Millisecond, // 每100ms刷新
-	DropPolicy:    "drop",           // 队列满时丢弃
-	OnDropped:     nil,              // 不记录丢弃事件
+	DropPolicy:    "drop",                 // drop when the queue is full
+	OnDropped:     nil,                    // no callback on a drop
 }
 
 // logEntry 日志条目（内部结构）
@@ -43,15 +43,17 @@ type logEntry struct {
 
 // asyncLogger 异步日志（高性能写入）
 type asyncLogger struct {
-	logger   Logger
-	config   AsyncConfig
-	buffer   chan *logEntry
-	syncChan chan struct{}    // 同步刷新信号
+	logger Logger
+	config AsyncConfig
+	buffer chan *logEntry
+	// syncChan carries a channel the flush loop closes once the caller's
+	// entries have been written.
+	syncChan chan chan struct{}
 	wg       sync.WaitGroup
 	closed   atomic.Bool
 	ctx      context.Context
 	cancel   context.CancelFunc
-	
+
 	// 监控指标
 	droppedCount atomic.Uint64 // 丢弃计数
 	queueLength  atomic.Int64  // 当前队列长度
@@ -69,22 +71,22 @@ func NewAsyncLogger(logger Logger, config AsyncConfig) Logger {
 	if config.DropPolicy == "" {
 		config.DropPolicy = "drop"
 	}
-	
+
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	async := &asyncLogger{
 		logger:   logger,
 		config:   config,
 		buffer:   make(chan *logEntry, config.BufferSize),
-		syncChan: make(chan struct{}, 1),
+		syncChan: make(chan chan struct{}),
 		ctx:      ctx,
 		cancel:   cancel,
 	}
-	
+
 	// 启动后台写入 goroutine
 	async.wg.Add(1)
 	go async.flushLoop()
-	
+
 	return async
 }
 
@@ -135,14 +137,14 @@ func (l *asyncLoggerWithFields) Log(level Level, v ...interface{}) {
 		l.async.logger.Fields(l.fields).Log(level, v...)
 		return
 	}
-	
+
 	entry := &logEntry{
 		level:  level,
 		msg:    fmt.Sprint(v...),
 		fields: l.fields,
 		isf:    false,
 	}
-	
+
 	l.async.send(entry)
 }
 
@@ -152,7 +154,7 @@ func (l *asyncLoggerWithFields) Logf(level Level, format string, v ...interface{
 		l.async.logger.Fields(l.fields).Logf(level, format, v...)
 		return
 	}
-	
+
 	entry := &logEntry{
 		level:  level,
 		format: format,
@@ -160,7 +162,7 @@ func (l *asyncLoggerWithFields) Logf(level Level, format string, v ...interface{
 		fields: l.fields,
 		isf:    true,
 	}
-	
+
 	l.async.send(entry)
 }
 
@@ -178,18 +180,18 @@ func (a *asyncLogger) Log(level Level, v ...interface{}) {
 		a.logger.Log(level, v...)
 		return
 	}
-	
+
 	// 构造日志条目
 	entry := &logEntry{
 		level: level,
 		isf:   false,
 	}
-	
+
 	// 简单拼接消息
 	if len(v) > 0 {
 		entry.msg = toString(v...)
 	}
-	
+
 	a.send(entry)
 }
 
@@ -199,14 +201,14 @@ func (a *asyncLogger) Logf(level Level, format string, v ...interface{}) {
 		a.logger.Logf(level, format, v...)
 		return
 	}
-	
+
 	entry := &logEntry{
 		level:  level,
 		format: format,
 		args:   v,
 		isf:    true,
 	}
-	
+
 	a.send(entry)
 }
 
@@ -220,7 +222,7 @@ func (a *asyncLogger) send(entry *logEntry) {
 	defer func() {
 		a.queueLength.Store(int64(len(a.buffer)))
 	}()
-	
+
 	select {
 	case a.buffer <- entry:
 		// 成功入队
@@ -271,21 +273,38 @@ func (a *asyncLogger) notifyDropped(entry *logEntry) {
 // flushLoop 后台刷新循环
 func (a *asyncLogger) flushLoop() {
 	defer a.wg.Done()
-	
+
 	ticker := time.NewTicker(a.config.FlushInterval)
 	defer ticker.Stop()
-	
+
 	batch := make([]*logEntry, 0, 100) // 批量处理
-	
+
 	for {
 		select {
 		case <-a.ctx.Done():
-			// 关闭信号，刷新剩余日志
+			// The batch holds entries already taken out of the channel, and
+			// flushRemaining only drains the channel. Without this they are
+			// dropped on shutdown, which is the opposite of what a graceful
+			// close promises.
+			a.flushBatch(&batch)
 			a.flushRemaining()
 			return
-		case <-a.syncChan:
-			// 同步刷新信号
+		case done := <-a.syncChan:
+			// Take everything already queued before flushing. An entry that has
+			// been moved out of the channel is not written yet, so a caller
+			// watching the channel length alone would be told its line had been
+			// flushed while it was still sitting in this batch.
+		drain:
+			for {
+				select {
+				case entry := <-a.buffer:
+					batch = append(batch, entry)
+				default:
+					break drain
+				}
+			}
 			a.flushBatch(&batch)
+			close(done)
 		case <-ticker.C:
 			// 定时刷新
 			a.flushBatch(&batch)
@@ -305,23 +324,23 @@ func (a *asyncLogger) flushBatch(batch *[]*logEntry) {
 	if len(*batch) == 0 {
 		return
 	}
-	
+
 	for _, entry := range *batch {
 		logger := a.logger
 		if len(entry.fields) > 0 {
 			logger = logger.Fields(entry.fields)
 		}
-		
+
 		if entry.isf {
 			logger.Logf(entry.level, entry.format, entry.args...)
 		} else {
 			logger.Log(entry.level, entry.msg)
 		}
 	}
-	
+
 	// 清空批次
 	*batch = (*batch)[:0]
-	
+
 	// 更新队列长度
 	a.queueLength.Store(int64(len(a.buffer)))
 }
@@ -329,13 +348,13 @@ func (a *asyncLogger) flushBatch(batch *[]*logEntry) {
 // flushRemaining 刷新剩余日志（关闭时调用）
 func (a *asyncLogger) flushRemaining() {
 	close(a.buffer)
-	
+
 	for entry := range a.buffer {
 		logger := a.logger
 		if len(entry.fields) > 0 {
 			logger = logger.Fields(entry.fields)
 		}
-		
+
 		if entry.isf {
 			logger.Logf(entry.level, entry.format, entry.args...)
 		} else {
@@ -349,22 +368,19 @@ func (a *asyncLogger) Sync() error {
 	if a.closed.Load() {
 		return nil
 	}
-	
-	// 发送同步刷新信号
+
+	done := make(chan struct{})
 	select {
-	case a.syncChan <- struct{}{}:
-	default:
-		// 通道已有信号，无需重复发送
+	case a.syncChan <- done:
+	case <-a.ctx.Done():
+		// Shutting down; the loop flushes what is left on its way out.
+		return nil
 	}
-	
-	// 等待缓冲区清空
-	for {
-		if len(a.buffer) == 0 && a.queueLength.Load() == 0 {
-			break
-		}
-		time.Sleep(5 * time.Millisecond)
+
+	select {
+	case <-done:
+	case <-a.ctx.Done():
 	}
-	
 	return nil
 }
 
@@ -373,13 +389,13 @@ func (a *asyncLogger) Close() error {
 	if a.closed.Swap(true) {
 		return nil // 已关闭
 	}
-	
+
 	// 发送关闭信号
 	a.cancel()
-	
+
 	// 等待后台 goroutine 退出
 	a.wg.Wait()
-	
+
 	return nil
 }
 

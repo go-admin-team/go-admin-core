@@ -488,3 +488,43 @@ func TestAsyncLogger_SamplePolicy(t *testing.T) {
 		closer.Close()
 	}
 }
+
+// Sync has to write entries that have already been taken out of the channel.
+//
+// They do not wait there until they are written: the flush loop moves them into
+// a batch of its own and writes that batch on a timer. A long flush interval
+// removes the timer from the picture, so only Sync can get the entry out.
+//
+// This does not reproduce the scheduling race that made TestAsyncLogger_Basic
+// fail on CI — that window is a few instructions wide and cannot be forced from
+// a test. It pins the guarantee Sync is supposed to offer, which the new
+// implementation provides by construction rather than by polling.
+func TestSyncWaitsForEntriesAlreadyTakenFromTheChannel(t *testing.T) {
+	buf := &bytes.Buffer{}
+	base := NewLogrusLogger(WithOutput(buf), WithLevel(InfoLevel))
+
+	async := NewAsyncLogger(base, AsyncConfig{
+		BufferSize:    100,
+		FlushInterval: time.Hour, // only Sync can flush
+		DropPolicy:    "drop",
+	})
+	defer stopAsync(t, async)
+
+	async.Log(InfoLevel, "written before sync")
+
+	// Long enough for the flush loop to move the entry out of the channel and
+	// into its batch, where the old Sync could no longer see it.
+	time.Sleep(100 * time.Millisecond)
+
+	syncer, ok := async.(interface{ Sync() error })
+	if !ok {
+		t.Fatal("the async logger must expose Sync")
+	}
+	if err := syncer.Sync(); err != nil {
+		t.Fatalf("Sync: %v", err)
+	}
+
+	if got := buf.String(); !strings.Contains(got, "written before sync") {
+		t.Errorf("Sync returned before the entry reached the output, got: %q", got)
+	}
+}
