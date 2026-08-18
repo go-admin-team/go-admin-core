@@ -241,6 +241,13 @@ func (q *Queue) ensureGroup(ctx context.Context, topic string) error {
 	return nil
 }
 
+// isMissingGroup reports the error Redis returns for a read against a group
+// that does not exist. It has no dedicated type in the client, so the reply is
+// matched on its prefix, which is what NOGROUP is for.
+func isMissingGroup(err error) bool {
+	return err != nil && strings.HasPrefix(err.Error(), "NOGROUP")
+}
+
 // groupExists asks Redis whether anyone consumes the topic.
 func (q *Queue) groupExists(ctx context.Context, topic string) (bool, error) {
 	groups, err := q.client.XInfoGroups(ctx, q.stream(topic)).Result()
@@ -357,6 +364,18 @@ func (q *Queue) Start(ctx context.Context) error {
 		switch {
 		case errors.Is(err, goredis.Nil):
 			// The block elapsed with nothing new.
+			continue
+		case isMissingGroup(err):
+			// The group can be gone for two reasons: a Subscribe that has not
+			// finished creating it yet, or an operator deleting the stream
+			// while this is running. Neither is a reason to stop consuming
+			// forever, which is what returning here used to do.
+			for _, t := range topics {
+				if err := q.ensureGroup(ctx, t); err != nil && ctx.Err() == nil {
+					slog.Warn("queue: could not recreate the consumer group",
+						"topic", t, "error", err)
+				}
+			}
 			continue
 		case err != nil:
 			if ctx.Err() != nil {
