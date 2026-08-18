@@ -38,12 +38,13 @@ type updateValue struct {
 }
 
 type watcher struct {
-	exit    chan bool
-	path    []string
-	value   reader.Value
-	reader  reader.Reader
-	version string
-	updates chan updateValue
+	exit     chan bool
+	exitOnce sync.Once
+	path     []string
+	value    reader.Value
+	reader   reader.Reader
+	version  string
+	updates  chan updateValue
 }
 
 func (m *memory) watch(idx int, s source.Source) {
@@ -155,9 +156,8 @@ func (m *memory) reload() error {
 }
 
 func (m *memory) update() {
-	watchers := make([]*watcher, 0, m.watchers.Len())
-
 	m.RLock()
+	watchers := make([]*watcher, 0, m.watchers.Len())
 	for e := m.watchers.Front(); e != nil; e = e.Next() {
 		watchers = append(watchers, e.Value.(*watcher))
 	}
@@ -167,12 +167,12 @@ func (m *memory) update() {
 	m.RUnlock()
 
 	for _, w := range watchers {
-		if w.version >= snap.Version {
-			continue
-		}
-
+		// A watcher's version belongs to whoever calls Next, so it cannot be
+		// consulted from here. Next applies the same filter one step later,
+		// which is why this only ever skipped work rather than deciding
+		// anything.
 		uv := updateValue{
-			version: m.snap.Version,
+			version: snap.Version,
 			value:   vals.Get(w.path...),
 		}
 
@@ -413,13 +413,11 @@ func (w *watcher) Next() (*loader.Snapshot, error) {
 }
 
 func (w *watcher) Stop() error {
-	select {
-	case <-w.exit:
-	default:
-		close(w.exit)
-		close(w.updates)
-	}
-
+	// Selecting on the channel and then closing it is a check followed by an
+	// act: two callers can both find it open. Next returns on exit alone, so
+	// the updates channel is left for the collector rather than closed —
+	// closing it raced with the send in update and panicked the sender.
+	w.exitOnce.Do(func() { close(w.exit) })
 	return nil
 }
 
