@@ -16,8 +16,9 @@ import (
 )
 
 type memory struct {
-	exit chan bool
-	opts loader.Options
+	exit     chan bool
+	exitOnce sync.Once
+	opts     loader.Options
 
 	sync.RWMutex
 	// the current snapshot
@@ -86,7 +87,15 @@ func (m *memory) watch(idx int, s source.Source) {
 		// watch the source
 		w, err := s.Watch()
 		if err != nil {
-			time.Sleep(time.Second)
+			// The exit check at the bottom is only reached once a watch has
+			// been established, so without this a source that cannot be
+			// watched keeps this goroutine retrying for the life of the
+			// process, Close or no Close.
+			select {
+			case <-m.exit:
+				return
+			case <-time.After(time.Second):
+			}
 			continue
 		}
 
@@ -256,12 +265,7 @@ func (m *memory) Sync() error {
 }
 
 func (m *memory) Close() error {
-	select {
-	case <-m.exit:
-		return nil
-	default:
-		close(m.exit)
-	}
+	m.exitOnce.Do(func() { close(m.exit) })
 	return nil
 }
 
