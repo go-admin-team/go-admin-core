@@ -1,14 +1,22 @@
 package runtime
 
 import (
+	"log/slog"
+
 	"github.com/go-admin-team/go-admin-core/storage"
 	"github.com/go-admin-team/go-admin-core/storage/queue"
 )
 
 // NewQueue 创建对应上下文队列
+//
+// A nil q yields a fresh in-process queue, which is almost never what a caller
+// wants: two calls produce two unconnected queues, so a consumer registered on
+// one never sees what is published to the other. Application.GetQueuePrefix
+// passes a shared queue for exactly this reason.
 func NewQueue(prefix string, q storage.AdapterQueue) storage.AdapterQueue {
-	// 如果传入 nil，创建默认的内存队列
 	if q == nil {
+		slog.Warn("runtime: queue created without a backing adapter; it is connected to nothing else",
+			"prefix", prefix)
 		q = queue.NewMemory(100)
 	}
 	return &Queue{
