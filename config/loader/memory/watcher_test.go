@@ -1,8 +1,10 @@
 package memory
 
 import (
+	"runtime"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/go-admin-team/go-admin-core/config/source"
 )
@@ -14,6 +16,9 @@ func loadedMemory(t *testing.T) *memory {
 	if err := m.Load(&testSource{data: []byte(`{"a":1}`)}); err != nil {
 		t.Fatalf("Load: %v", err)
 	}
+	// Load starts a watch goroutine per source. Without this it outlives the
+	// test and keeps running while the rest of the package reports failures.
+	t.Cleanup(func() { _ = m.Close() })
 	return m
 }
 
@@ -77,7 +82,8 @@ func TestStopDuringUpdateDoesNotPanic(t *testing.T) {
 }
 
 type testSource struct {
-	data []byte
+	data        []byte
+	unwatchable bool
 }
 
 func (s *testSource) Read() (*source.ChangeSet, error) {
@@ -91,7 +97,76 @@ func (s *testSource) Read() (*source.ChangeSet, error) {
 }
 
 func (s *testSource) Write(*source.ChangeSet) error { return nil }
+
 func (s *testSource) Watch() (source.Watcher, error) {
+	if s.unwatchable {
+		return nil, source.ErrWatcherStopped
+	}
+	return &testWatcher{stop: make(chan struct{})}, nil
+}
+
+func (s *testSource) String() string { return "test" }
+
+// testWatcher reports nothing and blocks until it is stopped, which is what a
+// quiet source looks like to the loader.
+type testWatcher struct {
+	stop chan struct{}
+	once sync.Once
+}
+
+func (w *testWatcher) Next() (*source.ChangeSet, error) {
+	<-w.stop
 	return nil, source.ErrWatcherStopped
 }
-func (s *testSource) String() string { return "test" }
+
+func (w *testWatcher) Stop() error {
+	w.once.Do(func() { close(w.stop) })
+	return nil
+}
+
+// A source that cannot be watched used to keep the loader'"'"'s goroutine retrying
+// once a second forever: the exit check sat past the point the retry jumped
+// back from, so Close could not reach it.
+func TestCloseStopsAWatchThatCannotStart(t *testing.T) {
+	m := NewLoader().(*memory)
+	if err := m.Load(&testSource{data: []byte(`{"a":1}`), unwatchable: true}); err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	before := runtime.NumGoroutine()
+	if err := m.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	// The goroutine is in a one second sleep at worst, so give it two.
+	deadline := time.Now().Add(2 * time.Second)
+	for runtime.NumGoroutine() >= before && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+	}
+	if n := runtime.NumGoroutine(); n >= before {
+		t.Errorf("goroutine count %d did not fall below %d: the watch is still retrying", n, before)
+	}
+}
+
+// Close carried the same select-then-close as the watcher, and the loader is
+// closed both by its owner and by whatever is shutting the process down.
+func TestLoaderCloseIsSafeUnderConcurrency(t *testing.T) {
+	for i := 0; i < 500; i++ {
+		m := NewLoader().(*memory)
+
+		var wg sync.WaitGroup
+		start := make(chan struct{})
+		for j := 0; j < 16; j++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				<-start
+				if err := m.Close(); err != nil {
+					t.Errorf("Close: %v", err)
+				}
+			}()
+		}
+		close(start)
+		wg.Wait()
+	}
+}
