@@ -386,10 +386,7 @@ func (e *Application) queueAdapter() storage.AdapterQueue {
 
 // GetQueueAdapter 获取队列适配器
 func (e *Application) GetQueueAdapter() storage.AdapterQueue {
-	// GetDefaultTenant takes the lock, so it has to be called before
-	// queueAdapter does: sync.RWMutex is not reentrant.
-	tenant := e.GetDefaultTenant()
-	return NewQueue(tenant, e.queueAdapter())
+	return NewQueue(e.GetDefaultTenant(), e.queueAdapter())
 }
 
 // GetQueuePrefix 获取标记的queue

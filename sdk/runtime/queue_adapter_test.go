@@ -33,21 +33,36 @@ func TestQueuePrefixIsSharedWithoutConfiguration(t *testing.T) {
 	}
 }
 
+// fakeQueue is distinguishable from the fallback, which the real memory queue
+// is not: both report "memory", so asserting on that would pass whether or not
+// the configured adapter was used.
+type fakeQueue struct{ storage.AdapterQueue }
+
+func (fakeQueue) String() string { return "fake" }
+
 // The configured adapter is what the queue getters must hand out, otherwise
 // selecting Redis in the settings file changes nothing.
 func TestConfiguredAdapterIsUsed(t *testing.T) {
 	app := NewConfig()
-
-	configured := queue.NewMemory(16)
-	app.SetQueueAdapter(configured)
+	app.SetQueueAdapter(fakeQueue{})
 
 	for name, q := range map[string]storage.AdapterQueue{
 		"GetQueuePrefix":  app.GetQueuePrefix("x"),
 		"GetQueueAdapter": app.GetQueueAdapter(),
 	} {
-		if q.String() != configured.String() {
+		if q.String() != "fake" {
 			t.Errorf("%s: got %q, want the configured adapter", name, q.String())
 		}
+	}
+}
+
+// Without configuration the getters fall back, and the fallback has to be the
+// in-process queue rather than an error or a nil.
+func TestFallbackIsTheMemoryQueue(t *testing.T) {
+	app := NewConfig()
+
+	if got := app.GetQueuePrefix("x").String(); got != "memory" {
+		t.Errorf("got %q, want memory", got)
 	}
 }
 
