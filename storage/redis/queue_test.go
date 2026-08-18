@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -233,5 +234,145 @@ func TestCloseLeavesBorrowedClientUsable(t *testing.T) {
 				t.Errorf("a borrowed client must stay usable after Close: %v", err)
 			}
 		})
+	}
+}
+
+// An operator deleting the stream, or any other way the consumer group can go
+// missing, used to end the read loop for good: NOGROUP is an ordinary error, so
+// Start returned it and nothing was ever consumed again. It has to recover.
+func TestRecoversFromADeletedStream(t *testing.T) {
+	url := redisURL(t)
+	admin := adminClient(t, url)
+	flush(t, admin)
+
+	q, err := redisstore.OpenQueue(context.Background(), url, redisstore.QueueOptions{
+		Block: 50 * time.Millisecond,
+	})
+	if err != nil {
+		t.Fatalf("connect to Redis: %v", err)
+	}
+	defer q.Close()
+
+	got := make(chan storage.Message, 8)
+	if err := q.Subscribe("orders", func(_ context.Context, m storage.Message) error {
+		got <- m
+		return nil
+	}); err != nil {
+		t.Fatalf("Subscribe: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	started := make(chan error, 1)
+	go func() { started <- q.Start(ctx) }()
+
+	if err := q.Publish(context.Background(), storage.Message{Topic: "orders"}); err != nil {
+		t.Fatalf("Publish: %v", err)
+	}
+	select {
+	case <-got:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the first message was never delivered")
+	}
+
+	// Take the stream away underneath the running loop.
+	if err := admin.Del(context.Background(), "orders").Err(); err != nil {
+		t.Fatalf("DEL: %v", err)
+	}
+
+	// The loop has to notice, put the group back and carry on. Publish recreates
+	// the stream through XADD; without recovery Start would already have exited.
+	deadline := time.After(10 * time.Second)
+	for {
+		if err := q.Publish(context.Background(), storage.Message{Topic: "orders"}); err != nil {
+			t.Fatalf("Publish after the stream was deleted: %v", err)
+		}
+		select {
+		case <-got:
+			select {
+			case err := <-started:
+				t.Fatalf("Start returned instead of recovering: %v", err)
+			default:
+			}
+			return
+		case err := <-started:
+			t.Fatalf("Start returned instead of recovering: %v", err)
+		case <-time.After(250 * time.Millisecond):
+		}
+		select {
+		case <-deadline:
+			t.Fatal("the queue never resumed consuming after the stream was deleted")
+		default:
+		}
+	}
+}
+
+// spinClient reports a missing group on every read, and lets the group be
+// created exactly once so that Subscribe succeeds and the recovery inside the
+// read loop does not. A real Redis reaches this state through a failover to a
+// read-only replica or an ACL that allows XREADGROUP but not XGROUP.
+type spinClient struct {
+	// Embedded rather than implemented: the read loop touches two commands and
+	// nothing else, and a nil call panicking says so loudly.
+	goredis.UniversalClient
+
+	reads  atomic.Int64
+	groups atomic.Int64
+}
+
+func (c *spinClient) XReadGroup(ctx context.Context, _ *goredis.XReadGroupArgs) *goredis.XStreamSliceCmd {
+	c.reads.Add(1)
+	cmd := goredis.NewXStreamSliceCmd(ctx)
+	cmd.SetErr(errors.New("NOGROUP No such key 'orders' or consumer group 'g'"))
+	return cmd
+}
+
+func (c *spinClient) XGroupCreateMkStream(ctx context.Context, _, _, _ string) *goredis.StatusCmd {
+	cmd := goredis.NewStatusCmd(ctx)
+	if c.groups.Add(1) > 1 {
+		cmd.SetErr(errors.New("NOPERM this user has no permissions to run the 'xgroup|create' command"))
+	}
+	return cmd
+}
+
+// A group that cannot be recreated used to cost a full core: XREADGROUP answers
+// NOGROUP without waiting out Block, so the recovery path had no pacing of its
+// own. Needs no Redis.
+func TestReadLoopPacesItselfWhenTheGroupCannotBeRecreated(t *testing.T) {
+	const block = 50 * time.Millisecond
+
+	client := &spinClient{}
+	q := redisstore.NewQueue(client, redisstore.QueueOptions{
+		Group: "g",
+		Block: block,
+		// Long enough that the reclaim sweep never runs and never reaches a
+		// command this client does not implement.
+		ClaimMinIdle: time.Minute,
+	})
+	if err := q.Subscribe("orders", func(context.Context, storage.Message) error { return nil }); err != nil {
+		t.Fatalf("Subscribe: %v", err)
+	}
+
+	window := 20 * block
+	ctx, cancel := context.WithTimeout(context.Background(), window)
+	defer cancel()
+
+	// Start runs on its own so that a loop which ignores the deadline fails the
+	// test rather than hanging the package until the go test timeout.
+	done := make(chan error, 1)
+	go func() { done <- q.Start(ctx) }()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("Start: %v", err)
+		}
+	case <-time.After(4 * window):
+		t.Fatalf("Start did not return %v after the context expired", 3*window)
+	}
+
+	// One read per backoff is the shape being pinned; the allowance is for a
+	// loaded machine, not for a loop that never waits.
+	if reads, limit := client.reads.Load(), int64(window/block)*3; reads > limit {
+		t.Errorf("%d reads in %v, expected at most %d: the loop is not backing off", reads, window, limit)
 	}
 }

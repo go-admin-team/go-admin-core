@@ -241,6 +241,13 @@ func (q *Queue) ensureGroup(ctx context.Context, topic string) error {
 	return nil
 }
 
+// isMissingGroup reports the error Redis returns for a read against a group
+// that does not exist. It has no dedicated type in the client, so the reply is
+// matched on its prefix, which is what NOGROUP is for.
+func isMissingGroup(err error) bool {
+	return err != nil && strings.HasPrefix(err.Error(), "NOGROUP")
+}
+
 // groupExists asks Redis whether anyone consumes the topic.
 func (q *Queue) groupExists(ctx context.Context, topic string) (bool, error) {
 	groups, err := q.client.XInfoGroups(ctx, q.stream(topic)).Result()
@@ -357,6 +364,39 @@ func (q *Queue) Start(ctx context.Context) error {
 		switch {
 		case errors.Is(err, goredis.Nil):
 			// The block elapsed with nothing new.
+			continue
+		case isMissingGroup(err):
+			if ctx.Err() != nil {
+				// Cancellation outranks recovery. A real client reports the
+				// cancellation itself, but this branch loops, and a looping
+				// branch that cannot be stopped is a hang waiting to happen.
+				return nil
+			}
+			// The group can be gone for two reasons: a Subscribe that has not
+			// finished creating it yet, or an operator deleting the stream
+			// while this is running. Neither is a reason to stop consuming
+			// forever, which is what returning here used to do.
+			recreated := true
+			for _, t := range topics {
+				if err := q.ensureGroup(ctx, t); err != nil {
+					recreated = false
+					if ctx.Err() == nil {
+						slog.Warn("queue: could not recreate the consumer group",
+							"topic", t, "error", err)
+					}
+				}
+			}
+			if !recreated {
+				// A missing group comes back immediately and ignores Block, so
+				// a group that cannot be recreated — a read-only replica, an
+				// ACL without XGROUP — would spin this loop at full speed and
+				// fill the log. Wait out one read instead.
+				select {
+				case <-ctx.Done():
+					return nil
+				case <-time.After(q.opts.Block):
+				}
+			}
 			continue
 		case err != nil:
 			if ctx.Err() != nil {

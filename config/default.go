@@ -15,7 +15,10 @@ import (
 
 type config struct {
 	exit chan bool
-	opts Options
+	// exitOnce guards exit: the select-then-close in Close is a check followed
+	// by an act, so two callers can both reach the close.
+	exitOnce sync.Once
+	opts     Options
 
 	sync.RWMutex
 	// the current snapshot
@@ -196,12 +199,7 @@ func (c *config) Sync() error {
 }
 
 func (c *config) Close() error {
-	select {
-	case <-c.exit:
-		return nil
-	default:
-		close(c.exit)
-	}
+	c.exitOnce.Do(func() { close(c.exit) })
 	return nil
 }
 

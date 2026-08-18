@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 	"log"
+	"log/slog"
+	"sort"
 
 	"github.com/go-admin-team/go-admin-core/config"
 	"github.com/go-admin-team/go-admin-core/config/source"
@@ -55,13 +57,29 @@ type Config struct {
 	Extend      interface{}           `yaml:"extend"`
 }
 
-// 多db改造
+// multiDatabase fills in the databases map for a single-database setup, where
+// the wildcard entry means "one database serves every tenant".
 func (e *Config) multiDatabase() {
 	if len(*e.Databases) == 0 {
 		*e.Databases = map[string]*Database{
 			"*": e.Database,
 		}
+		return
+	}
 
+	// The wildcard short-circuits the per-tenant lookup, so anything listed
+	// beside it is dead configuration. Said out loud, because the symptom is
+	// tenants quietly sharing one database rather than an error.
+	if _, wildcard := (*e.Databases)["*"]; wildcard && len(*e.Databases) > 1 {
+		others := make([]string, 0, len(*e.Databases)-1)
+		for name := range *e.Databases {
+			if name != "*" {
+				others = append(others, name)
+			}
+		}
+		sort.Strings(others)
+		slog.Warn("config: the wildcard database entry hides the per-tenant ones, which will never be used",
+			"ignored", others)
 	}
 }
 
