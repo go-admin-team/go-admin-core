@@ -68,6 +68,38 @@ jobs:
       - name: Test with race detector
         run: make test-race
 
+  canary:
+    name: canary / go-admin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The consumer is built from its own default branch, against this tree.
+      # A written compatibility promise stops nobody; this is the check that
+      # fails when a change here breaks the open-source consumer. When the
+      # consumer's own branch is broken, the fix belongs in that repository.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: go-admin-team/go-admin
+          path: consumer
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: |
+            go.sum
+            consumer/go.sum
+
+      - name: Build the consumer against this tree
+        # setup-go pins GOTOOLCHAIN=local, which fails outright when either
+        # module asks for a newer Go than the one it installed — the consumer
+        # was a minor ahead the first time this job ran. Letting the toolchain
+        # resolve is what a consumer's own build does anyway.
+        env:
+          GOTOOLCHAIN: auto
+        run: scripts/canary.sh "${{ github.workspace }}/consumer"
+
   vuln:
     name: govulncheck
     runs-on: ubuntu-latest
