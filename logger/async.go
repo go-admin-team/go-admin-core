@@ -347,9 +347,18 @@ func (a *asyncLogger) flushBatch(batch *[]*logEntry) {
 
 // flushRemaining 刷新剩余日志（关闭时调用）
 func (a *asyncLogger) flushRemaining() {
-	close(a.buffer)
+	// Drained rather than closed. Log checks the closed flag before sending, but
+	// a goroutine that passed that check can still be between it and the send,
+	// and closing the channel underneath it would panic instead of dropping the
+	// entry.
+	for {
+		var entry *logEntry
+		select {
+		case entry = <-a.buffer:
+		default:
+			return
+		}
 
-	for entry := range a.buffer {
 		logger := a.logger
 		if len(entry.fields) > 0 {
 			logger = logger.Fields(entry.fields)

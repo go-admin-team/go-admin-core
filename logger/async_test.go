@@ -520,8 +520,18 @@ func TestSyncWaitsForEntriesAlreadyTakenFromTheChannel(t *testing.T) {
 	if !ok {
 		t.Fatal("the async logger must expose Sync")
 	}
-	if err := syncer.Sync(); err != nil {
-		t.Fatalf("Sync: %v", err)
+	// Bounded on purpose: with no timer to fall back on, a Sync that stopped
+	// returning would hang the whole package until the test binary timed out,
+	// and the failure would name the wrong thing.
+	done := make(chan error, 1)
+	go func() { done <- syncer.Sync() }()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("Sync: %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("Sync did not return")
 	}
 
 	if got := buf.String(); !strings.Contains(got, "written before sync") {
