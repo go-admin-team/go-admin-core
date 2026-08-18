@@ -1063,12 +1063,56 @@ type Logger = newcasbin.Logger
 func NewWithSeconds() *cron.Cron
 
 ## github.com/go-admin-team/go-admin-core/sdk/pkg/jwtauth
+const JwtPayloadKey = newjwtauth.JwtPayloadKey
+var (
+	ErrEmptyAuthHeader = newjwtauth.ErrEmptyAuthHeader
+	ErrEmptyCookieToken = newjwtauth.ErrEmptyCookieToken
+	ErrEmptyParamToken = newjwtauth.ErrEmptyParamToken
+	ErrEmptyQueryToken = newjwtauth.ErrEmptyQueryToken
+	ErrExpiredToken = newjwtauth.ErrExpiredToken
+	ErrFailedAuthentication = newjwtauth.ErrFailedAuthentication
+	ErrFailedTokenCreation = newjwtauth.ErrFailedTokenCreation
+	ErrForbidden = newjwtauth.ErrForbidden
+	ErrInvalidAuthHeader = newjwtauth.ErrInvalidAuthHeader
+	ErrInvalidClaims = newjwtauth.ErrInvalidClaims
+	ErrInvalidPrivKey = newjwtauth.ErrInvalidPrivKey
+	ErrInvalidPubKey = newjwtauth.ErrInvalidPubKey
+	ErrInvalidSigningAlgorithm = newjwtauth.ErrInvalidSigningAlgorithm
+	ErrInvalidVerificationode = newjwtauth.ErrInvalidVerificationode
+	ErrMissingAuthenticatorFunc = newjwtauth.ErrMissingAuthenticatorFunc
+	ErrMissingExpField = newjwtauth.ErrMissingExpField
+	ErrMissingLoginValues = newjwtauth.ErrMissingLoginValues
+	ErrMissingOrigIatField = newjwtauth.ErrMissingOrigIatField
+	ErrMissingSecretKey = newjwtauth.ErrMissingSecretKey
+	ErrNoPrivKeyFile = newjwtauth.ErrNoPrivKeyFile
+	ErrNoPubKeyFile = newjwtauth.ErrNoPubKeyFile
+	ErrWrongFormatOfExp = newjwtauth.ErrWrongFormatOfExp
+	DataScopeKey = newjwtauth.DataScopeKey
+	DeptId = newjwtauth.DeptId
+	DeptName = newjwtauth.DeptName
+	IdentityKey = newjwtauth.IdentityKey
+	NiceKey = newjwtauth.NiceKey
+	RKey = newjwtauth.RKey
+	RoleIdKey = newjwtauth.RoleIdKey
+	RoleKey = newjwtauth.RoleKey
+	RoleNameKey = newjwtauth.RoleNameKey
 func GetToken(c *gin.Context) string
 type GinJWTMiddleware = newjwtauth.GinJWTMiddleware
 func New(m *GinJWTMiddleware) (*GinJWTMiddleware, error)
 type MapClaims = newjwtauth.MapClaims
 func ExtractClaims(c *gin.Context) MapClaims
 func ExtractClaimsFromToken(token *jwt.Token) MapClaims
+
+## github.com/go-admin-team/go-admin-core/sdk/pkg/jwtauth/user
+func ExtractClaims(c *gin.Context) jwtauth.MapClaims
+func Get(c *gin.Context, key string) interface{}
+func GetDeptId(c *gin.Context) int
+func GetDeptName(c *gin.Context) string
+func GetRoleId(c *gin.Context) int
+func GetRoleName(c *gin.Context) string
+func GetUserId(c *gin.Context) int
+func GetUserIdStr(c *gin.Context) string
+func GetUserName(c *gin.Context) string
 
 ## github.com/go-admin-team/go-admin-core/sdk/pkg/logger
 func SetupLogger(opts ...logger.Option) logger.Logger
