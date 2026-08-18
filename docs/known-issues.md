@@ -32,43 +32,7 @@ production code path reaches it today.
 the four-layer `loader`/`reader`/`encoder`/`secrets` stack has no users. This
 race disappears with that work rather than being patched in place.
 
-## 2. The open-source go-admin does not build against this tree
-
-**Excluded from:** the canary run — it is expected to fail until the version
-unification work lands.
-
-**Reproduce:**
-
-```sh
-scripts/canary.sh /path/to/go-admin
-```
-
-**Status** (measured 2026-08-17): every consumer already on the merged-module
-layout builds clean. The open-source `go-admin`, still pinned to `v1.5.3-rc`,
-does not.
-
-**Why it fails** — four independent causes, in the order the compiler reports
-them:
-
-1. It still requires the separate `go-admin-core/sdk` module, which no longer
-   exists after the module merge.
-2. `captcha.NewCacheStore` moved when `sdk/pkg/captcha` was promoted to a
-   top-level package.
-3. `GetCasbinKey` and `GetCrontabKey` were renamed to `GetCasbinByTenant` and
-   `GetCrontabByTenant`.
-4. `SetCrontab(string, *cron.Cron)` became `SetCrontab(*cron.Cron)` — a
-   same-name, different-signature change.
-
-Beyond these, the consumer pins `casbin/v2` while this module is on
-`casbin/v3`. `Runtime` exposes `*casbin.SyncedEnforcer` directly, and across a
-major version that is a different type, so no deprecation shim can bridge it.
-
-**Plan:** this is a planned breaking upgrade, not a regression. It needs a
-codemod shipped alongside it. Note that cause 4 is the dangerous class: the
-obvious fix is to drop the first argument, which lands on a method that used to
-deadlock on call until it was repaired.
-
-## 3. Integration tests require a live MySQL
+## 2. Integration tests require a live MySQL
 
 **Excluded from:** every target, via `testing.Short()` guards in the tests
 themselves.
