@@ -10,12 +10,14 @@ import (
 // implementation selected on the channel and then closed it, which is a check
 // followed by an act: two callers could both find it open and both close it,
 // and the second one panics.
+//
+// The value is built here rather than through NewConfig because only the exit
+// channel takes part in the race, and NewConfig starts a watcher that outlives
+// Close by a second — three thousand of those is a lot of goroutines to hold
+// open for a race that does not involve them.
 func TestCloseIsSafeUnderConcurrency(t *testing.T) {
 	for i := 0; i < 3000; i++ {
-		c, err := NewConfig()
-		if err != nil {
-			t.Fatalf("NewConfig: %v", err)
-		}
+		c := &config{exit: make(chan bool)}
 
 		var wg sync.WaitGroup
 		start := make(chan struct{})
