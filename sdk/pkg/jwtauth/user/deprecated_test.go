@@ -1,6 +1,7 @@
 package user_test
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -12,10 +13,30 @@ import (
 )
 
 // withClaims builds a context carrying the payload the accessors read.
+//
+// The request matters: an accessor whose claim is absent logs the method and
+// path, so a context without one panics on a nil dereference rather than
+// returning the zero value the caller expects.
 func withClaims(claims jwtauth.MapClaims) *gin.Context {
+	gin.SetMode(gin.TestMode)
+
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
+	c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
 	c.Set(jwtauth.JwtPayloadKey, claims)
 	return c
+}
+
+// An absent claim is a normal condition — the accessors warn and return a zero
+// value — so it must not take the process down.
+func TestAbsentClaimReturnsZero(t *testing.T) {
+	c := withClaims(jwtauth.MapClaims{})
+
+	if got := olduser.GetDeptName(c); got != "" {
+		t.Errorf("GetDeptName with no claim: got %#v, want an empty string", got)
+	}
+	if got := olduser.GetUserId(c); got != 0 {
+		t.Errorf("GetUserId with no claim: got %#v, want 0", got)
+	}
 }
 
 // Every accessor has to return what the package it forwards to returns. A shim
