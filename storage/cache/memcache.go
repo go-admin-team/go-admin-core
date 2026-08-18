@@ -40,6 +40,10 @@ var _ storage.Cache = (*MemCache)(nil)
 
 // NewMemCache returns a cache that sweeps expired entries every
 // defaultSweepInterval. Call Close when the instance is not process-wide.
+// String identifies the backend, which is what the deprecated AdapterCache
+// interface reports through storage.LegacyAdapter.
+func (c *MemCache) String() string { return "memory" }
+
 func NewMemCache() *MemCache {
 	return NewMemCacheWithSweep(defaultSweepInterval)
 }
