@@ -341,6 +341,8 @@ func (e *Application) GetMiddleware(key string) interface{} {
 
 // SetCacheAdapter 设置缓存
 func (e *Application) SetCacheAdapter(c storage.AdapterCache) {
+	e.mux.Lock()
+	defer e.mux.Unlock()
 	e.cache = c
 }
 
@@ -351,22 +353,48 @@ func (e *Application) GetCacheAdapter() storage.AdapterCache {
 
 // GetCacheAdapterPrefix 获取prefix标记的cache
 func (e *Application) GetCacheAdapterPrefix(prefix string) storage.AdapterCache {
-	return NewCache(prefix, e.cache, "")
+	e.mux.RLock()
+	cache := e.cache
+	e.mux.RUnlock()
+	return NewCache(prefix, cache, "")
 }
 
 // SetQueueAdapter 设置队列适配器
+//
+// Reloading the configuration calls this again while requests are in flight,
+// so the field is guarded.
 func (e *Application) SetQueueAdapter(c storage.AdapterQueue) {
+	e.mux.Lock()
+	defer e.mux.Unlock()
 	e.queue = c
+}
+
+// queueAdapter returns the configured queue, falling back to the process-wide
+// memory queue.
+//
+// The fallback has to be that one shared instance rather than a fresh queue:
+// a producer and a consumer that both asked for "the queue" would otherwise be
+// handed different ones, and every message would be dropped in silence.
+func (e *Application) queueAdapter() storage.AdapterQueue {
+	e.mux.RLock()
+	defer e.mux.RUnlock()
+	if e.queue != nil {
+		return e.queue
+	}
+	return e.memoryQueue
 }
 
 // GetQueueAdapter 获取队列适配器
 func (e *Application) GetQueueAdapter() storage.AdapterQueue {
-	return NewQueue(e.GetDefaultTenant(), e.queue)
+	return NewQueue(e.GetDefaultTenant(), e.queueAdapter())
 }
 
 // GetQueuePrefix 获取标记的queue
+//
+// This is the queue the configuration selected. Prefer it over GetMemoryQueue,
+// which ignores configuration and never leaves the process.
 func (e *Application) GetQueuePrefix(key string) storage.AdapterQueue {
-	return NewQueue(key, e.queue)
+	return NewQueue(key, e.queueAdapter())
 }
 
 // GetQueue 获取默认租户的队列
@@ -418,6 +446,11 @@ func (e *Application) GetStreamMessage(id, stream string, value map[string]inter
 	return message, nil
 }
 
+// GetMemoryQueue returns the in-process queue.
+//
+// Deprecated: use GetQueuePrefix. This always returns the in-process queue,
+// whatever the configuration selected, so messages published through it are
+// invisible to every other instance.
 func (e *Application) GetMemoryQueue(prefix string) storage.AdapterQueue {
 	return NewQueue(prefix, e.memoryQueue)
 }
