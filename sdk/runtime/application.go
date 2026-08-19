@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"maps"
 	"net/http"
+	"slices"
 	"sync"
 
 	"github.com/casbin/casbin/v3"
@@ -424,7 +425,15 @@ func (e *Application) SetHandlerByTenant(tenant string, routerGroup func(r *gin.
 func (e *Application) GetAllHandler() map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc) {
 	e.mux.RLock()
 	defer e.mux.RUnlock()
-	return maps.Clone(e.handler)
+
+	// The values are slices, so cloning the map is not enough: the copies
+	// would share their arrays with the originals, and a caller appending to
+	// one writes the slot the next SetHandlerByTenant writes.
+	out := make(map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc), len(e.handler))
+	for tenant, fns := range e.handler {
+		out[tenant] = slices.Clone(fns)
+	}
+	return out
 }
 
 func (e *Application) GetHandler() []func(r *gin.RouterGroup, hand ...*gin.HandlerFunc) {
