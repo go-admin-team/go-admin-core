@@ -1,9 +1,9 @@
 package config
 
 import (
-	"github.com/go-admin-team/go-admin-core/storage"
-	"github.com/go-admin-team/go-admin-core/storage/cache"
-	redisstore "github.com/go-admin-team/go-admin-core/storage/redis"
+	"github.com/go-admin-team/go-admin-core/v2/storage"
+	"github.com/go-admin-team/go-admin-core/v2/storage/cache"
+	redisstore "github.com/go-admin-team/go-admin-core/v2/storage/redis"
 )
 
 // Cache selects the cache backend.

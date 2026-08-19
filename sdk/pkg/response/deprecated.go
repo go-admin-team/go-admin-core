@@ -9,7 +9,7 @@
 package response
 
 import (
-	newresponse "github.com/go-admin-team/go-admin-core/response"
+	newresponse "github.com/go-admin-team/go-admin-core/v2/response"
 	"github.com/gin-gonic/gin"
 )
 

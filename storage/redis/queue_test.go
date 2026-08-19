@@ -10,9 +10,9 @@ import (
 
 	goredis "github.com/redis/go-redis/v9"
 
-	"github.com/go-admin-team/go-admin-core/storage"
-	"github.com/go-admin-team/go-admin-core/storage/cachetest"
-	redisstore "github.com/go-admin-team/go-admin-core/storage/redis"
+	"github.com/go-admin-team/go-admin-core/v2/storage"
+	"github.com/go-admin-team/go-admin-core/v2/storage/cachetest"
+	redisstore "github.com/go-admin-team/go-admin-core/v2/storage/redis"
 )
 
 // The same suite that validates the in-memory implementation. One admin client

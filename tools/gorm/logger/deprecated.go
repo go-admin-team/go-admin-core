@@ -13,7 +13,7 @@
 package logger
 
 import (
-	newgormlog "github.com/go-admin-team/go-admin-core/tools/gorm/gormlog"
+	newgormlog "github.com/go-admin-team/go-admin-core/v2/tools/gorm/gormlog"
 	"gorm.io/gorm/logger"
 )
 

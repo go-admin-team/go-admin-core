@@ -7,9 +7,9 @@ import (
 
 	goredis "github.com/redis/go-redis/v9"
 
-	"github.com/go-admin-team/go-admin-core/storage"
-	"github.com/go-admin-team/go-admin-core/storage/cachetest"
-	redisstore "github.com/go-admin-team/go-admin-core/storage/redis"
+	"github.com/go-admin-team/go-admin-core/v2/storage"
+	"github.com/go-admin-team/go-admin-core/v2/storage/cachetest"
+	redisstore "github.com/go-admin-team/go-admin-core/v2/storage/redis"
 )
 
 // redisURL is where the tests look for a server. CI provides one through a

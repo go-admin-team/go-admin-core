@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-admin-team/go-admin-core/storage"
+	"github.com/go-admin-team/go-admin-core/v2/storage"
 )
 
 // 这些测试锁定「队列写满时不得泄漏 goroutine」这一约定。

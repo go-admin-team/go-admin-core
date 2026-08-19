@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/go-admin-team/go-admin-core/logger"
-	log "github.com/go-admin-team/go-admin-core/logger"
+	"github.com/go-admin-team/go-admin-core/v2/logger"
+	log "github.com/go-admin-team/go-admin-core/v2/logger"
 )
 
 // RotationConfig 日志轮转配置

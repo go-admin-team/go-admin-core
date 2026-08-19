@@ -9,7 +9,7 @@
 package log
 
 import (
-	newaudit "github.com/go-admin-team/go-admin-core/observe/audit"
+	newaudit "github.com/go-admin-team/go-admin-core/v2/observe/audit"
 	"time"
 )
 

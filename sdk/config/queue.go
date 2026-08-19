@@ -3,9 +3,9 @@ package config
 import (
 	"time"
 
-	"github.com/go-admin-team/go-admin-core/storage"
-	"github.com/go-admin-team/go-admin-core/storage/queue"
-	redisstore "github.com/go-admin-team/go-admin-core/storage/redis"
+	"github.com/go-admin-team/go-admin-core/v2/storage"
+	"github.com/go-admin-team/go-admin-core/v2/storage/queue"
+	redisstore "github.com/go-admin-team/go-admin-core/v2/storage/redis"
 )
 
 // Queue selects the queue backend, on the same terms as Cache: memory unless a

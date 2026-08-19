@@ -14,8 +14,8 @@ package user
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/go-admin-team/go-admin-core/jwtauth"
-	newuser "github.com/go-admin-team/go-admin-core/jwtauth/user"
+	"github.com/go-admin-team/go-admin-core/v2/jwtauth"
+	newuser "github.com/go-admin-team/go-admin-core/v2/jwtauth/user"
 )
 
 // Deprecated: use jwtauth/user.ExtractClaims.

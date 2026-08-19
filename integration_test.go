@@ -4,20 +4,20 @@ import (
 	"testing"
 
 	// 测试新路径
-	newcaptcha "github.com/go-admin-team/go-admin-core/captcha"
-	newjwtauth "github.com/go-admin-team/go-admin-core/jwtauth"
-	newresponse "github.com/go-admin-team/go-admin-core/response"
-	newcasbin "github.com/go-admin-team/go-admin-core/casbin"
-	newaudit "github.com/go-admin-team/go-admin-core/observe/audit"
-	newgormlog "github.com/go-admin-team/go-admin-core/tools/gorm/gormlog"
+	newcaptcha "github.com/go-admin-team/go-admin-core/v2/captcha"
+	newjwtauth "github.com/go-admin-team/go-admin-core/v2/jwtauth"
+	newresponse "github.com/go-admin-team/go-admin-core/v2/response"
+	newcasbin "github.com/go-admin-team/go-admin-core/v2/casbin"
+	newaudit "github.com/go-admin-team/go-admin-core/v2/observe/audit"
+	newgormlog "github.com/go-admin-team/go-admin-core/v2/tools/gorm/gormlog"
 
 	// 测试旧路径(兼容层)
-	oldcaptcha "github.com/go-admin-team/go-admin-core/sdk/pkg/captcha"
-	oldjwtauth "github.com/go-admin-team/go-admin-core/sdk/pkg/jwtauth"
-	oldresponse "github.com/go-admin-team/go-admin-core/sdk/pkg/response"
-	oldcasbin "github.com/go-admin-team/go-admin-core/sdk/pkg/casbin"
-	oldaudit "github.com/go-admin-team/go-admin-core/observability/audit"
-	oldgormlog "github.com/go-admin-team/go-admin-core/tools/gorm/logger"
+	oldcaptcha "github.com/go-admin-team/go-admin-core/v2/captcha"
+	oldjwtauth "github.com/go-admin-team/go-admin-core/v2/jwtauth"
+	oldresponse "github.com/go-admin-team/go-admin-core/v2/response"
+	oldcasbin "github.com/go-admin-team/go-admin-core/v2/casbin"
+	oldaudit "github.com/go-admin-team/go-admin-core/v2/observe/audit"
+	oldgormlog "github.com/go-admin-team/go-admin-core/v2/tools/gorm/gormlog"
 
 	"github.com/mojocn/base64Captcha"
 	"gorm.io/gorm/logger"

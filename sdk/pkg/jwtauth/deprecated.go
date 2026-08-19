@@ -11,7 +11,7 @@ package jwtauth
 
 import (
 	"github.com/gin-gonic/gin"
-	newjwtauth "github.com/go-admin-team/go-admin-core/jwtauth"
+	newjwtauth "github.com/go-admin-team/go-admin-core/v2/jwtauth"
 	"github.com/golang-jwt/jwt/v5"
 )
 

@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-admin-team/go-admin-core/config/loader"
-	"github.com/go-admin-team/go-admin-core/config/loader/memory"
+	"github.com/go-admin-team/go-admin-core/v2/config/loader"
+	"github.com/go-admin-team/go-admin-core/v2/config/loader/memory"
 )
 
 // unwatchableLoader loads normally and refuses to be watched, which is the

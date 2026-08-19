@@ -1,7 +1,7 @@
 package logger
 
 import (
-	"github.com/go-admin-team/go-admin-core/logger"
+	"github.com/go-admin-team/go-admin-core/v2/logger"
 )
 
 // SetupLogger 简化的日志初始化（推荐使用 logger.NewFromConfig）

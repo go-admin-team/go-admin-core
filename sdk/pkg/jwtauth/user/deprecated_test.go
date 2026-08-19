@@ -7,9 +7,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/go-admin-team/go-admin-core/jwtauth"
-	newuser "github.com/go-admin-team/go-admin-core/jwtauth/user"
-	olduser "github.com/go-admin-team/go-admin-core/sdk/pkg/jwtauth/user"
+	"github.com/go-admin-team/go-admin-core/v2/jwtauth"
+	newuser "github.com/go-admin-team/go-admin-core/v2/jwtauth/user"
+	olduser "github.com/go-admin-team/go-admin-core/v2/jwtauth/user"
 )
 
 // withClaims builds a context carrying the payload the accessors read.

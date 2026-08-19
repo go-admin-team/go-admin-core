@@ -9,7 +9,7 @@
 package captcha
 
 import (
-	newcaptcha "github.com/go-admin-team/go-admin-core/captcha"
+	newcaptcha "github.com/go-admin-team/go-admin-core/v2/captcha"
 	"github.com/mojocn/base64Captcha"
 )
 
