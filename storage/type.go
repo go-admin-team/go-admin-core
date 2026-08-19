@@ -49,7 +49,3 @@ type Messager interface {
 }
 
 type ConsumerFunc func(Messager) error
-
-type AdapterLocker interface {
-	String() string
-}

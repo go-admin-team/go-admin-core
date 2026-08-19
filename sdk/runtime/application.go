@@ -2,7 +2,9 @@ package runtime
 
 import (
 	"github.com/gin-gonic/gin"
+	"maps"
 	"net/http"
+	"slices"
 	"sync"
 
 	"github.com/casbin/casbin/v3"
@@ -27,7 +29,6 @@ type Application struct {
 	middlewares   map[string]interface{}                                          // 中间件
 	cache         storage.AdapterCache                                            // 缓存
 	queue         storage.AdapterQueue                                            // 队列
-	locker        storage.AdapterLocker                                           // 分布式锁
 	memoryQueue   storage.AdapterQueue                                            // 内存队列
 	handler       map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc) // 路由处理器
 	routers       []Router                                                        // 路由表
@@ -88,10 +89,13 @@ func (e *Application) GetDb() *gorm.DB {
 }
 
 // GetAllDb 获取所有租户的数据库 (原GetDb改名)
+// GetAllDb returns a snapshot. Handing back the map itself was a race the
+// lock could not fix: it was held across the return and released before the
+// caller read anything.
 func (e *Application) GetAllDb() map[string]*gorm.DB {
-	e.mux.Lock()
-	defer e.mux.Unlock()
-	return e.dbs
+	e.mux.RLock()
+	defer e.mux.RUnlock()
+	return maps.Clone(e.dbs)
 }
 
 func (e *Application) SetBefore(f func()) {
@@ -174,7 +178,9 @@ func (e *Application) SetCasbin(enforcer *casbin.SyncedEnforcer) {
 
 // GetAllCasbin 获取所有租户的casbin (原GetCasbin改名)
 func (e *Application) GetAllCasbin() map[string]*casbin.SyncedEnforcer {
-	return e.casbins
+	e.mux.RLock()
+	defer e.mux.RUnlock()
+	return maps.Clone(e.casbins)
 }
 
 // GetCasbin 获取默认租户的casbin (新增单租户快捷方法)
@@ -300,9 +306,9 @@ func (e *Application) SetCrontab(crontab *cron.Cron) {
 
 // GetAllCrontab 获取所有租户的定时任务 (原GetCrontab改名)
 func (e *Application) GetAllCrontab() map[string]*cron.Cron {
-	e.mux.Lock()
-	defer e.mux.Unlock()
-	return e.crontab
+	e.mux.RLock()
+	defer e.mux.RUnlock()
+	return maps.Clone(e.crontab)
 }
 
 // GetCrontab 获取默认租户的定时任务 (新增单租户快捷方法)
@@ -329,7 +335,9 @@ func (e *Application) SetMiddleware(key string, middleware interface{}) {
 
 // GetAllMiddleware 获取所有中间件
 func (e *Application) GetAllMiddleware() map[string]interface{} {
-	return e.middlewares
+	e.mux.RLock()
+	defer e.mux.RUnlock()
+	return maps.Clone(e.middlewares)
 }
 
 // GetMiddleware 获取对应的中间件
@@ -402,11 +410,6 @@ func (e *Application) GetQueue() storage.AdapterQueue {
 	return e.GetQueuePrefix(e.GetDefaultTenant())
 }
 
-// SetLockerAdapter 设置分布式锁
-func (e *Application) SetLockerAdapter(c storage.AdapterLocker) {
-	e.locker = c
-}
-
 func (e *Application) SetHandler(routerGroup func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)) {
 	e.mux.Lock()
 	defer e.mux.Unlock()
@@ -420,9 +423,17 @@ func (e *Application) SetHandlerByTenant(tenant string, routerGroup func(r *gin.
 }
 
 func (e *Application) GetAllHandler() map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc) {
-	e.mux.Lock()
-	defer e.mux.Unlock()
-	return e.handler
+	e.mux.RLock()
+	defer e.mux.RUnlock()
+
+	// The values are slices, so cloning the map is not enough: the copies
+	// would share their arrays with the originals, and a caller appending to
+	// one writes the slot the next SetHandlerByTenant writes.
+	out := make(map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc), len(e.handler))
+	for tenant, fns := range e.handler {
+		out[tenant] = slices.Clone(fns)
+	}
+	return out
 }
 
 func (e *Application) GetHandler() []func(r *gin.RouterGroup, hand ...*gin.HandlerFunc) {

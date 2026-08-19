@@ -1162,7 +1162,6 @@ func (e *Application) SetDefaultTenant(tenant string)
 func (e *Application) SetEngine(engine http.Handler)
 func (e *Application) SetHandler(routerGroup func(r *gin.RouterGroup, hand ...*gin.HandlerFunc))
 func (e *Application) SetHandlerByTenant(tenant string, routerGroup func(r *gin.RouterGroup, hand ...*gin.HandlerFunc))
-func (e *Application) SetLockerAdapter(c storage.AdapterLocker)
 func (e *Application) SetLogger(l logger.Logger)
 func (e *Application) SetMiddleware(key string, middleware interface{})
 func (e *Application) SetQueueAdapter(c storage.AdapterQueue)
@@ -1315,8 +1314,6 @@ type AdapterCache interface {
 	Decrease(key string) error
 	Expire(key string, dur time.Duration) error
 func LegacyAdapter(c Cache) AdapterCache
-type AdapterLocker interface {
-	String() string
 type AdapterQueue interface {
 	String() string
 	Append(message Messager) error
