@@ -3,6 +3,8 @@ package pkg
 import (
 	"go/parser"
 	"go/token"
+	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -13,7 +15,16 @@ import (
 // The property is which source the code draws from, so it is asserted where it
 // is decidable: in the imports.
 func TestKeysAreDrawnFromACryptographicSource(t *testing.T) {
-	f, err := parser.ParseFile(token.NewFileSet(), "security.go", nil, parser.ImportsOnly)
+	// Located from this file rather than from the working directory: go test
+	// runs in the package directory, but the compiled binary can be run from
+	// anywhere, and a security check that quietly stops checking is worse than
+	// one that was never written.
+	_, self, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("cannot locate this test file")
+	}
+
+	f, err := parser.ParseFile(token.NewFileSet(), filepath.Join(filepath.Dir(self), "security.go"), nil, parser.ImportsOnly)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
