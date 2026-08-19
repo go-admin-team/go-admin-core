@@ -11,8 +11,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 )
@@ -47,27 +49,27 @@ func main() {
 	}
 }
 
-func run(dir string, write bool, out *os.File) (imports, files int, err error) {
-	err = filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+func run(dir string, write bool, out io.Writer) (imports, files int, err error) {
+	err = filepath.WalkDir(dir, func(filePath string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if d.IsDir() {
-			if skipDir(d.Name()) && path != dir {
+			if skipDir(d.Name()) && filePath != dir {
 				return fs.SkipDir
 			}
 			return nil
 		}
-		if !strings.HasSuffix(path, ".go") {
+		if !strings.HasSuffix(filePath, ".go") {
 			return nil
 		}
 
-		src, err := os.ReadFile(path)
+		src, err := os.ReadFile(filePath)
 		if err != nil {
 			return err
 		}
 
-		next, changes, err := rewrite(path, src)
+		next, changes, err := rewrite(filePath, src)
 		if err != nil {
 			// A file that does not parse is reported and stepped over: the
 			// tool has no business deciding a consumer's build is broken.
@@ -78,9 +80,9 @@ func run(dir string, write bool, out *os.File) (imports, files int, err error) {
 			return nil
 		}
 
-		rel, relErr := filepath.Rel(dir, path)
+		rel, relErr := filepath.Rel(dir, filePath)
 		if relErr != nil {
-			rel = path
+			rel = filePath
 		}
 		for _, c := range changes {
 			note := ""
@@ -92,7 +94,14 @@ func run(dir string, write bool, out *os.File) (imports, files int, err error) {
 		}
 
 		if write {
-			if err := os.WriteFile(path, next, 0o644); err != nil {
+			// The consumer's permission bits are theirs. A migration that
+			// quietly turns 0600 into 0644 is the kind of change nobody
+			// thinks to look for.
+			mode := fs.FileMode(0o644)
+			if info, err := d.Info(); err == nil {
+				mode = info.Mode().Perm()
+			}
+			if err := os.WriteFile(filePath, next, mode); err != nil {
 				return err
 			}
 		}
@@ -112,14 +121,16 @@ func skipDir(name string) bool {
 	return false
 }
 
-func packageName(path string) string {
+// packageName is asked about import paths, which are slash separated on every
+// platform, so it uses path rather than filepath.
+func packageName(importPath string) string {
 	for _, m := range moves {
-		switch path {
+		switch importPath {
 		case m.from:
 			return m.name
 		case m.to:
 			return m.newName
 		}
 	}
-	return filepath.Base(path)
+	return path.Base(importPath)
 }
