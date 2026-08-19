@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/go-admin-team/go-admin-core/v2/logger"
-	log "github.com/go-admin-team/go-admin-core/v2/logger"
 )
 
 // RotationConfig 日志轮转配置
@@ -92,9 +91,9 @@ func (e Logger) Setup() {
 	// 选择适配器
 	switch e.adapterType() {
 	case "zap":
-		log.DefaultLogger = logger.NewZapLogger(opts...)
+		logger.DefaultLogger = logger.NewZapLogger(opts...)
 	default:
-		log.DefaultLogger = logger.NewLogrusLogger(opts...)
+		logger.DefaultLogger = logger.NewLogrusLogger(opts...)
 	}
 }
 
