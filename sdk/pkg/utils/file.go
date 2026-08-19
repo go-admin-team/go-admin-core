@@ -2,8 +2,8 @@ package utils
 
 import (
 	"errors"
+	"io"
 	"io/ioutil"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -62,9 +62,11 @@ func MkDir(src string) error {
 }
 
 // Open 打开文件
+//
+// The caller owns the file and closes it. Closing it here — which a deferred
+// call did — handed back a file that was already closed.
 func Open(name string, flag int, perm os.FileMode) (*os.File, error) {
 	f, err := os.OpenFile(name, flag, perm)
-	defer f.Close()
 	if err != nil {
 		return nil, err
 	}
@@ -75,27 +77,26 @@ func Open(name string, flag int, perm os.FileMode) (*os.File, error) {
 // GetImgType 获取Img文件类型
 func GetImgType(p string) (string, error) {
 	file, err := os.Open(p)
-	defer file.Close()
 	if err != nil {
-		log.Println(err)
-		os.Exit(1)
+		return "", err
 	}
+	defer file.Close()
 
 	buff := make([]byte, 512)
 
-	_, err = file.Read(buff)
-
-	if err != nil {
-		log.Println(err)
-		os.Exit(1)
+	// DetectContentType is given what was actually read: a file shorter than
+	// the buffer used to be padded with zeroes and detected as those.
+	n, err := file.Read(buff)
+	if err != nil && !errors.Is(err, io.EOF) {
+		return "", err
 	}
 
-	filetype := http.DetectContentType(buff)
+	filetype := http.DetectContentType(buff[:n])
 
 	ext := imgext.Get()
 
 	for i := 0; i < len(ext); i++ {
-		if strings.Contains(ext[i], filetype[6:len(filetype)]) {
+		if strings.Contains(ext[i], filetype[6:]) {
 			return filetype, nil
 		}
 	}
@@ -106,21 +107,19 @@ func GetImgType(p string) (string, error) {
 // GetType 获取文件类型
 func GetType(p string) (string, error) {
 	file, err := os.Open(p)
-	defer file.Close()
 	if err != nil {
-		log.Println(err)
-		os.Exit(1)
+		return "", err
 	}
+	defer file.Close()
 
 	buff := make([]byte, 512)
 
-	_, err = file.Read(buff)
-
-	if err != nil {
-		log.Println(err)
+	n, err := file.Read(buff)
+	if err != nil && !errors.Is(err, io.EOF) {
+		return "", err
 	}
 
-	filetype := http.DetectContentType(buff)
+	filetype := http.DetectContentType(buff[:n])
 
 	//ext := GetExt(p)
 	//var list = strings.Split(filetype, "/")
