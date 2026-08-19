@@ -40,7 +40,7 @@ symbol rather than a wrong import.
 | --- | --- | --- |
 | `make ci` | tidy, build, vet, the race detector across the whole tree with nothing excluded, and the exported API matching `api/core.txt` | anything about consumers |
 | `scripts/canary.sh DIR` | a consumer, migrated by `coreupgrade`, compiles against this tree | that it runs — only that it builds |
-| `scripts/check-language.sh origin/main` | no Chinese in added Go lines or in commit subjects | uncommitted work; it reads committed state |
+| `scripts/check-language.sh origin/main` | no Chinese in added Go lines, or anywhere in a commit message — subject and body both | uncommitted work; it reads committed state |
 
 ## Traps
 
