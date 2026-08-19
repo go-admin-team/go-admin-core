@@ -8,6 +8,7 @@ import (
 	"go/token"
 	"sort"
 	"strconv"
+	"strings"
 )
 
 // change is one import line the tool would replace, reported whether or not
@@ -23,7 +24,7 @@ type change struct {
 // than substituting text so that the path appearing in a comment, a string
 // literal or a struct tag is left alone; only the import block is touched, and
 // the rest of the file keeps its formatting byte for byte.
-func rewrite(filename string, src []byte) ([]byte, []change, error) {
+func rewrite(filename string, src []byte, toMajor bool) ([]byte, []change, error) {
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, filename, src, parser.ImportsOnly|parser.ParseComments)
 	if err != nil {
@@ -44,7 +45,7 @@ func rewrite(filename string, src []byte) ([]byte, []change, error) {
 			continue
 		}
 
-		m, ok := lookup(path)
+		to, m, ok := target(path, toMajor)
 		if !ok {
 			continue
 		}
@@ -62,7 +63,7 @@ func rewrite(filename string, src []byte) ([]byte, []change, error) {
 			name = m.name
 		}
 
-		text := strconv.Quote(m.to)
+		text := strconv.Quote(to)
 		if name != "" {
 			text = name + " " + text
 		}
@@ -75,7 +76,7 @@ func rewrite(filename string, src []byte) ([]byte, []change, error) {
 		changes = append(changes, change{
 			Line:    fset.Position(spec.Pos()).Line,
 			From:    path,
-			To:      m.to,
+			To:      to,
 			Aliased: added,
 		})
 	}
@@ -106,6 +107,39 @@ func rewrite(filename string, src []byte) ([]byte, []change, error) {
 	}
 
 	return out, changes, nil
+}
+
+// target returns the path that replaces importPath. The two rules compose in
+// one direction only: a package is moved first and then carried across the
+// major version, so sdk/pkg/response becomes response becomes v2/response.
+func target(importPath string, toMajor bool) (string, move, bool) {
+	m, moved := lookup(importPath)
+
+	out := importPath
+	if moved {
+		out = m.to
+	}
+	if toMajor {
+		if major, ok := withMajor(out); ok {
+			out = major
+		}
+	}
+	return out, m, out != importPath
+}
+
+// withMajor puts a path of this module on its major version. A path already
+// there is left alone, and so is a module whose path merely starts with the
+// same characters — go-admin-core-extra is not this module.
+func withMajor(importPath string) (string, bool) {
+	switch {
+	case importPath == majorPath || strings.HasPrefix(importPath, majorPath+"/"):
+		return "", false
+	case importPath == strings.TrimSuffix(mod, "/"):
+		return majorPath, true
+	case strings.HasPrefix(importPath, mod):
+		return majorPath + "/" + strings.TrimPrefix(importPath, mod), true
+	}
+	return "", false
 }
 
 func lookup(path string) (move, bool) {

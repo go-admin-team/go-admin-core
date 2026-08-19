@@ -21,9 +21,12 @@ import (
 
 func main() {
 	write := flag.Bool("w", false, "write the files instead of reporting what would change")
+	major := flag.Bool("v2", false, "also move every import of this module onto its v2 path")
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "usage: coreupgrade [-w] DIR\n\n")
+		fmt.Fprintf(os.Stderr, "usage: coreupgrade [-w] [-v2] DIR\n\n")
 		fmt.Fprintf(os.Stderr, "Rewrites deprecated go-admin-core imports. Without -w it only reports.\n")
+		fmt.Fprintf(os.Stderr, "With -v2 it also moves every import of this module onto the v2 path,\n")
+		fmt.Fprintf(os.Stderr, "which Go requires from that major version on. Run go mod tidy after.\n")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -33,7 +36,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	n, files, err := run(flag.Arg(0), *write, os.Stdout)
+	n, files, err := run(flag.Arg(0), *write, *major, os.Stdout)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "coreupgrade:", err)
 		os.Exit(1)
@@ -49,7 +52,7 @@ func main() {
 	}
 }
 
-func run(dir string, write bool, out io.Writer) (imports, files int, err error) {
+func run(dir string, write, toMajor bool, out io.Writer) (imports, files int, err error) {
 	err = filepath.WalkDir(dir, func(filePath string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -69,7 +72,7 @@ func run(dir string, write bool, out io.Writer) (imports, files int, err error) 
 			return err
 		}
 
-		next, changes, err := rewrite(filePath, src)
+		next, changes, err := rewrite(filePath, src, toMajor)
 		if err != nil {
 			// A file that does not parse is reported and stepped over: the
 			// tool has no business deciding a consumer's build is broken.

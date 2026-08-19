@@ -25,3 +25,8 @@ var moves = []move{
 	{from: mod + "observability/audit", to: mod + "observe/audit", name: "audit", newName: "audit"},
 	{from: mod + "tools/gorm/logger", to: mod + "tools/gorm/gormlog", name: "logger", newName: "gormlog"},
 }
+
+// majorPath is where this module lives once it carries a major version. Go
+// requires the suffix from v2 on, so every import of this module changes, not
+// only the ones that also moved.
+const majorPath = mod + "v2"
