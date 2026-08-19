@@ -22,6 +22,8 @@ func dialedClient(t *testing.T) *Client {
 		if err != nil {
 			return
 		}
+		defer conn.Close()
+
 		// Hold the connection open; the test drives the other end.
 		for {
 			if _, _, err := conn.ReadMessage(); err != nil {
