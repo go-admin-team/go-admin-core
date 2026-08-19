@@ -139,7 +139,7 @@ var _ = fmt.Sprint
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got, changes, err := rewrite("x.go", []byte(c.in))
+			got, changes, err := rewrite("x.go", []byte(c.in), false)
 			if err != nil {
 				t.Fatalf("rewrite: %v", err)
 			}
@@ -208,7 +208,7 @@ func TestWriteKeepsThePermissionBits(t *testing.T) {
 		t.Fatalf("WriteFile: %v", err)
 	}
 
-	if _, _, err := run(dir, true, io.Discard); err != nil {
+	if _, _, err := run(dir, true, false, io.Discard); err != nil {
 		t.Fatalf("run: %v", err)
 	}
 
@@ -247,7 +247,7 @@ var _ = api.Api{}
 var _ = captcha.New
 `
 
-	got, _, err := rewrite("x.go", []byte(in))
+	got, _, err := rewrite("x.go", []byte(in), false)
 	if err != nil {
 		t.Fatalf("rewrite: %v", err)
 	}
@@ -276,7 +276,7 @@ import (
 var  _ = response.Error
 `
 
-	got, changes, err := rewrite("x.go", []byte(in))
+	got, changes, err := rewrite("x.go", []byte(in), false)
 	if err != nil {
 		t.Fatalf("rewrite: %v", err)
 	}
@@ -285,5 +285,120 @@ var  _ = response.Error
 	}
 	if !strings.Contains(string(got), "var  _ = response.Error") {
 		t.Errorf("the double space was reformatted away:\n%s", got)
+	}
+}
+
+// Go requires the major version in the path from v2 on, so -v2 touches every
+// import of this module, not only the ones that also moved.
+func TestTargetWithMajor(t *testing.T) {
+	const bare = "github.com/go-admin-team/go-admin-core"
+
+	cases := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{
+			name: "an ordinary package gains the version",
+			in:   bare + "/sdk/runtime",
+			want: bare + "/v2/sdk/runtime",
+		},
+		{
+			name: "the module root gains it too",
+			in:   bare,
+			want: bare + "/v2",
+		},
+		{
+			name: "a moved package is moved first, then carried across",
+			in:   bare + "/sdk/pkg/response",
+			want: bare + "/v2/response",
+		},
+		{
+			name: "a path already on v2 is left alone",
+			in:   bare + "/v2/sdk/runtime",
+			want: bare + "/v2/sdk/runtime",
+		},
+		{
+			name: "another module that starts the same way is not this one",
+			in:   bare + "-extra/sdk/runtime",
+			want: bare + "-extra/sdk/runtime",
+		},
+		{
+			name: "someone else's module is untouched",
+			in:   "gorm.io/gorm",
+			want: "gorm.io/gorm",
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got, _, changed := target(c.in, true)
+			if got != c.want {
+				t.Errorf("target(%q) = %q, want %q", c.in, got, c.want)
+			}
+			if want := c.in != c.want; changed != want {
+				t.Errorf("changed = %v, want %v", changed, want)
+			}
+		})
+	}
+}
+
+// Without the flag nothing gains a version, which is what a consumer staying
+// on v1 has to be able to rely on.
+func TestTargetWithoutMajorLeavesTheVersionAlone(t *testing.T) {
+	for _, in := range []string{
+		"github.com/go-admin-team/go-admin-core/sdk/runtime",
+		"github.com/go-admin-team/go-admin-core",
+	} {
+		got, _, changed := target(in, false)
+		if changed || got != in {
+			t.Errorf("target(%q, false) = %q, changed=%v; want it untouched", in, got, changed)
+		}
+	}
+
+	// A deprecated path still moves, it just does not gain a version.
+	got, _, changed := target("github.com/go-admin-team/go-admin-core/sdk/pkg/response", false)
+	if !changed || got != "github.com/go-admin-team/go-admin-core/response" {
+		t.Errorf("got %q changed=%v, want the v1 destination", got, changed)
+	}
+}
+
+// The whole point of -v2 is one pass rather than two, so a file mixing moved
+// and unmoved imports has to come out consistent.
+func TestRewriteWithMajorAcrossOneFile(t *testing.T) {
+	in := `package p
+
+import (
+	"github.com/go-admin-team/go-admin-core/sdk/pkg/response"
+	"github.com/go-admin-team/go-admin-core/sdk/runtime"
+	"gorm.io/gorm"
+)
+
+var _ = response.Error
+var _ = runtime.Runtime
+var _ = gorm.Open
+`
+	want := `package p
+
+import (
+	"github.com/go-admin-team/go-admin-core/v2/response"
+	"github.com/go-admin-team/go-admin-core/v2/sdk/runtime"
+	"gorm.io/gorm"
+)
+
+var _ = response.Error
+var _ = runtime.Runtime
+var _ = gorm.Open
+`
+
+	got, changes, err := rewrite("x.go", []byte(in), true)
+	if err != nil {
+		t.Fatalf("rewrite: %v", err)
+	}
+	if string(got) != want {
+		t.Errorf("got:\n%s\nwant:\n%s", got, want)
+	}
+	if len(changes) != 2 {
+		t.Errorf("changes = %d, want 2", len(changes))
 	}
 }
