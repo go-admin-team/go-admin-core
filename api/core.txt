@@ -1,14 +1,14 @@
 # Exported API of github.com/go-admin-team/go-admin-core
 # Regenerate with: make api-snapshot
 
-## github.com/go-admin-team/go-admin-core/captcha
+## github.com/go-admin-team/go-admin-core/v2/captcha
 func DriverDigitFunc() (id, b64s, answer string, err error)
 func DriverStringFunc() (id, b64s, answer string, err error)
 func NewCacheStore(cache storage.AdapterCache, expiration int) base64Captcha.Store
 func SetStore(s base64Captcha.Store)
 func Verify(id, code string, clear bool) bool
 
-## github.com/go-admin-team/go-admin-core/casbin
+## github.com/go-admin-team/go-admin-core/v2/casbin
 func Setup(db *gorm.DB, _ string) *casbin.SyncedEnforcer
 type Logger struct {
 func (l *Logger) EnableLog(enable bool)
@@ -18,7 +18,7 @@ func (l *Logger) LogModel(model [][]string)
 func (l *Logger) LogPolicy(policy map[string][][]string)
 func (l *Logger) LogRole(roles []string)
 
-## github.com/go-admin-team/go-admin-core/config
+## github.com/go-admin-team/go-admin-core/v2/config
 func Bytes() []byte
 func Get(path ...string) reader.Value
 func Load(source ...source.Source) error
@@ -55,25 +55,25 @@ type Watcher interface {
 	Stop() error
 func Watch(path ...string) (Watcher, error)
 
-## github.com/go-admin-team/go-admin-core/config/encoder
+## github.com/go-admin-team/go-admin-core/v2/config/encoder
 type Encoder interface {
 	Encode(interface{}) ([]byte, error)
 	Decode([]byte, interface{}) error
 	String() string
 
-## github.com/go-admin-team/go-admin-core/config/encoder/json
+## github.com/go-admin-team/go-admin-core/v2/config/encoder/json
 func NewEncoder() encoder.Encoder
 
-## github.com/go-admin-team/go-admin-core/config/encoder/toml
+## github.com/go-admin-team/go-admin-core/v2/config/encoder/toml
 func NewEncoder() encoder.Encoder
 
-## github.com/go-admin-team/go-admin-core/config/encoder/xml
+## github.com/go-admin-team/go-admin-core/v2/config/encoder/xml
 func NewEncoder() encoder.Encoder
 
-## github.com/go-admin-team/go-admin-core/config/encoder/yaml
+## github.com/go-admin-team/go-admin-core/v2/config/encoder/yaml
 func NewEncoder() encoder.Encoder
 
-## github.com/go-admin-team/go-admin-core/config/loader
+## github.com/go-admin-team/go-admin-core/v2/config/loader
 type Loader interface {
 	Close() error
 	Load(...source.Source) error
@@ -94,12 +94,12 @@ type Watcher interface {
 	Next() (*Snapshot, error)
 	Stop() error
 
-## github.com/go-admin-team/go-admin-core/config/loader/memory
+## github.com/go-admin-team/go-admin-core/v2/config/loader/memory
 func NewLoader(opts ...loader.Option) loader.Loader
 func WithReader(r reader.Reader) loader.Option
 func WithSource(s source.Source) loader.Option
 
-## github.com/go-admin-team/go-admin-core/config/reader
+## github.com/go-admin-team/go-admin-core/v2/config/reader
 func ReplaceEnvVars(raw []byte) ([]byte, error)
 type Option func(o *Options)
 func WithEncoder(e encoder.Encoder) Option
@@ -128,10 +128,10 @@ type Values interface {
 	Map() map[string]interface{}
 	Scan(v interface{}) error
 
-## github.com/go-admin-team/go-admin-core/config/reader/json
+## github.com/go-admin-team/go-admin-core/v2/config/reader/json
 func NewReader(opts ...reader.Option) reader.Reader
 
-## github.com/go-admin-team/go-admin-core/config/secrets
+## github.com/go-admin-team/go-admin-core/v2/config/secrets
 type DecryptOption func(*DecryptOptions)
 func SenderPublicKey(key []byte) DecryptOption
 type DecryptOptions struct {
@@ -156,13 +156,13 @@ type Secrets interface {
 	Encrypt([]byte, ...EncryptOption) ([]byte, error)
 	String() string
 
-## github.com/go-admin-team/go-admin-core/config/secrets/box
+## github.com/go-admin-team/go-admin-core/v2/config/secrets/box
 func NewSecrets(opts ...secrets.Option) secrets.Secrets
 
-## github.com/go-admin-team/go-admin-core/config/secrets/secretbox
+## github.com/go-admin-team/go-admin-core/v2/config/secrets/secretbox
 func NewSecrets(opts ...secrets.Option) secrets.Secrets
 
-## github.com/go-admin-team/go-admin-core/config/source
+## github.com/go-admin-team/go-admin-core/v2/config/source
 var (
 	ErrWatcherStopped = errors.New("watcher stopped")
 type ChangeSet struct {
@@ -188,30 +188,30 @@ type Watcher interface {
 	Stop() error
 func NewNoopWatcher() (Watcher, error)
 
-## github.com/go-admin-team/go-admin-core/config/source/env
+## github.com/go-admin-team/go-admin-core/v2/config/source/env
 var (
 	DefaultPrefixes = []string{}
 func NewSource(opts ...source.Option) source.Source
 func WithPrefix(p ...string) source.Option
 func WithStrippedPrefix(p ...string) source.Option
 
-## github.com/go-admin-team/go-admin-core/config/source/file
+## github.com/go-admin-team/go-admin-core/v2/config/source/file
 var (
 	DefaultPath = "config.json"
 func NewSource(opts ...source.Option) source.Source
 func WithPath(filePath string) source.Option
 
-## github.com/go-admin-team/go-admin-core/config/source/flag
+## github.com/go-admin-team/go-admin-core/v2/config/source/flag
 func IncludeUnset(b bool) source.Option
 func NewSource(opts ...source.Option) source.Source
 
-## github.com/go-admin-team/go-admin-core/config/source/memory
+## github.com/go-admin-team/go-admin-core/v2/config/source/memory
 func NewSource(opts ...source.Option) source.Source
 func WithChangeSet(cs *source.ChangeSet) source.Option
 func WithJSON(d []byte) source.Option
 func WithYAML(d []byte) source.Option
 
-## github.com/go-admin-team/go-admin-core/errors
+## github.com/go-admin-team/go-admin-core/v2/errors
 const (
 	Silent       = "0"
 	MessageWarn  = "1"
@@ -259,7 +259,7 @@ type ErrorCoder interface {
 	String() string
 	Code() int32
 
-## github.com/go-admin-team/go-admin-core/jwtauth
+## github.com/go-admin-team/go-admin-core/v2/jwtauth
 const JwtPayloadKey = "JWT_PAYLOAD"
 var (
 	ErrMissingSecretKey = errors.New("secret key is required")
@@ -343,7 +343,7 @@ type MapClaims map[string]interface{}
 func ExtractClaims(c *gin.Context) MapClaims
 func ExtractClaimsFromToken(token *jwt.Token) MapClaims
 
-## github.com/go-admin-team/go-admin-core/jwtauth/user
+## github.com/go-admin-team/go-admin-core/v2/jwtauth/user
 func ExtractClaims(c *gin.Context) jwt.MapClaims
 func Get(c *gin.Context, key string) interface{}
 func GetDeptId(c *gin.Context) int
@@ -354,7 +354,7 @@ func GetUserId(c *gin.Context) int
 func GetUserIdStr(c *gin.Context) string
 func GetUserName(c *gin.Context) string
 
-## github.com/go-admin-team/go-admin-core/logger
+## github.com/go-admin-team/go-admin-core/v2/logger
 const (
 	Reset = "\033[0m"
 	Red         = "\033[31m"
@@ -715,7 +715,7 @@ type ZapSamplingConfig struct {
 type ZerologConfig struct {
 	TimeFormat string `json:"timeFormat" yaml:"timeFormat"`
 
-## github.com/go-admin-team/go-admin-core/logger/writer
+## github.com/go-admin-team/go-admin-core/v2/logger/writer
 type FileWriter struct {
 	FilenameFunc func(*FileWriter) string
 func NewFileWriter(opts ...Option) (*FileWriter, error)
@@ -726,27 +726,7 @@ func WithPath(s string) Option
 func WithSuffix(s string) Option
 type Options struct {
 
-## github.com/go-admin-team/go-admin-core/observability/audit
-var (
-	DefaultSize = newaudit.DefaultSize
-	DefaultFormat = newaudit.DefaultFormat
-func JSONFormat(r Record) string
-func TextFormat(r Record) string
-type FormatFunc = newaudit.FormatFunc
-type Log = newaudit.Log
-type Option = newaudit.Option
-func Format(f FormatFunc) Option
-func Name(n string) Option
-func Size(s int) Option
-type Options = newaudit.Options
-type ReadOption = newaudit.ReadOption
-func Count(c int) ReadOption
-func Since(s time.Time) ReadOption
-type ReadOptions = newaudit.ReadOptions
-type Record = newaudit.Record
-type Stream = newaudit.Stream
-
-## github.com/go-admin-team/go-admin-core/observe/audit
+## github.com/go-admin-team/go-admin-core/v2/observe/audit
 var (
 	DefaultSize = 256
 	DefaultFormat = TextFormat
@@ -780,7 +760,7 @@ type Stream interface {
 	Chan() <-chan Record
 	Stop() error
 
-## github.com/go-admin-team/go-admin-core/response
+## github.com/go-admin-team/go-admin-core/v2/response
 var Default = &response{}
 func Custum(c *gin.Context, data gin.H)
 func Error(c *gin.Context, code int, err error, msg string)
@@ -803,7 +783,7 @@ type Responses interface {
 	SetSuccess(bool)
 	Clone() Responses
 
-## github.com/go-admin-team/go-admin-core/response/antd
+## github.com/go-admin-team/go-admin-core/v2/response/antd
 const (
 	Silent       = "0"
 	MessageWarn  = "1"
@@ -836,10 +816,10 @@ type Response struct {
 	Host         string `json:"host,omitempty"`         // onvenient for backend Troubleshooting: host of current access server
 	Status       string `json:"status,omitempty"`
 
-## github.com/go-admin-team/go-admin-core/sdk
+## github.com/go-admin-team/go-admin-core/v2/sdk
 var Runtime runtime.Runtime = runtime.NewConfig()
 
-## github.com/go-admin-team/go-admin-core/sdk/api
+## github.com/go-admin-team/go-admin-core/v2/sdk/api
 var DefaultLanguage = "zh-CN"
 func GetRequestLogger(c *gin.Context) *logger.Helper
 func SetRequestLogger(c *gin.Context)
@@ -862,7 +842,7 @@ func (e *Api) OK(data interface{}, msg string)
 func (e *Api) PageOK(result interface{}, count int, pageIndex int, pageSize int, msg string)
 func (e Api) Translate(form, to interface{})
 
-## github.com/go-admin-team/go-admin-core/sdk/config
+## github.com/go-admin-team/go-admin-core/v2/sdk/config
 var (
 	DatabaseConfig  = new(Database)
 	DatabasesConfig = make(map[string]*Database)
@@ -981,7 +961,7 @@ type Tls struct {
 	Key  string `yaml:"key" json:"key"`
 	Ca   string `yaml:"ca" json:"ca"`
 
-## github.com/go-admin-team/go-admin-core/sdk/pkg
+## github.com/go-admin-team/go-admin-core/v2/sdk/pkg
 const (
 	TextBlack = iota + 30
 	TextRed
@@ -1049,88 +1029,20 @@ type ReplaceHelper struct {
 	NewText string //新的文本
 func (h *ReplaceHelper) DoWork() error
 
-## github.com/go-admin-team/go-admin-core/sdk/pkg/captcha
-func DriverDigitFunc() (id, b64s, answer string, err error)
-func DriverStringFunc() (id, b64s, answer string, err error)
-func SetStore(s base64Captcha.Store)
-func Verify(id, code string, clear bool) bool
-
-## github.com/go-admin-team/go-admin-core/sdk/pkg/casbin
-func Setup(db *gorm.DB, tableName string) *casbin.SyncedEnforcer
-type Logger = newcasbin.Logger
-
-## github.com/go-admin-team/go-admin-core/sdk/pkg/cronjob
+## github.com/go-admin-team/go-admin-core/v2/sdk/pkg/cronjob
 func NewWithSeconds() *cron.Cron
 
-## github.com/go-admin-team/go-admin-core/sdk/pkg/jwtauth
-const JwtPayloadKey = newjwtauth.JwtPayloadKey
-var (
-	ErrEmptyAuthHeader = newjwtauth.ErrEmptyAuthHeader
-	ErrEmptyCookieToken = newjwtauth.ErrEmptyCookieToken
-	ErrEmptyParamToken = newjwtauth.ErrEmptyParamToken
-	ErrEmptyQueryToken = newjwtauth.ErrEmptyQueryToken
-	ErrExpiredToken = newjwtauth.ErrExpiredToken
-	ErrFailedAuthentication = newjwtauth.ErrFailedAuthentication
-	ErrFailedTokenCreation = newjwtauth.ErrFailedTokenCreation
-	ErrForbidden = newjwtauth.ErrForbidden
-	ErrInvalidAuthHeader = newjwtauth.ErrInvalidAuthHeader
-	ErrInvalidClaims = newjwtauth.ErrInvalidClaims
-	ErrInvalidPrivKey = newjwtauth.ErrInvalidPrivKey
-	ErrInvalidPubKey = newjwtauth.ErrInvalidPubKey
-	ErrInvalidSigningAlgorithm = newjwtauth.ErrInvalidSigningAlgorithm
-	ErrInvalidVerificationode = newjwtauth.ErrInvalidVerificationode
-	ErrMissingAuthenticatorFunc = newjwtauth.ErrMissingAuthenticatorFunc
-	ErrMissingExpField = newjwtauth.ErrMissingExpField
-	ErrMissingLoginValues = newjwtauth.ErrMissingLoginValues
-	ErrMissingOrigIatField = newjwtauth.ErrMissingOrigIatField
-	ErrMissingSecretKey = newjwtauth.ErrMissingSecretKey
-	ErrNoPrivKeyFile = newjwtauth.ErrNoPrivKeyFile
-	ErrNoPubKeyFile = newjwtauth.ErrNoPubKeyFile
-	ErrWrongFormatOfExp = newjwtauth.ErrWrongFormatOfExp
-	DataScopeKey = newjwtauth.DataScopeKey
-	DeptId = newjwtauth.DeptId
-	DeptName = newjwtauth.DeptName
-	IdentityKey = newjwtauth.IdentityKey
-	NiceKey = newjwtauth.NiceKey
-	RKey = newjwtauth.RKey
-	RoleIdKey = newjwtauth.RoleIdKey
-	RoleKey = newjwtauth.RoleKey
-	RoleNameKey = newjwtauth.RoleNameKey
-func GetToken(c *gin.Context) string
-type GinJWTMiddleware = newjwtauth.GinJWTMiddleware
-func New(m *GinJWTMiddleware) (*GinJWTMiddleware, error)
-type MapClaims = newjwtauth.MapClaims
-func ExtractClaims(c *gin.Context) MapClaims
-func ExtractClaimsFromToken(token *jwt.Token) MapClaims
-
-## github.com/go-admin-team/go-admin-core/sdk/pkg/jwtauth/user
-func ExtractClaims(c *gin.Context) jwtauth.MapClaims
-func Get(c *gin.Context, key string) interface{}
-func GetDeptId(c *gin.Context) int
-func GetDeptName(c *gin.Context) string
-func GetRoleId(c *gin.Context) int
-func GetRoleName(c *gin.Context) string
-func GetUserId(c *gin.Context) int
-func GetUserIdStr(c *gin.Context) string
-func GetUserName(c *gin.Context) string
-
-## github.com/go-admin-team/go-admin-core/sdk/pkg/logger
+## github.com/go-admin-team/go-admin-core/v2/sdk/pkg/logger
 func SetupLogger(opts ...logger.Option) logger.Logger
 
-## github.com/go-admin-team/go-admin-core/sdk/pkg/response
-func Custum(c *gin.Context, data gin.H)
-func Error(c *gin.Context, code int, err error, msg string)
-func OK(c *gin.Context, data interface{}, msg string)
-func PageOK(c *gin.Context, result interface{}, count int, pageIndex int, pageSize int, msg string)
-
-## github.com/go-admin-team/go-admin-core/sdk/pkg/table
+## github.com/go-admin-team/go-admin-core/v2/sdk/pkg/table
 func Crc16Hash(src string) string
 func Crc32Hash(src string) string
 func Crc8Hash(src string) string
 func CreateSubTable(f func(string) string)
 func DynamicTable(f func(string) string, baseTable, fieldValue string) func(db *gorm.DB) *gorm.DB
 
-## github.com/go-admin-team/go-admin-core/sdk/pkg/utils
+## github.com/go-admin-team/go-admin-core/v2/sdk/pkg/utils
 func Base64ToImage(imageBase64 string) ([]byte, error)
 func CheckExist(src string) bool
 func CheckPermission(src string) bool
@@ -1167,7 +1079,7 @@ func (t JSONTime) MarshalJSON() ([]byte, error)
 func (t *JSONTime) Scan(v interface{}) error
 func (t JSONTime) Value() (driver.Value, error)
 
-## github.com/go-admin-team/go-admin-core/sdk/pkg/ws
+## github.com/go-admin-team/go-admin-core/v2/sdk/pkg/ws
 var WebsocketManager = Manager{
 	Group:            make(map[string]map[string]*Client),
 	Register:         make(chan *Client, 128),
@@ -1220,7 +1132,7 @@ type MessageData struct {
 	Context   context.Context
 	Message   []byte
 
-## github.com/go-admin-team/go-admin-core/sdk/runtime
+## github.com/go-admin-team/go-admin-core/v2/sdk/runtime
 const DefaultTenant = "default"
 func NewCache(prefix string, store storage.AdapterCache, wxTokenStoreKey string) storage.AdapterCache
 func NewQueue(prefix string, q storage.AdapterQueue) storage.AdapterQueue
@@ -1369,7 +1281,7 @@ type Runtime interface {
 	SetAppRouters(appRouters func())
 	GetAppRouters() []func()
 
-## github.com/go-admin-team/go-admin-core/sdk/service
+## github.com/go-admin-team/go-admin-core/v2/sdk/service
 type Service struct {
 	Orm   *gorm.DB
 	Msg   string
@@ -1379,7 +1291,7 @@ type Service struct {
 	Cache storage.AdapterCache
 func (db *Service) AddError(err error) error
 
-## github.com/go-admin-team/go-admin-core/server
+## github.com/go-admin-team/go-admin-core/v2/server
 type Manager interface {
 	Add(...Runnable)
 	Start(context.Context) error
@@ -1393,7 +1305,7 @@ type Server struct {
 func (e *Server) Add(r ...Runnable)
 func (e *Server) Start(ctx context.Context) (err error)
 
-## github.com/go-admin-team/go-admin-core/server/listener
+## github.com/go-admin-team/go-admin-core/v2/server/listener
 func New(name string, opts ...Option) server.Runnable
 func NewHealthz(opts ...Option) server.Runnable
 func NewMetrics(opts ...Option) server.Runnable
@@ -1412,7 +1324,7 @@ func (e *Server) Shutdown(ctx context.Context) error
 func (e *Server) Start(ctx context.Context) error
 func (e *Server) String() string
 
-## github.com/go-admin-team/go-admin-core/storage
+## github.com/go-admin-team/go-admin-core/v2/storage
 const (
 	PrefixKey = "__host"
 var (
@@ -1475,7 +1387,7 @@ type Queue interface {
 	Start(ctx context.Context) error
 	io.Closer
 
-## github.com/go-admin-team/go-admin-core/storage/cache
+## github.com/go-admin-team/go-admin-core/v2/storage/cache
 type MemCache struct {
 func NewMemCache() *MemCache
 func NewMemCacheWithSweep(interval time.Duration) *MemCache
@@ -1510,13 +1422,13 @@ func (m *Message) SetPrefix(prefix string)
 func (m *Message) SetStream(stream string)
 func (m *Message) SetValues(values map[string]interface{})
 
-## github.com/go-admin-team/go-admin-core/storage/cachetest
+## github.com/go-admin-team/go-admin-core/v2/storage/cachetest
 func Run(t *testing.T, newCache Factory)
 func RunQueue(t *testing.T, newQueue QueueFactory)
 type Factory func(t *testing.T) storage.Cache
 type QueueFactory func(t *testing.T) storage.Queue
 
-## github.com/go-admin-team/go-admin-core/storage/queue
+## github.com/go-admin-team/go-admin-core/v2/storage/queue
 type MemQueue struct {
 func NewMemQueue(size int) *MemQueue
 func (q *MemQueue) Close() error
@@ -1548,7 +1460,7 @@ func (m *Message) SetPrefix(prefix string)
 func (m *Message) SetStream(stream string)
 func (m *Message) SetValues(values map[string]interface{})
 
-## github.com/go-admin-team/go-admin-core/storage/redis
+## github.com/go-admin-team/go-admin-core/v2/storage/redis
 type Cache struct {
 func New(client goredis.UniversalClient) *Cache
 func Open(ctx context.Context, url string) (*Cache, error)
@@ -1576,7 +1488,7 @@ type QueueOptions struct {
 	ClaimMinIdle time.Duration
 	Batch int64
 
-## github.com/go-admin-team/go-admin-core/tools/database
+## github.com/go-admin-team/go-admin-core/v2/tools/database
 type Configure interface {
 	Init(*gorm.Config, func(string) gorm.Dialector) (*gorm.DB, error)
 func NewConfigure(
@@ -1596,7 +1508,7 @@ type ResolverConfigure interface {
 	Init(*dbresolver.DBResolver, func(string) gorm.Dialector) *dbresolver.DBResolver
 func NewResolverConfigure(sources, replicas []string, policy string, tables []string) ResolverConfigure
 
-## github.com/go-admin-team/go-admin-core/tools/gorm/gormlog
+## github.com/go-admin-team/go-admin-core/v2/tools/gorm/gormlog
 const (
 	Reset       = "\033[0m"
 	Red         = "\033[31m"
@@ -1612,13 +1524,10 @@ const (
 	YellowBold  = "\033[33;1m"
 func New(config logger.Config) logger.Interface
 
-## github.com/go-admin-team/go-admin-core/tools/gorm/logger
-func New(config logger.Config) logger.Interface
-
-## github.com/go-admin-team/go-admin-core/tools/language
+## github.com/go-admin-team/go-admin-core/v2/tools/language
 func ParseAcceptLanguage(languages string, supportedLanguages []string) []string
 
-## github.com/go-admin-team/go-admin-core/tools/poster
+## github.com/go-admin-team/go-admin-core/v2/tools/poster
 func GetImage(src string) (m image.Image, err error)
 func GetQRImage(url string, level qrcode.RecoveryLevel, size int) (image.Image, error)
 func LoadTextType(path string) (*truetype.Font, error)
@@ -1652,7 +1561,7 @@ type Rect struct {
 	Y0 int
 	Y1 int
 
-## github.com/go-admin-team/go-admin-core/tools/search
+## github.com/go-admin-team/go-admin-core/v2/tools/search
 const (
 	FromQueryTag = "search"
 	Mysql = "mysql"
@@ -1682,10 +1591,10 @@ func (e *GormPublic) SetOr(k string, v []interface{})
 func (e *GormPublic) SetOrder(k string)
 func (e *GormPublic) SetWhere(k string, v []interface{})
 
-## github.com/go-admin-team/go-admin-core/tools/transfer
+## github.com/go-admin-team/go-admin-core/v2/tools/transfer
 func Handler(handler http.Handler) gin.HandlerFunc
 
-## github.com/go-admin-team/go-admin-core/tools/utils
+## github.com/go-admin-team/go-admin-core/v2/tools/utils
 const (
 	RequestIDKey = "x-request-id"
 	UsernameKey = "x-username"
