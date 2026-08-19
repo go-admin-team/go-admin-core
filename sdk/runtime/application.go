@@ -28,7 +28,6 @@ type Application struct {
 	middlewares   map[string]interface{}                                          // 中间件
 	cache         storage.AdapterCache                                            // 缓存
 	queue         storage.AdapterQueue                                            // 队列
-	locker        storage.AdapterLocker                                           // 分布式锁
 	memoryQueue   storage.AdapterQueue                                            // 内存队列
 	handler       map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc) // 路由处理器
 	routers       []Router                                                        // 路由表
@@ -408,11 +407,6 @@ func (e *Application) GetQueuePrefix(key string) storage.AdapterQueue {
 // GetQueue 获取默认租户的队列
 func (e *Application) GetQueue() storage.AdapterQueue {
 	return e.GetQueuePrefix(e.GetDefaultTenant())
-}
-
-// SetLockerAdapter 设置分布式锁
-func (e *Application) SetLockerAdapter(c storage.AdapterLocker) {
-	e.locker = c
 }
 
 func (e *Application) SetHandler(routerGroup func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)) {
