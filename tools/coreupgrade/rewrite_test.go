@@ -5,6 +5,9 @@ import (
 	"go/format"
 	"go/parser"
 	"go/token"
+	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -153,15 +156,31 @@ var _ = fmt.Sprint
 	}
 }
 
-// Every path the table claims to move has to be a real deprecated package, and
-// every replacement a real one, or the tool sends consumers somewhere that does
-// not exist.
-func TestMovesArePlausible(t *testing.T) {
+// Every path in the table has to exist in this module. A typo in a destination
+// sends every consumer that runs the tool to a package that is not there, and
+// the tool itself would never notice.
+func TestMovesPointAtRealPackages(t *testing.T) {
+	root := filepath.Join("..", "..")
+
 	seen := map[string]bool{}
 	for _, m := range moves {
-		if !strings.HasPrefix(m.from, mod) || !strings.HasPrefix(m.to, mod) {
-			t.Errorf("%s -> %s: not both in this module", m.from, m.to)
+		for _, p := range []string{m.from, m.to} {
+			if !strings.HasPrefix(p, mod) {
+				t.Errorf("%s is not in this module", p)
+				continue
+			}
+			dir := filepath.Join(root, filepath.FromSlash(strings.TrimPrefix(p, mod)))
+			info, err := os.Stat(dir)
+			if err != nil || !info.IsDir() {
+				t.Errorf("%s: no package at %s", p, dir)
+				continue
+			}
+			files, err := filepath.Glob(filepath.Join(dir, "*.go"))
+			if err != nil || len(files) == 0 {
+				t.Errorf("%s: %s holds no Go files", p, dir)
+			}
 		}
+
 		if m.from == m.to {
 			t.Errorf("%s moves to itself", m.from)
 		}
@@ -169,6 +188,44 @@ func TestMovesArePlausible(t *testing.T) {
 			t.Errorf("%s appears twice", m.from)
 		}
 		seen[m.from] = true
+	}
+}
+
+// The tool overwrites files in someone else's repository, so it has to leave
+// their permission bits alone.
+//
+// This pins the contract rather than reproducing a failure: os.WriteFile only
+// applies its mode when it creates the file, so the current implementation
+// cannot fail this test — reverting the mode to a literal 0644 still passes.
+// What it would catch is the write being changed to the usual atomic shape, a
+// temporary file renamed over the target, which does replace the mode.
+func TestWriteKeepsThePermissionBits(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "x.go")
+	src := "package p\n\nimport \"" + mod + "sdk/pkg/response\"\n\nvar _ = response.Error\n"
+
+	if err := os.WriteFile(file, []byte(src), 0o600); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	if _, _, err := run(dir, true, io.Discard); err != nil {
+		t.Fatalf("run: %v", err)
+	}
+
+	info, err := os.Stat(file)
+	if err != nil {
+		t.Fatalf("Stat: %v", err)
+	}
+	if got := info.Mode().Perm(); got != 0o600 {
+		t.Errorf("mode is %v, want 0600: the tool changed the file's permissions", got)
+	}
+
+	out, err := os.ReadFile(file)
+	if err != nil {
+		t.Fatalf("ReadFile: %v", err)
+	}
+	if strings.Contains(string(out), "sdk/pkg/response") {
+		t.Error("the import was not rewritten")
 	}
 }
 
