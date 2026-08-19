@@ -131,37 +131,6 @@ type Values interface {
 ## github.com/go-admin-team/go-admin-core/v2/config/reader/json
 func NewReader(opts ...reader.Option) reader.Reader
 
-## github.com/go-admin-team/go-admin-core/v2/config/secrets
-type DecryptOption func(*DecryptOptions)
-func SenderPublicKey(key []byte) DecryptOption
-type DecryptOptions struct {
-	SenderPublicKey []byte
-type EncryptOption func(*EncryptOptions)
-func RecipientPublicKey(key []byte) EncryptOption
-type EncryptOptions struct {
-	RecipientPublicKey []byte
-type Option func(*Options)
-func Key(k []byte) Option
-func PrivateKey(key []byte) Option
-func PublicKey(key []byte) Option
-type Options struct {
-	Key []byte
-	PrivateKey []byte
-	PublicKey []byte
-	Context context.Context
-type Secrets interface {
-	Init(...Option) error
-	Options() Options
-	Decrypt([]byte, ...DecryptOption) ([]byte, error)
-	Encrypt([]byte, ...EncryptOption) ([]byte, error)
-	String() string
-
-## github.com/go-admin-team/go-admin-core/v2/config/secrets/box
-func NewSecrets(opts ...secrets.Option) secrets.Secrets
-
-## github.com/go-admin-team/go-admin-core/v2/config/secrets/secretbox
-func NewSecrets(opts ...secrets.Option) secrets.Secrets
-
 ## github.com/go-admin-team/go-admin-core/v2/config/source
 var (
 	ErrWatcherStopped = errors.New("watcher stopped")
