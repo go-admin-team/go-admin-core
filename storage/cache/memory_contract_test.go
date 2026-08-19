@@ -27,10 +27,7 @@ func TestMemoryDistinguishesAbsentFromExpired(t *testing.T) {
 	})
 
 	t.Run("a key that expired is an error", func(t *testing.T) {
-		if err := m.Set("short", "v", 1); err != nil {
-			t.Fatalf("Set: %v", err)
-		}
-		time.Sleep(1100 * time.Millisecond)
+		expire(t, m, "short", "v")
 
 		got, err := m.Get("short")
 		if err == nil {
@@ -45,10 +42,7 @@ func TestMemoryDistinguishesAbsentFromExpired(t *testing.T) {
 	})
 
 	t.Run("an expired key is gone afterwards, not still expiring", func(t *testing.T) {
-		if err := m.Set("gone", "v", 1); err != nil {
-			t.Fatalf("Set: %v", err)
-		}
-		time.Sleep(1100 * time.Millisecond)
+		expire(t, m, "gone", "v")
 
 		if _, err := m.Get("gone"); err == nil {
 			t.Fatal("first Get after expiry should report the expiry")
@@ -72,7 +66,6 @@ func TestMemoryDistinguishesAbsentFromExpired(t *testing.T) {
 		if err := m.Set("forever", "v", 0); err != nil {
 			t.Fatalf("Set: %v", err)
 		}
-		time.Sleep(50 * time.Millisecond)
 
 		got, err := m.Get("forever")
 		if err == nil {
@@ -82,4 +75,16 @@ func TestMemoryDistinguishesAbsentFromExpired(t *testing.T) {
 			t.Errorf("Get returned %q, want empty", got)
 		}
 	})
+}
+
+// expire stores an entry that is already past its time. Waiting out a real
+// expiry costs a second per case and makes the result depend on how loaded the
+// machine is; the entry is what the implementation reads, so writing it
+// directly asks the same question and always answers it.
+func expire(t *testing.T, m *Memory, key, value string) {
+	t.Helper()
+
+	if err := m.setItem(key, &item{Value: value, Expired: time.Now().Add(-time.Second)}); err != nil {
+		t.Fatalf("setItem: %v", err)
+	}
 }
