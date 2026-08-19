@@ -54,7 +54,11 @@ func ParseAcceptLanguage(languages string, supportedLanguages []string) []string
 
 	for i, rawPreferredLanguage := range preferredLanguages {
 		// Format strings.
-		preferredLanguage := strings.Replace(strings.ToLower(strings.TrimSpace(rawPreferredLanguage)), "_", "-", 0)
+		// Both forms of a locale tag arrive here, and only the hyphen one can
+		// match a supported tag. Replace was asked for zero replacements, so
+		// the underscore form was passed through untouched and matched
+		// nothing.
+		preferredLanguage := strings.ReplaceAll(strings.ToLower(strings.TrimSpace(rawPreferredLanguage)), "_", "-")
 
 		if preferredLanguage == "" {
 			continue
