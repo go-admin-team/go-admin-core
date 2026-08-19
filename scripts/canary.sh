@@ -86,8 +86,11 @@ for repo in "${repos[@]}"; do
 	# — it always is. Ask whether the build actually depends on it.
 	# Captured rather than piped into grep -q: this script runs with pipefail,
 	# and grep leaving early sends go list a SIGPIPE that reads as failure.
+	# Matched by string rather than by pattern, because the module path is full
+	# of dots that a regex would treat as wildcards.
 	deps=$(cd "$repo" && go list -deps ./... 2>/dev/null)
-	if ! printf '%s\n' "$deps" | grep -q "^$CORE_MOD/"; then
+	if ! printf '%s\n' "$deps" |
+		awk -v m="$CORE_MOD" '$0 == m || index($0, m "/") == 1 { found = 1 } END { exit !found }'; then
 		echo "FAIL $name"
 		echo "    nothing in $name depends on $CORE_MOD; the build did not use this tree"
 		cleanup_workfile "$repo"
