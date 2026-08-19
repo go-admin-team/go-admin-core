@@ -99,8 +99,12 @@ func (c *Client) Write(cxt context.Context) {
 			if err != nil {
 				log.Printf("client [%s] writemessage err: %s", c.Id, err)
 			}
-		case _ = <-c.Context.Done():
-			break
+		case <-c.Context.Done():
+			// break here leaves the select, not the loop. What ended the
+			// loop was the check at the top, which watches the parameter —
+			// so this exit worked only while the caller passed the client's
+			// own context, which the signature does not require.
+			return
 		}
 	}
 }
