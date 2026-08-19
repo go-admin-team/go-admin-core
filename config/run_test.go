@@ -11,12 +11,19 @@ import (
 )
 
 // unwatchableLoader loads normally and refuses to be watched, which is the
-// state run's retry loop was written for.
+// state run's retry loop was written for. It reports each attempt so the test
+// can wait for the loop to be where it needs it rather than guessing at a
+// duration.
 type unwatchableLoader struct {
 	loader.Loader
+	tried chan struct{}
 }
 
 func (l *unwatchableLoader) Watch(...string) (loader.Watcher, error) {
+	select {
+	case l.tried <- struct{}{}:
+	default:
+	}
 	return nil, errors.New("cannot watch")
 }
 
@@ -26,13 +33,18 @@ func (l *unwatchableLoader) Watch(...string) (loader.Watcher, error) {
 func TestCloseStopsARunThatCannotWatch(t *testing.T) {
 	before := runtime.NumGoroutine()
 
-	c, err := NewConfig(WithLoader(&unwatchableLoader{Loader: memory.NewLoader()}))
+	l := &unwatchableLoader{Loader: memory.NewLoader(), tried: make(chan struct{}, 1)}
+	c, err := NewConfig(WithLoader(l))
 	if err != nil {
 		t.Fatalf("NewConfig: %v", err)
 	}
 
-	// Let run reach the retry rather than racing its first iteration.
-	time.Sleep(50 * time.Millisecond)
+	// Close has to arrive while run is in the retry, not before it gets there.
+	select {
+	case <-l.tried:
+	case <-time.After(5 * time.Second):
+		t.Fatal("run never attempted a watch")
+	}
 
 	if err := c.Close(); err != nil {
 		t.Fatalf("Close: %v", err)
