@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	dlog "github.com/go-admin-team/go-admin-core/observe/audit"
+	dlog "github.com/go-admin-team/go-admin-core/v2/observe/audit"
 )
 
 func init() {

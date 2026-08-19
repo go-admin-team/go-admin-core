@@ -6,7 +6,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/go-admin-team/go-admin-core/storage"
+	"github.com/go-admin-team/go-admin-core/v2/storage"
 )
 
 const defaultBuffer = 1024

@@ -3,9 +3,9 @@ package cache_test
 import (
 	"testing"
 
-	"github.com/go-admin-team/go-admin-core/storage"
-	"github.com/go-admin-team/go-admin-core/storage/cache"
-	"github.com/go-admin-team/go-admin-core/storage/cachetest"
+	"github.com/go-admin-team/go-admin-core/v2/storage"
+	"github.com/go-admin-team/go-admin-core/v2/storage/cache"
+	"github.com/go-admin-team/go-admin-core/v2/storage/cachetest"
 )
 
 func TestMemCacheConformance(t *testing.T) {

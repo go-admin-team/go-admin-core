@@ -1,4 +1,4 @@
-module github.com/go-admin-team/go-admin-core
+module github.com/go-admin-team/go-admin-core/v2
 
 go 1.25.13
 

@@ -37,3 +37,6 @@ logger/test.log
 *.log
 upgrade-deps.sh
 RELEASE_NOTES.md
+
+# go build ./... drops the coreupgrade binary at the root
+/coreupgrade

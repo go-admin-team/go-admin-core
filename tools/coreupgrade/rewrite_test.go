@@ -156,29 +156,34 @@ var _ = fmt.Sprint
 	}
 }
 
-// Every path in the table has to exist in this module. A typo in a destination
-// sends every consumer that runs the tool to a package that is not there, and
-// the tool itself would never notice.
+// Every destination has to exist in this module. A typo there sends every
+// consumer that runs the tool to a package that is not present, and the tool
+// itself would never notice.
 func TestMovesPointAtRealPackages(t *testing.T) {
 	root := filepath.Join("..", "..")
 
 	seen := map[string]bool{}
 	for _, m := range moves {
-		for _, p := range []string{m.from, m.to} {
-			if !strings.HasPrefix(p, mod) {
-				t.Errorf("%s is not in this module", p)
-				continue
-			}
-			dir := filepath.Join(root, filepath.FromSlash(strings.TrimPrefix(p, mod)))
-			info, err := os.Stat(dir)
-			if err != nil || !info.IsDir() {
-				t.Errorf("%s: no package at %s", p, dir)
-				continue
-			}
-			files, err := filepath.Glob(filepath.Join(dir, "*.go"))
-			if err != nil || len(files) == 0 {
-				t.Errorf("%s: %s holds no Go files", p, dir)
-			}
+		// Only the destination has to exist. The source is what this release
+		// removed — requiring it here would mean the tool could not survive
+		// the removal it was written for.
+		if !strings.HasPrefix(m.from, mod) {
+			t.Errorf("%s is not in this module", m.from)
+		}
+		if !strings.HasPrefix(m.to, mod) {
+			t.Errorf("%s is not in this module", m.to)
+			continue
+		}
+
+		dir := filepath.Join(root, filepath.FromSlash(strings.TrimPrefix(m.to, mod)))
+		info, err := os.Stat(dir)
+		if err != nil || !info.IsDir() {
+			t.Errorf("%s: no package at %s", m.to, dir)
+			continue
+		}
+		files, err := filepath.Glob(filepath.Join(dir, "*.go"))
+		if err != nil || len(files) == 0 {
+			t.Errorf("%s: %s holds no Go files", m.to, dir)
 		}
 
 		if m.from == m.to {

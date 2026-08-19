@@ -1,7 +1,7 @@
 package queue
 
 import (
-	"github.com/go-admin-team/go-admin-core/storage"
+	"github.com/go-admin-team/go-admin-core/v2/storage"
 	"sync"
 )
 

@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-admin-team/go-admin-core/storage"
+	"github.com/go-admin-team/go-admin-core/v2/storage"
 )
 
 // Factory builds a Cache for a single test. Cleanup is the caller's business;

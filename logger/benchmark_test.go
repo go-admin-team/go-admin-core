@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-admin-team/go-admin-core/logger"
+	"github.com/go-admin-team/go-admin-core/v2/logger"
 )
 
 // BenchmarkDefaultLogger 基准测试：默认 logger

@@ -3,8 +3,8 @@ package runtime
 import (
 	"log/slog"
 
-	"github.com/go-admin-team/go-admin-core/storage"
-	"github.com/go-admin-team/go-admin-core/storage/queue"
+	"github.com/go-admin-team/go-admin-core/v2/storage"
+	"github.com/go-admin-team/go-admin-core/v2/storage/queue"
 )
 
 // NewQueue 创建对应上下文队列

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-admin-team/go-admin-core/config/source"
+	"github.com/go-admin-team/go-admin-core/v2/config/source"
 )
 
 func setEnvVars(vars map[string]string) {

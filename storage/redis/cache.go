@@ -14,7 +14,7 @@ import (
 
 	goredis "github.com/redis/go-redis/v9"
 
-	"github.com/go-admin-team/go-admin-core/storage"
+	"github.com/go-admin-team/go-admin-core/v2/storage"
 )
 
 // Cache is a Redis-backed storage.Cache.
