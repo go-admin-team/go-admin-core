@@ -1,8 +1,8 @@
 package pkg
 
 import (
+	"crypto/rand"
 	"encoding/hex"
-	"math/rand"
 
 	"golang.org/x/crypto/scrypt"
 )
@@ -12,6 +12,10 @@ const (
 	letter = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 )
 
+// generateRandString draws from crypto/rand. These values are used as key
+// material — one of them is every user's password salt — and math/rand is a
+// generator whose internal state can be recovered from its output, which makes
+// the next value predictable to anyone who has seen enough of them.
 func generateRandString(length int, s string) string {
 	var chars = []byte(s)
 	clen := len(chars)
