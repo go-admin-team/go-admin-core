@@ -128,13 +128,18 @@ func (c *config) run() {
 		w, err := c.opts.Loader.Watch()
 		if err != nil {
 			log.Errorf("failed to start watcher: %v", err)
-			time.Sleep(time.Second)
+			// The exit check at the bottom sits past the point this jumps
+			// back from, so without racing it here a loader that cannot be
+			// watched keeps this goroutine retrying after Close.
+			select {
+			case <-c.exit:
+				return
+			case <-time.After(time.Second):
+			}
 			continue
 		}
 
 		done := make(chan bool)
-		// close done channel when exit
-		defer close(done)
 
 		// the stop watch func 停止监控函数
 		go func() {
@@ -149,9 +154,18 @@ func (c *config) run() {
 		if err := watch(w); err != nil {
 			// 记录错误日志
 			log.Errorf("watch error: %v", err)
-			// do something better
-			time.Sleep(time.Second)
+			select {
+			case <-c.exit:
+				close(done)
+				return
+			case <-time.After(time.Second):
+			}
 		}
+
+		// Closed per iteration rather than deferred: a defer inside this loop
+		// only runs when run returns, so every iteration left its stop-watch
+		// goroutine alive until then.
+		close(done)
 
 		// if the config is closed exit 检查是否退出
 		select {
