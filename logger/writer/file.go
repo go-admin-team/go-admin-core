@@ -77,7 +77,7 @@ func (p *FileWriter) write() {
 
 func (p *FileWriter) checkFile() {
 	info, _ := p.file.Stat()
-	if strings.Index(p.file.Name(), time.Now().Format(timeFormat)) < 0 ||
+	if !strings.Contains(p.file.Name(), time.Now().Format(timeFormat)) ||
 		(p.opts.cap > 0 && uint(info.Size()) > p.opts.cap) {
 		//生成新文件
 		if uint(info.Size()) > p.opts.cap {

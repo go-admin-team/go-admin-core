@@ -5,7 +5,6 @@ import (
 	"image/color"
 	"image/draw"
 	"image/jpeg"
-	"io/ioutil"
 	"os"
 
 	"github.com/golang/freetype"
@@ -13,7 +12,7 @@ import (
 	"github.com/skip2/go-qrcode"
 )
 
-//新PNG载体
+// 新PNG载体
 type Rect struct {
 	X0 int
 	X1 int
@@ -68,7 +67,7 @@ func MergeImage(PNG draw.Image, image image.Image, imageBound image.Point) {
 
 // LoadTextType 读取字体类型
 func LoadTextType(path string) (*truetype.Font, error) {
-	fbyte, err := ioutil.ReadFile(path)
+	fbyte, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}

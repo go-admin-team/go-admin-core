@@ -3,7 +3,7 @@ package pkg
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 )
@@ -26,7 +26,7 @@ func Get(url string) (string, error) {
 		return "", err
 	}
 	defer resp.Body.Close()
-	result, _ := ioutil.ReadAll(resp.Body)
+	result, _ := io.ReadAll(resp.Body)
 
 	return string(result), nil
 }
@@ -47,7 +47,7 @@ func Post(url string, data interface{}, contentType string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
-	result, _ := ioutil.ReadAll(resp.Body)
+	result, _ := io.ReadAll(resp.Body)
 	return result, nil
 
 }

@@ -1013,7 +1013,6 @@ func DynamicTable(f func(string) string, baseTable, fieldValue string) func(db *
 
 ## github.com/go-admin-team/go-admin-core/v2/sdk/pkg/utils
 func Base64ToImage(imageBase64 string) ([]byte, error)
-func CheckExist(src string) bool
 func CheckPermission(src string) bool
 func GetCurrentTimeStamp() int64
 func GetDirFiles(dir string) ([]string, error)
@@ -1026,6 +1025,7 @@ func Hmac(data string) string
 func IsNotExistMkDir(src string) error
 func IsStringEmpty(str string) bool
 func MkDir(src string) error
+func NotExist(src string) bool
 func Open(name string, flag int, perm os.FileMode) (*os.File, error)
 func PathExists(path string) bool
 func RemoveRepByMap(slc []string) []string
