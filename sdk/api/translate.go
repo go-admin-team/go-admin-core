@@ -20,6 +20,9 @@ import (
 )
 
 // transInit local 通常取决于 http 请求头的 'Accept-Language'
+// getAcceptLanguage in api.go.
+//
+//lint:ignore U1000 The other half of the unwired translation feature; see
 func transInit(local string) (trans ut.Translator, err error) {
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		zhT := zh.New() //chinese

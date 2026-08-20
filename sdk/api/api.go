@@ -1,3 +1,7 @@
+//lint:file-ignore SA1019 This file is part of the bridge to the deprecated
+// AdapterCache. Referring to what it exists to keep working is the point of it;
+// the deprecation is carried by storage.AdapterCache itself.
+
 package api
 
 import (
@@ -168,6 +172,11 @@ func (e Api) Translate(form, to interface{}) {
 }
 
 // getAcceptLanguage 获取当前语言
+// reads the header, transInit builds the translator, and nothing calls either.
+// Validation errors come back in the validator's default language regardless
+// of what the client asked for.
+//
+//lint:ignore U1000 Half of a translation feature that was never wired: this
 func (e Api) getAcceptLanguage() string {
 	languages := language.ParseAcceptLanguage(e.Context.GetHeader("Accept-Language"), nil)
 	if len(languages) == 0 {

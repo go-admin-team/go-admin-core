@@ -57,6 +57,13 @@ func Setup(db *gorm.DB, _ string) *casbin.SyncedEnforcer {
 	return enforcer
 }
 
+// registered anywhere — no SetWatcher, no SetUpdateCallback, no
+// StartAutoLoadPolicy, in this module or in any consumer. Setup loads the
+// policy once inside a sync.Once, so a permission changed on one instance is
+// invisible to every other until it restarts. Kept because deleting it would
+// take the evidence of the missing wiring with it.
+//
+//lint:ignore U1000 This is the callback for a policy watcher that is not
 func updateCallback(msg string) {
 	l := logger.NewHelper(sdk.Runtime.GetLogger())
 	l.Infof("casbin updateCallback msg: %v", msg)

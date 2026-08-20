@@ -38,4 +38,4 @@ api-snapshot:
 api-check: api-snapshot
 	git diff --exit-code api/
 
-ci: tidy build vet test-race api-check
+ci: tidy build vet lint test-race api-check

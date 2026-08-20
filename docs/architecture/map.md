@@ -38,7 +38,7 @@ symbol rather than a wrong import.
 
 | command | what it guarantees | what it does not |
 | --- | --- | --- |
-| `make ci` | tidy, build, vet, the race detector across the whole tree with nothing excluded, and the exported API matching `api/core.txt` | anything about consumers |
+| `make ci` | tidy, build, vet, staticcheck with no findings, the race detector across the whole tree with nothing excluded, and the exported API matching `api/core.txt` | anything about consumers |
 | `scripts/canary.sh DIR` | a consumer, migrated by `coreupgrade`, compiles against this tree | that it runs — only that it builds |
 | `scripts/check-language.sh origin/main` | no Chinese in added Go lines, or anywhere in a commit message — subject and body both | uncommitted work; it reads committed state |
 
@@ -58,6 +58,11 @@ gitignored; it is still surprising.
 **Twenty-nine of fifty-one packages have no tests.** `storage` is the exception
 worth copying: a written contract plus `cachetest`, which every implementation
 must pass. That suite is what caught the mistakes in the redis queue.
+
+**Every lint exemption names its reason on the line above it.** There are
+eleven, all either the compatibility layer referring to what it is compatible
+with, generated protobuf code, or the working half of a feature nobody wired.
+Adding one is a decision to be reviewed; `make lint` reports nothing otherwise.
 
 **`Runtime` has fifty-seven methods and is reached through a package-level
 global**, `sdk.Runtime`. Changes to it have effects no test in this repository

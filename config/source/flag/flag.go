@@ -36,7 +36,6 @@ func (fs *flagsrc) Read() (*source.ChangeSet, error) {
 		}
 
 		_ = mergo.Map(&changes, tmp) // need to sort error handling
-		return
 	}
 
 	unset, ok := fs.opts.Context.Value(includeUnsetKey{}).(bool)

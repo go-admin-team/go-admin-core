@@ -128,9 +128,8 @@ func (m *Memory) getItem(key string) (*item, error) {
 	if !ok {
 		return nil, nil
 	}
-	switch i.(type) {
+	switch item := i.(type) {
 	case *item:
-		item := i.(*item)
 		if item.expired(time.Now()) {
 			//过期
 			_ = m.del(key)
