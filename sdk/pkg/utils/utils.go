@@ -76,7 +76,7 @@ func GetCurrentTimeStamp() int64 {
 	return time.Now().UnixNano() / 1e6
 }
 
-// slice去重
+// RemoveRepByMap returns slc without its duplicates, keeping first order.
 func RemoveRepByMap(slc []string) []string {
 	result := []string{}
 	tempMap := map[string]byte{}
