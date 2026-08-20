@@ -10,8 +10,6 @@ import (
 	"github.com/go-admin-team/go-admin-core/v2/sdk/pkg"
 )
 
-type loggerKey struct{}
-
 // GetRequestLogger 获取上下文提供的日志
 func GetRequestLogger(c *gin.Context) *logger.Helper {
 	var log *logger.Helper

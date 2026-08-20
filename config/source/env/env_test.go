@@ -138,11 +138,3 @@ func containsKey(m map[string]interface{}, s string) bool {
 	}
 	return false
 }
-
-func getKeys(m map[string]interface{}) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	return keys
-}
