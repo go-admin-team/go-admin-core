@@ -41,11 +41,17 @@ func (e *Queue) Register(name string, f storage.ConsumerFunc) {
 
 // Append 增加数据到生产者
 func (e *Queue) Append(message storage.Messager) error {
+	// The map has to go back through SetValues. Writing into what GetValues
+	// returned worked only while the message already had one: when it did not,
+	// the prefix went into a map that was attached to nothing and the message
+	// was published without its tenant.
 	values := message.GetValues()
 	if values == nil {
 		values = make(map[string]interface{})
 	}
 	values[storage.PrefixKey] = e.prefix
+	message.SetValues(values)
+
 	return e.queue.Append(message)
 }
 
