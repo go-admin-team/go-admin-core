@@ -4,6 +4,7 @@ import (
 	"github.com/go-admin-team/go-admin-core/v2/storage"
 	"github.com/go-admin-team/go-admin-core/v2/storage/queue"
 	"testing"
+	"time"
 )
 
 func TestNewMemoryQueue(t *testing.T) {
@@ -36,14 +37,35 @@ func TestNewMemoryQueue(t *testing.T) {
 	}
 }
 
+// Register forwards to the backing adapter, so what this checks is that a
+// consumer registered through the wrapper receives what is published through
+// it. The test was a stub — two type declarations and no body — which reads as
+// coverage from the outside.
 func TestQueue_Register(t *testing.T) {
-	type fields struct {
-		prefix string
-		queue  storage.AdapterQueue
-	}
-	type args struct {
-		name string
-		f    storage.ConsumerFunc
+	q := NewQueue("tenant", queue.NewMemory(10))
+
+	got := make(chan storage.Messager, 1)
+	q.Register("orders", func(m storage.Messager) error {
+		got <- m
+		return nil
+	})
+
+	m := &queue.Message{}
+	m.SetValues(map[string]interface{}{"id": "1"})
+	m.SetStream("orders")
+	if err := q.Append(m); err != nil {
+		t.Fatalf("Append: %v", err)
 	}
 
+	go q.Run()
+	t.Cleanup(func() { q.Shutdown() })
+
+	select {
+	case received := <-got:
+		if received.GetPrefix() != "tenant" {
+			t.Errorf("prefix is %q, want tenant", received.GetPrefix())
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("the registered consumer never received the message")
+	}
 }

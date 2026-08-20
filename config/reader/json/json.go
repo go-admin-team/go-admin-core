@@ -11,8 +11,6 @@ import (
 	"github.com/go-admin-team/go-admin-core/v2/config/source"
 )
 
-const readerTyp = "json"
-
 type jsonReader struct {
 	opts reader.Options
 	json encoder.Encoder

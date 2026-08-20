@@ -41,11 +41,13 @@ func (e *Queue) Register(name string, f storage.ConsumerFunc) {
 
 // Append 增加数据到生产者
 func (e *Queue) Append(message storage.Messager) error {
-	values := message.GetValues()
-	if values == nil {
-		values = make(map[string]interface{})
-	}
-	values[storage.PrefixKey] = e.prefix
+	// SetPrefix rather than reaching into the values map: it creates the map
+	// when there is none — which is where the prefix used to be lost — and it
+	// does the whole thing under the message's own lock, where a read through
+	// GetValues followed by a write through SetValues is three separate
+	// acquisitions with the modification sitting outside all of them.
+	message.SetPrefix(e.prefix)
+
 	return e.queue.Append(message)
 }
 

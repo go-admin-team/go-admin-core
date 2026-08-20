@@ -114,9 +114,6 @@ func (*Memory) String() string {
 	return "memory"
 }
 
-func (m *Memory) connect() {
-}
-
 func (m *Memory) Get(key string) (string, error) {
 	item, err := m.getItem(key)
 	if err != nil || item == nil {

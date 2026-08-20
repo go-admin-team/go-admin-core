@@ -25,7 +25,6 @@ type Server struct {
 	internalCancel         context.CancelFunc
 	internalProceduresStop chan struct{}
 	shutdownCtx            context.Context
-	shutdownCancel         context.CancelFunc
 	logger                 *logger.Helper
 	opts                   options
 }
