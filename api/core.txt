@@ -794,6 +794,7 @@ var Runtime runtime.Runtime = runtime.NewConfig()
 var DefaultLanguage = "zh-CN"
 func GetRequestLogger(c *gin.Context) *logger.Helper
 func SetRequestLogger(c *gin.Context)
+func TranslateValidationErrors(err error, locale string) error
 type Api struct {
 	Context *gin.Context
 	Logger  *logger.Helper
