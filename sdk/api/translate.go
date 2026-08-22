@@ -30,6 +30,15 @@ var (
 )
 
 func buildTranslators() {
+	// gin allows validation to be turned off by setting binding.Validator to
+	// nil, and Engine on a nil interface panics. A caller who disabled the
+	// validator has no validation errors to translate, so leaving translators
+	// empty is the right outcome — translatorFor then returns nil and the
+	// error is passed through untouched.
+	if binding.Validator == nil {
+		return
+	}
+
 	v, ok := binding.Validator.Engine().(*validator.Validate)
 	if !ok {
 		return

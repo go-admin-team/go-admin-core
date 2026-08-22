@@ -61,7 +61,7 @@ func Setup(db *gorm.DB, _ string) *casbin.SyncedEnforcer {
 			panic(err)
 		}
 
-		// Without this the policy is whatever it was at startup. updateCallback
+		// Without this the policy is whatever it was at startup. UpdateCallback
 		// below is written for a watcher, which would make this immediate
 		// rather than periodic; polling needs no second piece of infrastructure
 		// and closes the gap today.

@@ -96,3 +96,17 @@ func hasHan(s string) bool {
 	}
 	return false
 }
+
+// gin lets an application turn validation off with binding.Validator = nil,
+// and Engine on a nil interface panics. Nothing here has validation errors to
+// translate in that state, so building no translators is the right answer —
+// the alternative was taking the caller's process down from a helper.
+func TestBuildTranslatorsSurvivesADisabledValidator(t *testing.T) {
+	saved := binding.Validator
+	binding.Validator = nil
+	t.Cleanup(func() { binding.Validator = saved })
+
+	// Called directly: buildTranslators runs once through sync.Once, and by
+	// this point another test has already spent it.
+	buildTranslators()
+}

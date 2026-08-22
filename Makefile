@@ -29,7 +29,7 @@ STATICCHECK ?= honnef.co/go/tools/cmd/staticcheck@v0.7.0
 lint:
 	@tmp=$$(mktemp -d); \
 	GOBIN=$$tmp $(GO) install $(STATICCHECK) || { rm -rf $$tmp; exit 1; }; \
-	targets="$$(go env GOOS)"; \
+	targets="$$($(GO) env GOOS)"; \
 	case "$$targets" in linux) ;; *) targets="$$targets linux";; esac; \
 	status=0; \
 	for os in $$targets; do \
