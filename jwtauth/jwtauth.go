@@ -171,8 +171,8 @@ var (
 	// ErrMissingExpField missing exp field in token
 	ErrMissingExpField = errors.New("missing exp field")
 
-	// ErrWrongFormatOfExp field must be float64 format
-	ErrWrongFormatOfExp = errors.New("exp must be float64 format")
+	// ErrWrongFormatOfExp exp is present but is not a number
+	ErrWrongFormatOfExp = errors.New("exp is not a number")
 
 	// ErrInvalidClaims indicates the token claims are not of the expected type
 	ErrInvalidClaims = errors.New("invalid token claims")
