@@ -2,7 +2,6 @@ package user
 
 import (
 	"encoding/json"
-	"math"
 	"net/http/httptest"
 	"testing"
 
@@ -97,5 +96,4 @@ func TestOrdinaryClaimsStillRead(t *testing.T) {
 	if got := GetDeptName(c); got != "hq" {
 		t.Errorf("GetDeptName = %q, want hq", got)
 	}
-	_ = math.MaxInt64
 }

@@ -313,6 +313,7 @@ func (mw *GinJWTMiddleware) TokenGenerator(data interface{}) (string, time.Time,
 type MapClaims map[string]interface{}
 func ExtractClaims(c *gin.Context) MapClaims
 func ExtractClaimsFromToken(token *jwt.Token) MapClaims
+func (m MapClaims) Int64(key string) (int64, bool)
 
 ## github.com/go-admin-team/go-admin-core/v2/jwtauth/user
 func ExtractClaims(c *gin.Context) jwt.MapClaims

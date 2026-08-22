@@ -411,11 +411,12 @@ func (mw *GinJWTMiddleware) middlewareImpl(c *gin.Context) {
 		return
 	}
 
-	if _, ok := claims["exp"].(float64); !ok {
+	exp, ok := claims.Int64("exp")
+	if !ok {
 		mw.unauthorized(c, http.StatusBadRequest, mw.HTTPStatusMessageFunc(ErrWrongFormatOfExp, c))
 		return
 	}
-	if int64(claims["exp"].(float64)) < mw.TimeFunc().Unix() {
+	if exp < mw.TimeFunc().Unix() {
 		mw.unauthorized(c, 6401, mw.HTTPStatusMessageFunc(ErrExpiredToken, c))
 		return
 	}
@@ -598,11 +599,10 @@ func (mw *GinJWTMiddleware) CheckIfTokenExpire(c *gin.Context) (jwt.MapClaims, e
 
 	// A validly signed token minted elsewhere may carry no orig_iat. Treat it
 	// as non-refreshable instead of panicking on the type assertion.
-	rawIat, ok := claims["orig_iat"].(float64)
+	origIat, ok := MapClaims(claims).Int64("orig_iat")
 	if !ok {
 		return nil, ErrMissingOrigIatField
 	}
-	origIat := int64(rawIat)
 
 	if origIat < mw.TimeFunc().Add(-mw.MaxRefresh).Unix() {
 		return nil, ErrExpiredToken
