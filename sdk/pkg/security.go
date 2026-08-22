@@ -1,8 +1,8 @@
 package pkg
 
 import (
+	"crypto/rand"
 	"encoding/hex"
-	"math/rand"
 
 	"golang.org/x/crypto/scrypt"
 )
@@ -12,6 +12,14 @@ const (
 	letter = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 )
 
+// generateRandString draws from crypto/rand.
+//
+// What each caller needs differs. A password salt needs to be unique, not
+// secret, and math/rand gave unique values. A token or a verification code —
+// which is what the exported names here read like they are for — needs to be
+// unpredictable, and math/rand is a generator whose internal state can be
+// recovered from enough of its output, after which every later value is known.
+// One source that satisfies both is simpler than two that each satisfy one.
 func generateRandString(length int, s string) string {
 	var chars = []byte(s)
 	clen := len(chars)
