@@ -20,8 +20,24 @@ test:
 test-race:
 	$(GO) test -short -race -timeout 600s ./...
 
+# Pinned, because a gate whose verdict can change without a code change is not
+# a gate. Analysed for the host and for linux: a file behind a build tag is
+# invisible to a run on another platform, which is how a finding in
+# watcher_linux.go stayed hidden from every local run and failed in CI.
+STATICCHECK ?= honnef.co/go/tools/cmd/staticcheck@v0.7.0
+
 lint:
-	$(GO) run honnef.co/go/tools/cmd/staticcheck@latest ./...
+	@tmp=$$(mktemp -d); \
+	GOBIN=$$tmp $(GO) install $(STATICCHECK) || { rm -rf $$tmp; exit 1; }; \
+	targets="$$(go env GOOS)"; \
+	case "$$targets" in linux) ;; *) targets="$$targets linux";; esac; \
+	status=0; \
+	for os in $$targets; do \
+		echo "staticcheck GOOS=$$os"; \
+		GOOS=$$os $$tmp/staticcheck ./... || status=1; \
+	done; \
+	rm -rf $$tmp; \
+	exit $$status
 
 vuln:
 	$(GO) run golang.org/x/vuln/cmd/govulncheck@latest ./...

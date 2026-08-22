@@ -59,6 +59,12 @@ gitignored; it is still surprising.
 worth copying: a written contract plus `cachetest`, which every implementation
 must pass. That suite is what caught the mistakes in the redis queue.
 
+**`make lint` analyses the host platform and linux.** A file behind a build
+tag is invisible to a run on any other platform: a finding in
+`watcher_linux.go` survived every local run on a mac and failed in CI. The
+staticcheck version is pinned for the same reason a gate should not change its
+verdict on its own.
+
 **Every lint exemption names its reason on the line above it.** There are
 eleven, all either the compatibility layer referring to what it is compatible
 with, generated protobuf code, or the working half of a feature nobody wired.
