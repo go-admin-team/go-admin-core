@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"log"
 	"log/slog"
 	"sort"
@@ -112,7 +111,7 @@ func Setup(s source.Source,
 
 func handleError(err error, msg string) {
 	if err != nil {
-		log.Fatal(fmt.Sprintf("%s: %s", msg, err.Error()))
+		log.Fatalf("%s: %s", msg, err.Error())
 	}
 }
 

@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -70,7 +69,7 @@ func (h ReplaceHelper) walkCallback(path string, f os.FileInfo, err error) error
 		return nil
 	}
 
-	buf, err := ioutil.ReadFile(path)
+	buf, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
@@ -82,7 +81,7 @@ func (h ReplaceHelper) walkCallback(path string, f os.FileInfo, err error) error
 	newContent := strings.Replace(content, h.OldText, h.NewText, -1)
 
 	//重新写入
-	err = ioutil.WriteFile(path, []byte(newContent), 0)
+	err = os.WriteFile(path, []byte(newContent), 0)
 	if err != nil {
 		return err
 	}

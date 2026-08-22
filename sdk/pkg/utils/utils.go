@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/hex"
-	"io/ioutil"
 	"os"
 	"strings"
 	"time"
@@ -50,7 +49,7 @@ func Base64ToImage(imageBase64 string) ([]byte, error) {
 }
 
 func GetDirFiles(dir string) ([]string, error) {
-	dirList, err := ioutil.ReadDir(dir)
+	dirList, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +76,7 @@ func GetCurrentTimeStamp() int64 {
 	return time.Now().UnixNano() / 1e6
 }
 
-//slice去重
+// RemoveRepByMap returns slc without its duplicates, keeping first order.
 func RemoveRepByMap(slc []string) []string {
 	result := []string{}
 	tempMap := map[string]byte{}

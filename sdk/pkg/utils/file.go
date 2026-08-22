@@ -3,7 +3,6 @@ package utils
 import (
 	"errors"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -15,7 +14,7 @@ import (
 
 // GetSize 获取文件大小
 func GetSize(f multipart.File) (int, error) {
-	content, err := ioutil.ReadAll(f)
+	content, err := io.ReadAll(f)
 
 	return len(content), err
 }
@@ -25,8 +24,13 @@ func GetExt(fileName string) string {
 	return path.Ext(fileName)
 }
 
-// CheckExist 检查文件是否存在
-func CheckExist(src string) bool {
+// NotExist reports whether nothing is at src.
+//
+// It was called CheckExist and documented as checking existence while
+// returning the opposite, so its one caller compensated by inverting twice.
+// Renamed rather than corrected in place: a caller who had worked the real
+// behaviour out gets a compile error instead of a silent inversion.
+func NotExist(src string) bool {
 	_, err := os.Stat(src)
 
 	return os.IsNotExist(err)
@@ -42,10 +46,8 @@ func CheckPermission(src string) bool {
 // IsNotExistMkDir 检查文件夹是否存在
 // 如果不存在则新建文件夹
 func IsNotExistMkDir(src string) error {
-	if exist := !CheckExist(src); exist == false {
-		if err := MkDir(src); err != nil {
-			return err
-		}
+	if NotExist(src) {
+		return MkDir(src)
 	}
 
 	return nil
@@ -101,7 +103,7 @@ func GetImgType(p string) (string, error) {
 		}
 	}
 
-	return "", errors.New("Invalid image type")
+	return "", errors.New("invalid image type")
 }
 
 // GetType 获取文件类型
