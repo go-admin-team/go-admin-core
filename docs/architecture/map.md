@@ -73,3 +73,23 @@ Adding one is a decision to be reviewed; `make lint` reports nothing otherwise.
 **`Runtime` has fifty-seven methods and is reached through a package-level
 global**, `sdk.Runtime`. Changes to it have effects no test in this repository
 will catch; the canary is the only thing that will.
+
+## Branches that are not lines of development
+
+`main` carries v2. `release/v1.7` carries v1 and is an ancestor of `main`, not
+a fork: nothing on it is missing from v2, so there is never anything to move in
+that direction. Fixes flow one way, from `main` back to `release/v1.7`, and
+only when they matter to someone who has not migrated.
+
+Everything else on the remote is abandoned. Read the SHA before assuming a
+branch name means what it says:
+
+| branch | last commit | what it is |
+| --- | --- | --- |
+| `up` | `2024-01-08` | Thirty-seven refactors and dependency bumps against the pre-v2 layout. Its one idea worth having — typed claim accessors, including one for identities beyond float64 — is in `jwtauth` now, arrived at independently four years later. Its own `claims.go` discards the result of an `fmt.Errorf`. |
+| `dev` | `2026-08-19` | One commit, the `Get` timeout, which is on `main` as a separate change. |
+| `fix/http-get-timeout` | `2026-08-19` | The same commit under another name. A private consumer pinned this SHA directly, which is why it ran with a fix neither released line had. |
+
+A branch that is one commit ahead of both `main` and `release/v1.7` is on
+neither line. Ahead of `main` alone means it was cut from `main`; ahead of
+`release/v1.7` alone means it predates the v2 split.
