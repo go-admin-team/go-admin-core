@@ -97,3 +97,24 @@ func TestOrdinaryClaimsStillRead(t *testing.T) {
 		t.Errorf("GetDeptName = %q, want hq", got)
 	}
 }
+
+// Accepting a number for a claim that has to be text would make the reading
+// depend on how the parser was configured: json.Number where UseNumber is on,
+// float64 where it is off, and only one of those was being accepted.
+func TestNumericClaimsAreNotNames(t *testing.T) {
+	for _, claims := range []jwt.MapClaims{
+		{"nice": json.Number("42"), "rolekey": json.Number("7"), "deptkey": json.Number("9")},
+		{"nice": float64(42), "rolekey": float64(7), "deptkey": float64(9)},
+	} {
+		c := contextWith(claims)
+		if got := GetUserName(c); got != "" {
+			t.Errorf("GetUserName = %q, want empty", got)
+		}
+		if got := GetRoleName(c); got != "" {
+			t.Errorf("GetRoleName = %q, want empty", got)
+		}
+		if got := GetDeptName(c); got != "" {
+			t.Errorf("GetDeptName = %q, want empty", got)
+		}
+	}
+}

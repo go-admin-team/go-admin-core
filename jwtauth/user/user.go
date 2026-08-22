@@ -1,7 +1,6 @@
 package user
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
@@ -10,15 +9,15 @@ import (
 	"github.com/go-admin-team/go-admin-core/v2/sdk/pkg"
 )
 
+// claimString reads a claim that has to be text.
+//
+// A number is not accepted in either encoding it can arrive in. Accepting
+// json.Number and not float64 would make the reading depend on how the parser
+// was configured: the same token would give a name of "42" with UseNumber on
+// and no name at all with it off.
 func claimString(v interface{}) (string, bool) {
-	switch s := v.(type) {
-	case string:
-		return s, true
-	case json.Number:
-		return s.String(), true
-	default:
-		return "", false
-	}
+	s, ok := v.(string)
+	return s, ok
 }
 
 func ExtractClaims(c *gin.Context) jwt.MapClaims {
