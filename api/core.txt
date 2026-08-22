@@ -9,7 +9,9 @@ func SetStore(s base64Captcha.Store)
 func Verify(id, code string, clear bool) bool
 
 ## github.com/go-admin-team/go-admin-core/v2/casbin
+var ReloadInterval = time.Minute
 func Setup(db *gorm.DB, _ string) *casbin.SyncedEnforcer
+func UpdateCallback(msg string)
 type Logger struct {
 func (l *Logger) EnableLog(enable bool)
 func (l *Logger) IsEnabled() bool
@@ -792,6 +794,7 @@ var Runtime runtime.Runtime = runtime.NewConfig()
 var DefaultLanguage = "zh-CN"
 func GetRequestLogger(c *gin.Context) *logger.Helper
 func SetRequestLogger(c *gin.Context)
+func TranslateValidationErrors(err error, locale string) error
 type Api struct {
 	Context *gin.Context
 	Logger  *logger.Helper
