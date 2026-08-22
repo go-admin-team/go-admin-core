@@ -1,6 +1,4 @@
-//lint:file-ignore SA1019 This file is part of the bridge to the deprecated
-// AdapterCache. Referring to what it exists to keep working is the point of it;
-// the deprecation is carried by storage.AdapterCache itself.
+//lint:file-ignore SA1019 Bridges to the deprecated AdapterCache; referring to what it exists to keep working is the point of the file, and the deprecation is carried by storage.AdapterCache itself.
 
 package api
 
