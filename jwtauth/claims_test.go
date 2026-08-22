@@ -2,6 +2,7 @@ package jwtauth
 
 import (
 	"encoding/json"
+	"math"
 	"testing"
 )
 
@@ -37,5 +38,28 @@ func TestMapClaimsInt64ReadsEveryEncodingANumberArrivesIn(t *testing.T) {
 		if _, ok := claims.Int64(key); ok {
 			t.Errorf("%s: read as a number", key)
 		}
+	}
+}
+
+// A float64 that is not an integer in range is not a number this claim can
+// hold. Converting one is undefined and yields MaxInt64 in practice, so 1e300
+// used to read as a valid identity; NaN used to read as zero, which several
+// callers treat as no user at all.
+func TestMapClaimsInt64RejectsFloatsThatAreNotIdentities(t *testing.T) {
+	for name, v := range map[string]float64{
+		"fractional":       3.14,
+		"nan":              math.NaN(),
+		"positive inf":     math.Inf(1),
+		"negative inf":     math.Inf(-1),
+		"far above range":  1e300,
+		"just above range": math.MaxInt64,
+	} {
+		if got, ok := (MapClaims{"identity": v}).Int64("identity"); ok {
+			t.Errorf("%s (%v) read as %d", name, v, got)
+		}
+	}
+
+	if got, ok := (MapClaims{"identity": float64(1755000000)}).Int64("identity"); !ok || got != 1755000000 {
+		t.Errorf("an ordinary integral float64 must still read: %d, %v", got, ok)
 	}
 }
