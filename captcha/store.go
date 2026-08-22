@@ -1,3 +1,5 @@
+//lint:file-ignore SA1019 Bridges to the deprecated AdapterCache; referring to what it exists to keep working is the point of the file, and the deprecation is carried by storage.AdapterCache itself.
+
 package captcha
 
 import (

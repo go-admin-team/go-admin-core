@@ -63,15 +63,14 @@ func NewFileWriter(opts ...Option) (*FileWriter, error) {
 }
 
 func (p *FileWriter) write() {
-	for {
-		select {
-		case d := <-p.input:
-			_, err := p.file.Write(d)
-			if err != nil {
-				log.Printf("write file failed, %s\n", err.Error())
-			}
-			p.checkFile()
+	// for range rather than a select with one case: a closed channel is
+	// always ready, so the select spun instead of ending.
+	for d := range p.input {
+		_, err := p.file.Write(d)
+		if err != nil {
+			log.Printf("write file failed, %s\n", err.Error())
 		}
+		p.checkFile()
 	}
 }
 

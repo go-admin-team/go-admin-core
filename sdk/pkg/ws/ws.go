@@ -147,7 +147,7 @@ func (manager *Manager) Start() {
 			}
 			manager.Lock.Unlock()
 
-			// 发送广播数据到某个组的 channel 变量 Send 中
+			// Broadcast to one group, through each client's own Message channel.
 			//case data := <-manager.boardCast:
 			//	if groupMap, ok := manager.wsGroup[data.GroupId]; ok {
 			//		for _, conn := range groupMap {
@@ -160,43 +160,53 @@ func (manager *Manager) Start() {
 
 // SendService 处理单个 client 发送数据
 func (manager *Manager) SendService() {
-	for {
-		select {
-		case data := <-manager.Message:
-			if groupMap, ok := manager.Group[data.Group]; ok {
-				if conn, ok := groupMap[data.Id]; ok {
-					conn.Message <- data.Message
-				}
-			}
+	// for range rather than a select with one case: a closed channel is
+	// always ready, so the select spun instead of ending.
+	for data := range manager.Message {
+		// Group is written under this lock when a client registers, so reading
+		// it without one is a concurrent map access; the send itself stays
+		// outside, because a slow client must not hold up registration.
+		manager.Lock.Lock()
+		conn, ok := manager.Group[data.Group][data.Id]
+		manager.Lock.Unlock()
+
+		if ok {
+			conn.Message <- data.Message
 		}
 	}
 }
 
 // SendGroupService 处理 group 广播数据
 func (manager *Manager) SendGroupService() {
-	for {
-		select {
-		// 发送广播数据到某个组的 channel 变量 Send 中
-		case data := <-manager.GroupMessage:
-			if groupMap, ok := manager.Group[data.Group]; ok {
-				for _, conn := range groupMap {
-					conn.Message <- data.Message
-				}
-			}
+	// Broadcast to one group, through each client's own Message channel.
+	for data := range manager.GroupMessage {
+		manager.Lock.Lock()
+		conns := make([]*Client, 0, len(manager.Group[data.Group]))
+		for _, conn := range manager.Group[data.Group] {
+			conns = append(conns, conn)
+		}
+		manager.Lock.Unlock()
+
+		for _, conn := range conns {
+			conn.Message <- data.Message
 		}
 	}
 }
 
 // SendAllService 处理广播数据
 func (manager *Manager) SendAllService() {
-	for {
-		select {
-		case data := <-manager.BroadCastMessage:
-			for _, v := range manager.Group {
-				for _, conn := range v {
-					conn.Message <- data.Message
-				}
+	for data := range manager.BroadCastMessage {
+		manager.Lock.Lock()
+		conns := make([]*Client, 0, manager.clientCount)
+		for _, group := range manager.Group {
+			for _, conn := range group {
+				conns = append(conns, conn)
 			}
+		}
+		manager.Lock.Unlock()
+
+		for _, conn := range conns {
+			conn.Message <- data.Message
 		}
 	}
 }

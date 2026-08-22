@@ -1,3 +1,5 @@
+//lint:file-ignore SA1019 Bridges to the deprecated AdapterCache; referring to what it exists to keep working is the point of the file, and the deprecation is carried by storage.AdapterCache itself.
+
 package api
 
 import (
@@ -86,7 +88,9 @@ func (e *Api) Bind(d interface{}, bindings ...binding.Binding) *Api {
 			continue
 		}
 		if err != nil {
-			e.AddError(err)
+			// Validation failures are rendered in the language the request
+			// asked for. Everything else is passed through untouched.
+			e.AddError(TranslateValidationErrors(err, e.getAcceptLanguage()))
 			break
 		}
 		validated = true
@@ -96,7 +100,7 @@ func (e *Api) Bind(d interface{}, bindings ...binding.Binding) *Api {
 	// required would be bypassed entirely (issue #81).
 	if !validated && e.Errors == nil {
 		if err = validate(d); err != nil {
-			e.AddError(err)
+			e.AddError(TranslateValidationErrors(err, e.getAcceptLanguage()))
 		}
 	}
 	//vd.SetErrorFactory(func(failPath, msg string) error {
@@ -167,7 +171,8 @@ func (e Api) Translate(form, to interface{}) {
 	pkg.Translate(form, to)
 }
 
-// getAcceptLanguage 获取当前语言
+// getAcceptLanguage reports the language the request asked for, falling back
+// to DefaultLanguage.
 func (e Api) getAcceptLanguage() string {
 	languages := language.ParseAcceptLanguage(e.Context.GetHeader("Accept-Language"), nil)
 	if len(languages) == 0 {

@@ -78,3 +78,50 @@ func TestWriteEndsWhenTheClientContextIsCancelled(t *testing.T) {
 		t.Fatal("Write did not return after the client context was cancelled")
 	}
 }
+
+// Group is written under manager.Lock when a client registers and read without
+// it by every send service. A client connecting while a message is dispatched
+// is a concurrent map read and write; ranging over it during a write is a
+// fatal error rather than a failed test.
+func TestManagerGroupIsNotReadWhileWritten(t *testing.T) {
+	m := &Manager{
+		Group:            make(map[string]map[string]*Client),
+		Register:         make(chan *Client, 8),
+		UnRegister:       make(chan *Client, 8),
+		Message:          make(chan *MessageData, 8),
+		GroupMessage:     make(chan *GroupMessageData, 8),
+		BroadCastMessage: make(chan *BroadCastMessageData, 8),
+	}
+
+	go m.Start()
+	go m.SendAllService()
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for i := 0; i < 300; i++ {
+			c := &Client{
+				Id:      "c",
+				Group:   "g",
+				Message: make(chan []byte, 1),
+			}
+			// Drained, because a dispatcher blocked on a full client buffer
+			// stops registering anyone — which is a real property, just not
+			// the one under test here.
+			go func() {
+				for range c.Message {
+				}
+			}()
+
+			m.Register <- c
+			m.BroadCastMessage <- &BroadCastMessageData{Message: []byte("x")}
+		}
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(10 * time.Second):
+		t.Fatal("the manager stopped consuming")
+	}
+	time.Sleep(100 * time.Millisecond)
+}

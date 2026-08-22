@@ -51,7 +51,7 @@ func (m *Message) GetPrefix() (prefix string) {
 	if m.Values == nil {
 		return
 	}
-	v, _ := m.Values[storage.PrefixKey]
+	v := m.Values[storage.PrefixKey]
 	prefix, _ = v.(string)
 	return
 }

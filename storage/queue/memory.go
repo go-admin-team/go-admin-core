@@ -56,9 +56,9 @@ func (m *Memory) Append(message storage.Messager) error {
 	}
 
 	var q queue
-	switch v.(type) {
+	switch v := v.(type) {
 	case queue:
-		q = v.(queue)
+		q = v
 	default:
 		q = m.makeQueue()
 		m.queue.Store(message.GetStream(), q)
@@ -90,9 +90,9 @@ func (m *Memory) Register(name string, f storage.ConsumerFunc) {
 		m.queue.Store(name, v)
 	}
 	var q queue
-	switch v.(type) {
+	switch v := v.(type) {
 	case queue:
-		q = v.(queue)
+		q = v
 	default:
 		q = m.makeQueue()
 		m.queue.Store(name, q)
