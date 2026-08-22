@@ -14,19 +14,27 @@ import (
 func Get(url string) (string, error) {
 
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", url, nil)
-	req.Header.Set("Accept", "*/*")
-	req.Header.Set("Content-Type", "application/json")
+	// The header was set before this check, so a url NewRequest rejects gave
+	// the caller a nil dereference instead of the error it returns.
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return "", err
 	}
+	req.Header.Set("Accept", "*/*")
+	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
-	result, _ := io.ReadAll(resp.Body)
+
+	// A body that fails halfway through used to come back as a short string
+	// with no error, which reads exactly like a successful empty response.
+	result, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
 
 	return string(result), nil
 }
@@ -40,14 +48,22 @@ func Post(url string, data interface{}, contentType string) ([]byte, error) {
 
 	// 超时时间：5秒
 	client := &http.Client{Timeout: 5 * time.Second}
-	jsonStr, _ := json.Marshal(data)
+	// A value that will not marshal used to be posted as an empty body.
+	jsonStr, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+
 	resp, err := client.Post(url, contentType, bytes.NewBuffer(jsonStr))
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	result, _ := io.ReadAll(resp.Body)
+	result, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
 	return result, nil
 
 }
