@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 // Get set the request headers before checking the error from NewRequest, so a
@@ -80,5 +81,48 @@ func TestPostSendsAndReads(t *testing.T) {
 	}
 	if string(got) != `{"ok":true}` {
 		t.Errorf("Post = %s", got)
+	}
+}
+
+// The fallback is asserted directly. Driving it through get cannot see it: an
+// unbounded client and a thirty-second one behave identically for every
+// response that arrives, and the only case that separates them takes thirty
+// seconds to reach.
+func TestEffectiveTimeoutNeverYieldsAnUnboundedClient(t *testing.T) {
+	for _, d := range []time.Duration{0, -time.Second} {
+		if got := effectiveTimeout(d); got != getTimeout {
+			t.Errorf("effectiveTimeout(%v) = %v, want %v", d, got, getTimeout)
+		}
+	}
+	if got := effectiveTimeout(time.Second); got != time.Second {
+		t.Errorf("effectiveTimeout(1s) = %v, want it left alone", got)
+	}
+}
+
+// A server that accepts and never answers is what the timeout is for. Without
+// one the request never returns and the caller's goroutine is gone for good.
+func TestGetGivesUpOnAServerThatNeverAnswers(t *testing.T) {
+	block := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		<-block
+	}))
+	defer func() {
+		close(block)
+		srv.Close()
+	}()
+
+	done := make(chan error, 1)
+	go func() {
+		_, err := get(srv.URL, 200*time.Millisecond)
+		done <- err
+	}()
+
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Error("a request to a server that never answered returned no error")
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("the request never came back: there is no bound on it")
 	}
 }
