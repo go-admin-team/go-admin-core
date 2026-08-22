@@ -163,10 +163,15 @@ func (manager *Manager) SendService() {
 	// for range rather than a select with one case: a closed channel is
 	// always ready, so the select spun instead of ending.
 	for data := range manager.Message {
-		if groupMap, ok := manager.Group[data.Group]; ok {
-			if conn, ok := groupMap[data.Id]; ok {
-				conn.Message <- data.Message
-			}
+		// Group is written under this lock when a client registers, so reading
+		// it without one is a concurrent map access; the send itself stays
+		// outside, because a slow client must not hold up registration.
+		manager.Lock.Lock()
+		conn, ok := manager.Group[data.Group][data.Id]
+		manager.Lock.Unlock()
+
+		if ok {
+			conn.Message <- data.Message
 		}
 	}
 }
@@ -175,10 +180,15 @@ func (manager *Manager) SendService() {
 func (manager *Manager) SendGroupService() {
 	// Broadcast to one group, through each client's own Message channel.
 	for data := range manager.GroupMessage {
-		if groupMap, ok := manager.Group[data.Group]; ok {
-			for _, conn := range groupMap {
-				conn.Message <- data.Message
-			}
+		manager.Lock.Lock()
+		conns := make([]*Client, 0, len(manager.Group[data.Group]))
+		for _, conn := range manager.Group[data.Group] {
+			conns = append(conns, conn)
+		}
+		manager.Lock.Unlock()
+
+		for _, conn := range conns {
+			conn.Message <- data.Message
 		}
 	}
 }
@@ -186,10 +196,17 @@ func (manager *Manager) SendGroupService() {
 // SendAllService 处理广播数据
 func (manager *Manager) SendAllService() {
 	for data := range manager.BroadCastMessage {
-		for _, v := range manager.Group {
-			for _, conn := range v {
-				conn.Message <- data.Message
+		manager.Lock.Lock()
+		conns := make([]*Client, 0, manager.clientCount)
+		for _, group := range manager.Group {
+			for _, conn := range group {
+				conns = append(conns, conn)
 			}
+		}
+		manager.Lock.Unlock()
+
+		for _, conn := range conns {
+			conn.Message <- data.Message
 		}
 	}
 }
