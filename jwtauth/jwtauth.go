@@ -171,8 +171,8 @@ var (
 	// ErrMissingExpField missing exp field in token
 	ErrMissingExpField = errors.New("missing exp field")
 
-	// ErrWrongFormatOfExp field must be float64 format
-	ErrWrongFormatOfExp = errors.New("exp must be float64 format")
+	// ErrWrongFormatOfExp exp is present but is not a number
+	ErrWrongFormatOfExp = errors.New("exp is not a number")
 
 	// ErrInvalidClaims indicates the token claims are not of the expected type
 	ErrInvalidClaims = errors.New("invalid token claims")
@@ -411,11 +411,12 @@ func (mw *GinJWTMiddleware) middlewareImpl(c *gin.Context) {
 		return
 	}
 
-	if _, ok := claims["exp"].(float64); !ok {
+	exp, ok := claims.Int64("exp")
+	if !ok {
 		mw.unauthorized(c, http.StatusBadRequest, mw.HTTPStatusMessageFunc(ErrWrongFormatOfExp, c))
 		return
 	}
-	if int64(claims["exp"].(float64)) < mw.TimeFunc().Unix() {
+	if exp < mw.TimeFunc().Unix() {
 		mw.unauthorized(c, 6401, mw.HTTPStatusMessageFunc(ErrExpiredToken, c))
 		return
 	}
@@ -598,11 +599,10 @@ func (mw *GinJWTMiddleware) CheckIfTokenExpire(c *gin.Context) (jwt.MapClaims, e
 
 	// A validly signed token minted elsewhere may carry no orig_iat. Treat it
 	// as non-refreshable instead of panicking on the type assertion.
-	rawIat, ok := claims["orig_iat"].(float64)
+	origIat, ok := MapClaims(claims).Int64("orig_iat")
 	if !ok {
 		return nil, ErrMissingOrigIatField
 	}
-	origIat := int64(rawIat)
 
 	if origIat < mw.TimeFunc().Add(-mw.MaxRefresh).Unix() {
 		return nil, ErrExpiredToken
@@ -720,7 +720,7 @@ func (mw *GinJWTMiddleware) ParseToken(c *gin.Context) (*jwt.Token, error) {
 		c.Set("JWT_TOKEN", token)
 
 		return mw.Key, nil
-	})
+	}, jwt.WithJSONNumber())
 }
 
 // ParseTokenString parse jwt token string
@@ -734,7 +734,7 @@ func (mw *GinJWTMiddleware) ParseTokenString(token string) (*jwt.Token, error) {
 		}
 
 		return mw.Key, nil
-	})
+	}, jwt.WithJSONNumber())
 }
 
 func (mw *GinJWTMiddleware) unauthorized(c *gin.Context, code int, message string) {

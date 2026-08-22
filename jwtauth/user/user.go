@@ -5,9 +5,20 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/go-admin-team/go-admin-core/v2/sdk/pkg"
 	jwt "github.com/go-admin-team/go-admin-core/v2/jwtauth"
+	"github.com/go-admin-team/go-admin-core/v2/sdk/pkg"
 )
+
+// claimString reads a claim that has to be text.
+//
+// A number is not accepted in either encoding it can arrive in. Accepting
+// json.Number and not float64 would make the reading depend on how the parser
+// was configured: the same token would give a name of "42" with UseNumber on
+// and no name at all with it off.
+func claimString(v interface{}) (string, bool) {
+	s, ok := v.(string)
+	return s, ok
+}
 
 func ExtractClaims(c *gin.Context) jwt.MapClaims {
 	claims, exists := c.Get(jwt.JwtPayloadKey)
@@ -30,7 +41,11 @@ func Get(c *gin.Context, key string) interface{} {
 func GetUserId(c *gin.Context) int {
 	data := ExtractClaims(c)
 	if data["identity"] != nil {
-		return int((data["identity"]).(float64))
+		if id, ok := data.Int64("identity"); ok {
+			return int(id)
+		}
+		fmt.Println(pkg.GetCurrentTimeStr() + " [WARING] " + c.Request.Method + " " + c.Request.URL.Path + " GetUserId: identity is not a number")
+		return 0
 	}
 	fmt.Println(pkg.GetCurrentTimeStr() + " [WARING] " + c.Request.Method + " " + c.Request.URL.Path + " GetUserId 缺少 identity")
 	return 0
@@ -39,7 +54,11 @@ func GetUserId(c *gin.Context) int {
 func GetUserIdStr(c *gin.Context) string {
 	data := ExtractClaims(c)
 	if data["identity"] != nil {
-		return pkg.Int64ToString(int64((data["identity"]).(float64)))
+		if id, ok := data.Int64("identity"); ok {
+			return pkg.Int64ToString(id)
+		}
+		fmt.Println(pkg.GetCurrentTimeStr() + " [WARING] " + c.Request.Method + " " + c.Request.URL.Path + " GetUserIdStr: identity is not a number")
+		return ""
 	}
 	fmt.Println(pkg.GetCurrentTimeStr() + " [WARING] " + c.Request.Method + " " + c.Request.URL.Path + " GetUserIdStr 缺少 identity")
 	return ""
@@ -48,7 +67,10 @@ func GetUserIdStr(c *gin.Context) string {
 func GetUserName(c *gin.Context) string {
 	data := ExtractClaims(c)
 	if data["nice"] != nil {
-		return (data["nice"]).(string)
+		if s, ok := claimString(data["nice"]); ok {
+			return s
+		}
+		return ""
 	}
 	fmt.Println(pkg.GetCurrentTimeStr() + " [WARING] " + c.Request.Method + " " + c.Request.URL.Path + " GetUserName 缺少 nice")
 	return ""
@@ -57,7 +79,10 @@ func GetUserName(c *gin.Context) string {
 func GetRoleName(c *gin.Context) string {
 	data := ExtractClaims(c)
 	if data["rolekey"] != nil {
-		return (data["rolekey"]).(string)
+		if s, ok := claimString(data["rolekey"]); ok {
+			return s
+		}
+		return ""
 	}
 	fmt.Println(pkg.GetCurrentTimeStr() + " [WARING] " + c.Request.Method + " " + c.Request.URL.Path + " GetRoleName 缺少 rolekey")
 	return ""
@@ -66,7 +91,11 @@ func GetRoleName(c *gin.Context) string {
 func GetRoleId(c *gin.Context) int {
 	data := ExtractClaims(c)
 	if data["roleid"] != nil {
-		i := int((data["roleid"]).(float64))
+		id, ok := data.Int64("roleid")
+		if !ok {
+			return 0
+		}
+		i := int(id)
 		return i
 	}
 	fmt.Println(pkg.GetCurrentTimeStr() + " [WARING] " + c.Request.Method + " " + c.Request.URL.Path + " GetRoleId 缺少 roleid")
@@ -76,7 +105,11 @@ func GetRoleId(c *gin.Context) int {
 func GetDeptId(c *gin.Context) int {
 	data := ExtractClaims(c)
 	if data["deptid"] != nil {
-		i := int((data["deptid"]).(float64))
+		id, ok := data.Int64("deptid")
+		if !ok {
+			return 0
+		}
+		i := int(id)
 		return i
 	}
 	fmt.Println(pkg.GetCurrentTimeStr() + " [WARING] " + c.Request.Method + " " + c.Request.URL.Path + " GetDeptId 缺少 deptid")
@@ -86,7 +119,10 @@ func GetDeptId(c *gin.Context) int {
 func GetDeptName(c *gin.Context) string {
 	data := ExtractClaims(c)
 	if data["deptkey"] != nil {
-		return (data["deptkey"]).(string)
+		if s, ok := claimString(data["deptkey"]); ok {
+			return s
+		}
+		return ""
 	}
 	fmt.Println(pkg.GetCurrentTimeStr() + " [WARING] " + c.Request.Method + " " + c.Request.URL.Path + " GetDeptName 缺少 deptkey")
 	return ""
