@@ -720,7 +720,7 @@ func (mw *GinJWTMiddleware) ParseToken(c *gin.Context) (*jwt.Token, error) {
 		c.Set("JWT_TOKEN", token)
 
 		return mw.Key, nil
-	})
+	}, jwt.WithJSONNumber())
 }
 
 // ParseTokenString parse jwt token string
@@ -734,7 +734,7 @@ func (mw *GinJWTMiddleware) ParseTokenString(token string) (*jwt.Token, error) {
 		}
 
 		return mw.Key, nil
-	})
+	}, jwt.WithJSONNumber())
 }
 
 func (mw *GinJWTMiddleware) unauthorized(c *gin.Context, code int, message string) {
