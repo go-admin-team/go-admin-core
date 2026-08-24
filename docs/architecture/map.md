@@ -81,14 +81,24 @@ a fork: nothing on it is missing from v2, so there is never anything to move in
 that direction. Fixes flow one way, from `main` back to `release/v1.7`, and
 only when they matter to someone who has not migrated.
 
-Everything else on the remote is abandoned. Read the SHA before assuming a
-branch name means what it says:
+Everything else has been deleted from the remote, having been read first. The
+SHAs are here so any of them can be brought back with
+`git branch <name> <sha>` — nothing below is reachable from `main`, so a git gc
+will eventually collect them, and after that only a clone taken before this
+commit still has them.
 
-| branch | last commit | what it is |
-| --- | --- | --- |
-| `up` | `2024-01-08` | Thirty-seven refactors and dependency bumps against the pre-v2 layout. Its one idea worth having — typed claim accessors, including one for identities beyond float64 — is in `jwtauth` now, arrived at independently four years later. Its own `claims.go` discards the result of an `fmt.Errorf`. |
-| `dev` | `2026-08-19` | One commit, the `Get` timeout, which is on `main` as a separate change. |
-| `fix/http-get-timeout` | `2026-08-19` | The same commit under another name. A private consumer pinned this SHA directly, which is why it ran with a fix neither released line had. |
+| branch | sha | last commit | what it was |
+| --- | --- | --- | --- |
+| `up` | `fbbcd03` | `2024-01-08` | Thirty-seven refactors and dependency bumps against the pre-v2 layout. Its one idea worth having — typed claim accessors, including one for identities beyond float64 — is in `jwtauth` now, arrived at independently four years later. Its own `claims.go` discards the result of an `fmt.Errorf`. |
+| `dev` | `dbc1957` | `2026-08-19` | One commit, the `Get` timeout, which is on `main` as a separate change. |
+| `fix/http-get-timeout` | `dbc1957` | `2026-08-19` | The same commit under another name. A private consumer pinned this SHA directly, which is why it ran with a fix neither released line had. |
+
+`dev` and `fix/http-get-timeout` are the same commit under two names, which is
+worth noticing before treating them as two pieces of unmerged work.
+
+There was also a branch called `master`, `8a92061` from `2022-11-24`, carrying
+the fix for the bare claim assertions that #136 arrived at independently four
+years later. It is deleted too.
 
 A branch that is one commit ahead of both `main` and `release/v1.7` is on
 neither line. Ahead of `main` alone means it was cut from `main`; ahead of
