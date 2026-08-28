@@ -1,6 +1,19 @@
 # Changelog
 
-All notable changes to go-admin-core will be documented in this file.
+> **This file is no longer maintained.**
+>
+> Release notes live at
+> [GitHub Releases](https://github.com/go-admin-team/go-admin-core/releases).
+> This file stops at 1.6.0-beta and describes none of v1.6.4, v1.6.5, v1.7.0,
+> v1.8.0, v1.8.1, v2.0.0, v2.0.1 or v2.1.0 — reading it as current would put
+> the project eight releases behind.
+>
+> It is kept because the v1.5 and v1.6 entries below are the only record of
+> that work. For moving from v1 to v2, see
+> [docs/migration/v2.0.0.md](docs/migration/v2.0.0.md).
+
+All notable changes to go-admin-core were documented in this file up to
+1.6.0-beta.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
