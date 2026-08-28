@@ -43,8 +43,17 @@ func ResolveSearchQuery(driver string, q interface{}, condition Condition) {
 	//}
 
 	for i := 0; i < qType.NumField(); i++ {
+		// Reflection cannot read an unexported field, and Interface panics on
+		// one rather than returning an error - so a single unexported field on
+		// a search DTO took down the whole list request. A field the author did
+		// not export is not part of the search contract either way.
+		field := qType.Field(i)
+		if !field.IsExported() {
+			continue
+		}
+
 		tag, ok = "", false
-		tag, ok = qType.Field(i).Tag.Lookup(FromQueryTag)
+		tag, ok = field.Tag.Lookup(FromQueryTag)
 		if !ok {
 			//递归调用
 			ResolveSearchQuery(driver, qValue.Field(i).Interface(), condition)
