@@ -67,17 +67,22 @@ func GenerateMsgIDFromContext(c *gin.Context) string {
 	return requestId
 }
 
+// errDBNotInContext is built once rather than per call. Handlers call GetOrm
+// before doing anything else, so a misconfigured route allocated an error on
+// every request it served - and the message was identical every time.
+var errDBNotInContext = errors.New("db connect not exist")
+
 // GetOrm 获取orm连接
 func GetOrm(c *gin.Context) (*gorm.DB, error) {
 	idb, exist := c.Get("db")
 	if !exist {
-		return nil, errors.New("db connect not exist")
+		return nil, errDBNotInContext
 	}
 	switch db := idb.(type) {
 	case *gorm.DB:
 		//新增操作
 		return db, nil
 	default:
-		return nil, errors.New("db connect not exist")
+		return nil, errDBNotInContext
 	}
 }
