@@ -63,10 +63,14 @@ func ResolveSearchQuery(driver string, q interface{}, condition Condition) {
 		case "-":
 			continue
 		}
-		t = makeTag(tag)
+		// The zero check comes before the tag is parsed, not after. A list page
+		// opened without filters leaves every field zero, and makeTag allocates
+		// on each one only for the result to be dropped on the next line - two
+		// thirds of the work on the most common request of all.
 		if qValue.Field(i).IsZero() {
 			continue
 		}
+		t = makeTag(tag)
 		//解析 Postgres `语法不支持，单独适配
 		if driver == Postgres {
 			pgSql(driver, t, condition, qValue, i)
