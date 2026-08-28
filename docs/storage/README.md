@@ -85,6 +85,13 @@ from the Redis one in two ways that only show up on the switch:
 - The original memory queue retries a failed message three times on its own.
   Redis retries through `max_attempts`; `MemQueue`, which `Open()` returns, does
   not retry at all.
+- **A full queue behaves differently.** The original memory queue drops the
+  message and returns an error, so `poolSize` is the point at which messages
+  start being lost rather than a tuning knob: one consumer goroutine per topic
+  draining into a database will not keep up with a busy endpoint, and the
+  default of 100 empties into losses under load. `MemQueue` and Redis apply
+  back pressure instead — `Publish` blocks until there is room or the context
+  is done. Size the original queue for the burst, or move to `Open()`.
 
 Code that wants one behaviour on both backends should move to `Open()` and the
 `Queue` contract.
@@ -107,7 +114,7 @@ type Cache interface {
 
 | Implementation | Constructor | Use |
 | --- | --- | --- |
-| memory | `cache.NewMemCache()` | one instance, nothing to run |
+| memory | `cache.NewMemCache()` / `cache.NewMemCacheWithOptions(o)` | one instance, nothing to run |
 | Redis | `redis.New(client)` / `redis.Open(ctx, url)` | several instances |
 
 `redis.New` borrows the client and leaves it open on `Close`; `redis.Open` owns
@@ -125,6 +132,22 @@ Rules worth knowing before writing against it:
   no ttl.
 - `ctx` is checked first, so a caller that gave up gets its own error rather
   than `ErrCacheClosed`.
+- **`MemCache` is bounded — the older `Memory` is not.** `cache.NewMemCache`,
+  which is what `Open()` returns, holds a million entries by default and evicts
+  to stay within that, so an entry can disappear before its ttl expires. Expired
+  entries are dropped first; only a shard with none to spare drops a live one.
+  Treat any read as able to miss — which the contract already required.
+  `cache.NewMemCacheWithOptions(cache.MemCacheOptions{MaxEntries: n})` sets
+  another limit, and a negative `MaxEntries` restores unbounded growth, which is
+  only safe where the keyspace is bounded by something else. Redis is bounded by
+  that server's own `maxmemory` policy instead.
+
+  `Setup()`'s memory branch still returns `cache.NewMemory`, which has **no such
+  bound** and grows until the process runs out of memory. Everything reached
+  through `AdapterCache` is on that path — `captcha.NewCacheStore` and
+  `Runtime.SetCacheAdapter` among them — so a caller that writes one entry per
+  request under a key it never reuses should either bound the keyspace itself or
+  move to `Open()`.
 
 `storage.WithPrefix(c, "app:")` namespaces one backend across applications.
 

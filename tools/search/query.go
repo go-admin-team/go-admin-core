@@ -43,8 +43,17 @@ func ResolveSearchQuery(driver string, q interface{}, condition Condition) {
 	//}
 
 	for i := 0; i < qType.NumField(); i++ {
+		// Reflection cannot read an unexported field, and Interface panics on
+		// one rather than returning an error - so a single unexported field on
+		// a search DTO took down the whole list request. A field the author did
+		// not export is not part of the search contract either way.
+		field := qType.Field(i)
+		if !field.IsExported() {
+			continue
+		}
+
 		tag, ok = "", false
-		tag, ok = qType.Field(i).Tag.Lookup(FromQueryTag)
+		tag, ok = field.Tag.Lookup(FromQueryTag)
 		if !ok {
 			//递归调用
 			ResolveSearchQuery(driver, qValue.Field(i).Interface(), condition)
@@ -54,10 +63,14 @@ func ResolveSearchQuery(driver string, q interface{}, condition Condition) {
 		case "-":
 			continue
 		}
-		t = makeTag(tag)
+		// The zero check comes before the tag is parsed, not after. A list page
+		// opened without filters leaves every field zero, and makeTag allocates
+		// on each one only for the result to be dropped on the next line - two
+		// thirds of the work on the most common request of all.
 		if qValue.Field(i).IsZero() {
 			continue
 		}
+		t = makeTag(tag)
 		//解析 Postgres `语法不支持，单独适配
 		if driver == Postgres {
 			pgSql(driver, t, condition, qValue, i)

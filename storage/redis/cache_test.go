@@ -14,7 +14,7 @@ import (
 
 // redisURL is where the tests look for a server. CI provides one through a
 // service container; locally the tests skip unless REDIS_URL is set.
-func redisURL(t *testing.T) string {
+func redisURL(t testing.TB) string {
 	t.Helper()
 
 	url := os.Getenv("REDIS_URL")

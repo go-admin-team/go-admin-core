@@ -189,39 +189,53 @@ func (m *Memory) Decrease(key string) error {
 	return m.calculate(key, -1)
 }
 
+// calculate is a read-modify-write, so it takes the write lock. Under the read
+// lock it used to take, concurrent callers all read the same value and wrote
+// back the same result: 50 goroutines incrementing 200 times each landed about
+// 10% short of the expected total.
+//
+// It also stores a new item rather than writing through the pointer it just
+// read. That pointer is published in the sync.Map and concurrent Get callers
+// hold it, so assigning to its fields races with them however the writers are
+// locked against each other.
 func (m *Memory) calculate(key string, num int) error {
-	m.mutex.RLock()
-	defer m.mutex.RUnlock()
-	item, err := m.getItem(key)
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	it, err := m.getItem(key)
 	if err != nil {
 		return err
 	}
 
-	if item == nil {
+	if it == nil {
 		err = fmt.Errorf("%s not exist", key)
 		return err
 	}
 	var n int
-	n, err = cast.ToIntE(item.Value)
+	n, err = cast.ToIntE(it.Value)
 	if err != nil {
 		return err
 	}
-	n += num
-	item.Value = strconv.Itoa(n)
-	return m.setItem(key, item)
+	return m.setItem(key, &item{
+		Value:   strconv.Itoa(n + num),
+		Expired: it.Expired,
+	})
 }
 
+// Expire replaces the item for the same reason calculate does: the item it
+// reads is already visible to concurrent readers.
 func (m *Memory) Expire(key string, dur time.Duration) error {
-	m.mutex.RLock()
-	defer m.mutex.RUnlock()
-	item, err := m.getItem(key)
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	it, err := m.getItem(key)
 	if err != nil {
 		return err
 	}
-	if item == nil {
+	if it == nil {
 		err = fmt.Errorf("%s not exist", key)
 		return err
 	}
-	item.Expired = time.Now().Add(dur)
-	return m.setItem(key, item)
+	return m.setItem(key, &item{
+		Value:   it.Value,
+		Expired: time.Now().Add(dur),
+	})
 }

@@ -3,7 +3,7 @@
 [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
-[中文文档](README.zh-CN.md)
+[English](README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja-JP.md)
 
 ## ✨ Core Features
 
@@ -30,7 +30,8 @@
 - [x] Configuration management (multiple data sources)
 - [x] Log writer (file rotation support)
 
-> **Latest Version:** Go 1.25 | 35 unit tests + 30+ performance benchmarks
+> Every change runs the race detector, staticcheck on two platforms, and
+> allocation budgets on the paths that execute per request.
 
 ---
 
@@ -39,7 +40,7 @@
 ### Installation
 
 ```bash
-go get -u github.com/go-admin-team/go-admin-core
+go get -u github.com/go-admin-team/go-admin-core/v2
 ```
 
 **System Requirements:** Go 1.25 or higher (see the `go` directive in `go.mod`)
@@ -49,7 +50,7 @@ go get -u github.com/go-admin-team/go-admin-core
 ```go
 package main
 
-import "github.com/go-admin-team/go-admin-core/logger"
+import "github.com/go-admin-team/go-admin-core/v2/logger"
 
 func main() {
     // Create Logrus logger instance
@@ -132,7 +133,7 @@ asyncLog.Fields(map[string]interface{}{
 ```go
 package main
 
-import "github.com/go-admin-team/go-admin-core/config"
+import "github.com/go-admin-team/go-admin-core/v2/config"
 
 func main() {
     source := config.FileSource("config.json")
@@ -156,24 +157,32 @@ func main() {
 
 ---
 
-## 🧪 Test Coverage
+## 🧪 Testing
 
 ```bash
-# Run all tests
-go test ./... -v
+# Everything the CI gate runs
+make ci
 
-# Performance benchmarks
-go test ./logger -bench=. -benchmem
+# Race detector, across every package
+make test-race
 
-# Concurrency safety check
-go test ./logger -race
+# Benchmarks — a smoke run; raise -benchtime for numbers worth comparing
+make bench
+
+# Sustained load, resource reclamation and goroutine lifecycles
+GOADMIN_SOAK=2m make soak
+
+# Measure this tree against a base revision, through benchstat
+make bench-compare BASE=origin/main
 ```
 
-**Test Results:**
-- ✅ Unit Tests: 35/35 passed
-- ✅ Performance Benchmarks: 30+ passed
-- ✅ Concurrency Safety: Race Detector 0 warnings
-- ✅ Code Coverage: 85%+
+**Enforced on every change:**
+
+- Race detector, every package
+- staticcheck for both darwin and linux
+- The exported API snapshot in `api/core.txt` must match the code
+- Allocation budgets on the paths that run per request
+- Downstream consumers are built against this tree
 
 ---
 
