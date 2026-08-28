@@ -39,7 +39,7 @@
 ### Installation
 
 ```bash
-go get -u github.com/go-admin-team/go-admin-core
+go get -u github.com/go-admin-team/go-admin-core/v2
 ```
 
 **System Requirements:** Go 1.25 or higher (see the `go` directive in `go.mod`)
@@ -49,7 +49,7 @@ go get -u github.com/go-admin-team/go-admin-core
 ```go
 package main
 
-import "github.com/go-admin-team/go-admin-core/logger"
+import "github.com/go-admin-team/go-admin-core/v2/logger"
 
 func main() {
     // Create Logrus logger instance
@@ -132,7 +132,7 @@ asyncLog.Fields(map[string]interface{}{
 ```go
 package main
 
-import "github.com/go-admin-team/go-admin-core/config"
+import "github.com/go-admin-team/go-admin-core/v2/config"
 
 func main() {
     source := config.FileSource("config.json")
