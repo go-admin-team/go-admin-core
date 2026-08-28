@@ -11,6 +11,39 @@ import (
 
 const defaultSweepInterval = time.Minute
 
+// defaultMaxEntries bounds how much an in-process cache can hold.
+//
+// Without a bound the cache grows until the process dies, and reaching that
+// state needs no bug. Any endpoint that writes an entry under a key it will
+// never reuse - a one-time token, a per-request nonce - grows the cache at
+// whatever rate callers can drive, and an unauthenticated one puts that rate in
+// the caller's hands. At roughly 180 bytes an entry, a few thousand writes a
+// second is hundreds of megabytes before the first ttl expires.
+//
+// A million entries is about 180MB: far above what an application legitimately
+// caches in one process, far below what it takes to exhaust a machine. The
+// point is that a number exists, not that this one is exactly right; pass
+// MemCacheOptions.MaxEntries to choose another.
+//
+// The bound is on this implementation only. Memory, in the same package, backs
+// the deprecated AdapterCache and is still unbounded.
+const defaultMaxEntries = 1 << 20
+
+// MemCacheOptions configures NewMemCacheWithOptions.
+type MemCacheOptions struct {
+	// SweepInterval is how often expired entries are collected. Zero or less
+	// starts no sweeper, leaving expiry entirely lazy.
+	SweepInterval time.Duration
+
+	// MaxEntries caps the number of entries held. Zero means
+	// defaultMaxEntries; a negative value means no limit, which is only
+	// appropriate when the keyspace is known to be bounded by something else.
+	//
+	// The cap is enforced per shard, so the effective total is rounded down to
+	// a multiple of shardCount.
+	MaxEntries int
+}
+
 type entry struct {
 	value string
 	// expiresAt is the zero time when the entry never expires.
@@ -47,6 +80,9 @@ type memShard struct {
 type MemCache struct {
 	shards [shardCount]memShard
 
+	// maxPerShard is the entry budget of one shard, or zero for no limit.
+	maxPerShard int
+
 	stop     chan struct{}
 	stopOnce sync.Once
 	wg       sync.WaitGroup
@@ -76,21 +112,108 @@ var _ storage.Cache = (*MemCache)(nil)
 func (c *MemCache) String() string { return "memory" }
 
 func NewMemCache() *MemCache {
-	return NewMemCacheWithSweep(defaultSweepInterval)
+	return NewMemCacheWithOptions(MemCacheOptions{SweepInterval: defaultSweepInterval})
 }
 
 // NewMemCacheWithSweep sets the sweep interval. Zero or less starts no
 // sweeper, leaving expiry entirely lazy.
 func NewMemCacheWithSweep(interval time.Duration) *MemCache {
+	return NewMemCacheWithOptions(MemCacheOptions{SweepInterval: interval})
+}
+
+// NewMemCacheWithOptions builds a cache from an explicit configuration.
+func NewMemCacheWithOptions(o MemCacheOptions) *MemCache {
 	m := &MemCache{stop: make(chan struct{})}
 	for i := range m.shards {
 		m.shards[i].items = make(map[string]entry)
 	}
-	if interval > 0 {
+
+	switch {
+	case o.MaxEntries < 0:
+		m.maxPerShard = 0 // unlimited
+	case o.MaxEntries == 0:
+		m.maxPerShard = defaultMaxEntries / shardCount
+	default:
+		// At least one per shard, so a small explicit cap is not rounded to
+		// zero and read as "unlimited".
+		if per := o.MaxEntries / shardCount; per > 0 {
+			m.maxPerShard = per
+		} else {
+			m.maxPerShard = 1
+		}
+	}
+
+	if o.SweepInterval > 0 {
 		m.wg.Add(1)
-		go m.sweep(interval)
+		go m.sweep(o.SweepInterval)
 	}
 	return m
+}
+
+// evictionSample bounds how many entries one eviction may examine.
+//
+// The cap is what keeps eviction off the critical path. Once a shard is at its
+// limit, freeing one slot lets the caller insert one - which fills it again, so
+// the next write of a new key evicts too. Eviction is therefore per-write in
+// the steady state, not occasional, and a scan of the whole shard here would
+// cost every write what the unsharded sweep used to cost once a minute. The
+// workload that reaches the limit at all is precisely the one that writes a new
+// key every time.
+const evictionSample = 64
+
+// evictIfFull frees a slot when the shard is at its limit and the pending write
+// would add a key rather than replace one. The caller holds the shard lock.
+//
+// The key lookup happens only once the shard is known to be full, so a cache
+// that never fills pays a single length comparison.
+func (s *memShard) evictIfFull(limit int, key string) {
+	if limit <= 0 || len(s.items) < limit {
+		return
+	}
+	if _, replacing := s.items[key]; replacing {
+		return
+	}
+	s.makeRoom(limit)
+}
+
+// makeRoom frees a slot in a shard that has reached its budget. The caller
+// holds the shard lock.
+//
+// Expired entries go first: they are owed to nobody. The search for one stops
+// after evictionSample entries rather than scanning the shard to prove there is
+// none - the sweep reclaims the rest on its own schedule, and this path cannot
+// afford to look. Failing that it drops an entry chosen by map iteration order,
+// which Go leaves unspecified and is therefore effectively arbitrary.
+//
+// Arbitrary rather than least-recently-used is deliberate. Tracking recency
+// means a linked list updated on every read, and reads are the operation this
+// cache exists to make cheap; an approximate policy on a cache whose contract
+// already allows any entry to vanish is the better trade.
+func (s *memShard) makeRoom(limit int) {
+	now := time.Now()
+
+	scanned := 0
+	for k, e := range s.items {
+		if e.expired(now) {
+			delete(s.items, k)
+			if len(s.items) < limit {
+				return
+			}
+		}
+		scanned++
+		if scanned >= evictionSample {
+			break
+		}
+	}
+
+	// Nothing reclaimable in the sample. One live entry has to go; the loop
+	// exits on the first iteration, since the shard holds exactly limit.
+	for k := range s.items {
+		delete(s.items, k)
+		if len(s.items) < limit {
+			return
+		}
+	}
 }
 
 func (m *MemCache) sweep(interval time.Duration) {
@@ -174,6 +297,7 @@ func (m *MemCache) Set(ctx context.Context, key, val string, ttl time.Duration) 
 		return storage.ErrCacheClosed
 	}
 
+	s.evictIfFull(m.maxPerShard, key)
 	s.items[key] = entry{value: val, expiresAt: expiry(ttl)}
 	return nil
 }
@@ -220,6 +344,7 @@ func (m *MemCache) Incr(ctx context.Context, key string, delta int64) (int64, er
 	}
 
 	current += delta
+	s.evictIfFull(m.maxPerShard, key)
 	// A counter created here carries no ttl, matching Redis INCR.
 	s.items[key] = entry{value: strconv.FormatInt(current, 10)}
 	return current, nil

@@ -1360,6 +1360,7 @@ type Queue interface {
 ## github.com/go-admin-team/go-admin-core/v2/storage/cache
 type MemCache struct {
 func NewMemCache() *MemCache
+func NewMemCacheWithOptions(o MemCacheOptions) *MemCache
 func NewMemCacheWithSweep(interval time.Duration) *MemCache
 func (m *MemCache) Close() error
 func (m *MemCache) Del(ctx context.Context, keys ...string) error
@@ -1368,6 +1369,9 @@ func (m *MemCache) Get(ctx context.Context, key string) (string, error)
 func (m *MemCache) Incr(ctx context.Context, key string, delta int64) (int64, error)
 func (m *MemCache) Set(ctx context.Context, key, val string, ttl time.Duration) error
 func (c *MemCache) String() string
+type MemCacheOptions struct {
+	SweepInterval time.Duration
+	MaxEntries int
 type Memory struct {
 func NewMemory() *Memory
 func NewMemoryWithCleanupInterval(interval time.Duration) *Memory

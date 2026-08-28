@@ -45,6 +45,12 @@ func (e Cache) Setup() (storage.AdapterCache, error) {
 	// The memory branch stays on the older implementation. Both satisfy
 	// AdapterCache, but only this one preserves the retry and expiry behaviour
 	// that current call sites were written against.
+	//
+	// Two consequences of that choice, stated here rather than left to be
+	// discovered: cache.Memory has no entry limit, so a caller that writes keys
+	// it never reads again grows it until the process runs out of memory; and
+	// its counters serialise on a single mutex. Open() returns MemCache, which
+	// is bounded and sharded. Callers that need either should move to it.
 	if e.Redis == nil {
 		return cache.NewMemory(), nil
 	}
