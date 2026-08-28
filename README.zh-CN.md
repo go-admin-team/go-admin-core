@@ -3,7 +3,7 @@
 [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
-[English](README.md)
+[English](README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja-JP.md)
 
 ## ✨ 核心特性
 
@@ -29,7 +29,8 @@
 - [x] 配置管理（支持多种数据源）
 - [x] 日志写入器（支持文件分割）
 
-> **最新版本:** Go 1.25 | 35 个单元测试 + 30+ 性能基准测试
+> 每次改动都会执行竞态检测、双平台 staticcheck，以及针对每请求代码路径的
+> 内存分配预算门禁。
 
 ---
 
@@ -155,24 +156,32 @@ func main() {
 
 ---
 
-## 🧪 测试覆盖
+## 🧪 测试
 
 ```bash
-# 运行所有测试
-go test ./... -v
+# CI 门禁跑的全部内容
+make ci
 
-# 性能基准测试
-go test ./logger -bench=. -benchmem
+# 竞态检测，覆盖所有包
+make test-race
 
-# 并发安全检查
-go test ./logger -race
+# 基准测试 —— 冒烟运行；需要可比较的数字请调高 -benchtime
+make bench
+
+# 持续负载、资源回收与 goroutine 生命周期
+GOADMIN_SOAK=2m make soak
+
+# 与基准版本对比，结果交给 benchstat 判定
+make bench-compare BASE=origin/main
 ```
 
-**测试结果:**
-- ✅ 单元测试: 35/35 通过
-- ✅ 性能基准测试: 30+ 通过
-- ✅ 并发安全: Race Detector 0 warnings
-- ✅ 代码覆盖率: 85%+
+**每次改动都会强制执行:**
+
+- 竞态检测，覆盖所有包
+- darwin 与 linux 双平台 staticcheck
+- `api/core.txt` 中的导出 API 快照必须与代码一致
+- 每请求代码路径的内存分配预算
+- 以本仓库当前代码构建下游使用方
 
 ---
 
