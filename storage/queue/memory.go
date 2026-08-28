@@ -40,6 +40,31 @@ func (m *Memory) makeQueue() queue {
 	return make(queue, m.PoolNum)
 }
 
+// queueFor returns the channel for a stream, creating it at most once.
+//
+// LoadOrStore is what makes it once. The Load-then-Store it replaces let two
+// callers each miss, each build a channel, and the second overwrite the first:
+// a producer that had already published to the discarded channel lost those
+// messages, and a consumer registered on it stopped receiving. Register racing
+// against the first Append is the ordinary case - a server registers its log
+// consumers while requests are already arriving - and it dropped about one
+// message in seven.
+func (m *Memory) queueFor(name string) queue {
+	if v, ok := m.queue.Load(name); ok {
+		if q, ok := v.(queue); ok {
+			return q
+		}
+	}
+	v, _ := m.queue.LoadOrStore(name, m.makeQueue())
+	q, ok := v.(queue)
+	if !ok {
+		// Whatever is stored is not a queue. Replace it rather than fail.
+		q = m.makeQueue()
+		m.queue.Store(name, q)
+	}
+	return q
+}
+
 func (m *Memory) Append(message storage.Messager) error {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
@@ -48,21 +73,7 @@ func (m *Memory) Append(message storage.Messager) error {
 	memoryMessage.SetStream(message.GetStream())
 	memoryMessage.SetValues(message.GetValues())
 
-	v, ok := m.queue.Load(message.GetStream())
-
-	if !ok {
-		v = m.makeQueue()
-		m.queue.Store(message.GetStream(), v)
-	}
-
-	var q queue
-	switch v := v.(type) {
-	case queue:
-		q = v
-	default:
-		q = m.makeQueue()
-		m.queue.Store(message.GetStream(), q)
-	}
+	q := m.queueFor(message.GetStream())
 	// 不再为每条消息起 goroutine 投递。
 	//
 	// 原实现中，队列满时 goroutine 会阻塞在 channel 写入上且永不退出；
@@ -84,19 +95,7 @@ func (m *Memory) Append(message storage.Messager) error {
 func (m *Memory) Register(name string, f storage.ConsumerFunc) {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
-	v, ok := m.queue.Load(name)
-	if !ok {
-		v = m.makeQueue()
-		m.queue.Store(name, v)
-	}
-	var q queue
-	switch v := v.(type) {
-	case queue:
-		q = v
-	default:
-		q = m.makeQueue()
-		m.queue.Store(name, q)
-	}
+	q := m.queueFor(name)
 	go func(out queue, gf storage.ConsumerFunc) {
 		var err error
 		for message := range q {
