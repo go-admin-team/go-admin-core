@@ -6,6 +6,7 @@ import (
 
 	"github.com/casbin/casbin/v3"
 	"github.com/casbin/casbin/v3/model"
+	"github.com/casbin/casbin/v3/persist"
 	gormAdapter "github.com/casbin/gorm-adapter/v3"
 	"github.com/go-admin-team/go-admin-core/v2/logger"
 	"github.com/go-admin-team/go-admin-core/v2/sdk"
@@ -13,6 +14,17 @@ import (
 )
 
 // Initialize the model from a string.
+//
+// The matcher calls keyMatch2Cached rather than casbin's builtin keyMatch2.
+// The two answer identically - keymatch_test.go pins that - but the builtin
+// recompiles a regexp for every policy it tests, which dominates Enforce once
+// a role holds more than a handful of permissions. See keymatch.go.
+//
+// keyMatch2Cached is not a casbin builtin, so this model only works on an
+// enforcer that has it registered. Copying this string into a customised
+// model - adding a domain to the request definition, say - means going
+// through newEnforcer below, or registering it the same way. An enforcer
+// without it fails every Enforce with an unresolved-function error.
 var text = `
 [request_definition]
 r = sub, obj, act
@@ -24,7 +36,7 @@ p = sub, obj, act
 e = some(where (p.eft == allow))
 
 [matchers]
-m = r.sub == p.sub && (keyMatch2(r.obj, p.obj) || keyMatch(r.obj, p.obj)) && (r.act == p.act || p.act == "*")
+m = r.sub == p.sub && (keyMatch2Cached(r.obj, p.obj) || keyMatch(r.obj, p.obj)) && (r.act == p.act || p.act == "*")
 `
 
 // ReloadInterval is how often an enforcer reloads its policy from the
@@ -40,6 +52,35 @@ var (
 	enforcersMu sync.Mutex
 	enforcers   = map[string]*casbin.SyncedEnforcer{}
 )
+
+// newEnforcer builds an enforcer on the model above with the matcher's
+// functions registered.
+//
+// Every construction has to go through here. The model calls keyMatch2Cached,
+// which casbin does not define, so an enforcer built without the registration
+// fails every Enforce with an unresolved-function error - fail-closed, but
+// only discovered at the first request. Registering has to happen before that
+// first Enforce as well: casbin compiles the matcher once and resolves
+// function names at that point.
+func newEnforcer(a persist.Adapter) (*casbin.SyncedEnforcer, error) {
+	m, err := model.NewModelFromString(text)
+	if err != nil {
+		return nil, err
+	}
+
+	var e *casbin.SyncedEnforcer
+	if a == nil {
+		e, err = casbin.NewSyncedEnforcer(m)
+	} else {
+		e, err = casbin.NewSyncedEnforcer(m, a)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	e.AddFunction(keyMatch2CachedName, keyMatch2Func)
+	return e, nil
+}
 
 // Setup returns the enforcer for key, building it from db on first use.
 //
@@ -63,11 +104,7 @@ func Setup(db *gorm.DB, key string) *casbin.SyncedEnforcer {
 		panic(err)
 	}
 
-	m, err := model.NewModelFromString(text)
-	if err != nil {
-		panic(err)
-	}
-	e, err := casbin.NewSyncedEnforcer(m, Apter)
+	e, err := newEnforcer(Apter)
 	if err != nil {
 		panic(err)
 	}

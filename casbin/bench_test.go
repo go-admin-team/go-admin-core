@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/casbin/casbin/v3"
-	"github.com/casbin/casbin/v3/model"
 )
 
 // Every request to a protected route runs one Enforce. The matcher compares the
@@ -24,11 +23,7 @@ import (
 func benchEnforcer(b *testing.B, n int) *casbin.SyncedEnforcer {
 	b.Helper()
 
-	m, err := model.NewModelFromString(text)
-	if err != nil {
-		b.Fatal(err)
-	}
-	e, err := casbin.NewSyncedEnforcer(m)
+	e, err := newEnforcer(nil)
 	if err != nil {
 		b.Fatal(err)
 	}
