@@ -20,8 +20,9 @@ func TestSetupReloadsPolicyWrittenElsewhere(t *testing.T) {
 		t.Fatalf("open: %v", err)
 	}
 
+	// Read when the enforcer is built, so it has to be set before Setup.
 	ReloadInterval = 50 * time.Millisecond
-	e := Setup(db, "")
+	e := Setup(db, "reload.example")
 
 	const sub, obj, act = "alice", "/data", "GET"
 

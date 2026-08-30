@@ -10,7 +10,7 @@ func Verify(id, code string, clear bool) bool
 
 ## github.com/go-admin-team/go-admin-core/v2/casbin
 var ReloadInterval = time.Minute
-func Setup(db *gorm.DB, _ string) *casbin.SyncedEnforcer
+func Setup(db *gorm.DB, key string) *casbin.SyncedEnforcer
 func UpdateCallback(msg string)
 type Logger struct {
 func (l *Logger) EnableLog(enable bool)

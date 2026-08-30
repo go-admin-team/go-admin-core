@@ -27,7 +27,7 @@ e = some(where (p.eft == allow))
 m = r.sub == p.sub && (keyMatch2(r.obj, p.obj) || keyMatch(r.obj, p.obj)) && (r.act == p.act || p.act == "*")
 `
 
-// ReloadInterval is how often the shared enforcer reloads its policy from the
+// ReloadInterval is how often an enforcer reloads its policy from the
 // database.
 //
 // A policy written on one instance reaches the others no other way: the
@@ -37,42 +37,57 @@ m = r.sub == p.sub && (keyMatch2(r.obj, p.obj) || keyMatch(r.obj, p.obj)) && (r.
 var ReloadInterval = time.Minute
 
 var (
-	enforcer *casbin.SyncedEnforcer
-	once     sync.Once
+	enforcersMu sync.Mutex
+	enforcers   = map[string]*casbin.SyncedEnforcer{}
 )
 
-func Setup(db *gorm.DB, _ string) *casbin.SyncedEnforcer {
-	once.Do(func() {
-		Apter, err := gormAdapter.NewAdapterByDBUseTableName(db, "", "casbin_rule")
-		if err != nil && err.Error() != "invalid DDL" {
-			panic(err)
-		}
+// Setup returns the enforcer for key, building it from db on first use.
+//
+// key names the policy source. An enforcer serves the policy it loaded, so a
+// deployment that reads from more than one database - the multi-tenant
+// configuration, where each host has its own - has to pass a distinct key per
+// database. Passing one key for all of them hands every caller the enforcer
+// built from whichever database arrived first, and the rest are then
+// authorized against a policy table that is not theirs. "" is the right key
+// for a single database.
+func Setup(db *gorm.DB, key string) *casbin.SyncedEnforcer {
+	enforcersMu.Lock()
+	defer enforcersMu.Unlock()
 
-		m, err := model.NewModelFromString(text)
-		if err != nil {
-			panic(err)
-		}
-		enforcer, err = casbin.NewSyncedEnforcer(m, Apter)
-		if err != nil {
-			panic(err)
-		}
-		err = enforcer.LoadPolicy()
-		if err != nil {
-			panic(err)
-		}
+	if e, ok := enforcers[key]; ok {
+		return e
+	}
 
-		// Without this the policy is whatever it was at startup. UpdateCallback
-		// below is written for a watcher, which would make this immediate
-		// rather than periodic; polling needs no second piece of infrastructure
-		// and closes the gap today.
-		if ReloadInterval > 0 {
-			enforcer.StartAutoLoadPolicy(ReloadInterval)
-		}
+	Apter, err := gormAdapter.NewAdapterByDBUseTableName(db, "", "casbin_rule")
+	if err != nil && err.Error() != "invalid DDL" {
+		panic(err)
+	}
 
-		// Casbin v3: 日志默认已启用，无需 EnableLog()
-	})
+	m, err := model.NewModelFromString(text)
+	if err != nil {
+		panic(err)
+	}
+	e, err := casbin.NewSyncedEnforcer(m, Apter)
+	if err != nil {
+		panic(err)
+	}
 
-	return enforcer
+	if err := e.LoadPolicy(); err != nil {
+		panic(err)
+	}
+
+	// Without this the policy is whatever it was at startup. UpdateCallback
+	// below is written for a watcher, which would make this immediate rather
+	// than periodic; polling needs no second piece of infrastructure and
+	// closes the gap today.
+	if ReloadInterval > 0 {
+		e.StartAutoLoadPolicy(ReloadInterval)
+	}
+
+	// Casbin v3 enables logging by default; EnableLog is not needed.
+
+	enforcers[key] = e
+	return e
 }
 
 // UpdateCallback reloads the policy, for use as a watcher's update callback.
@@ -83,11 +98,26 @@ func Setup(db *gorm.DB, _ string) *casbin.SyncedEnforcer {
 //
 //	enforcer.SetWatcher(w)
 //	w.SetUpdateCallback(mycasbin.UpdateCallback)
+//
+// The message carries no tenant, so every enforcer reloads. That is a wasted
+// query for the tenants whose policy did not change, and the alternative -
+// reloading whichever one happens to be first - is wrong rather than slow.
 func UpdateCallback(msg string) {
 	l := logger.NewHelper(sdk.Runtime.GetLogger())
 	l.Infof("casbin updateCallback msg: %v", msg)
-	err := enforcer.LoadPolicy()
-	if err != nil {
-		l.Errorf("casbin LoadPolicy err: %v", err)
+
+	// Copied out so LoadPolicy, which queries the database, does not hold the
+	// lock that Setup needs.
+	enforcersMu.Lock()
+	built := make([]*casbin.SyncedEnforcer, 0, len(enforcers))
+	for _, e := range enforcers {
+		built = append(built, e)
+	}
+	enforcersMu.Unlock()
+
+	for _, e := range built {
+		if err := e.LoadPolicy(); err != nil {
+			l.Errorf("casbin LoadPolicy err: %v", err)
+		}
 	}
 }
