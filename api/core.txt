@@ -1112,6 +1112,8 @@ func NewCache(prefix string, store storage.AdapterCache, wxTokenStoreKey string)
 func NewQueue(prefix string, q storage.AdapterQueue) storage.AdapterQueue
 type Application struct {
 func NewConfig() *Application
+func (e *Application) AppRoutersSealed() bool
+func (e *Application) BeforeSealed() bool
 func (e *Application) GetAllCasbin() map[string]*casbin.SyncedEnforcer
 func (e *Application) GetAllCrontab() map[string]*cron.Cron
 func (e *Application) GetAllDb() map[string]*gorm.DB
@@ -1147,10 +1149,14 @@ func (e *Application) GetQueueAdapter() storage.AdapterQueue
 func (e *Application) GetQueuePrefix(key string) storage.AdapterQueue
 func (e *Application) GetRouter() []Router
 func (e *Application) GetStreamMessage(id, stream string, value map[string]interface{}) (storage.Messager, error)
+func (e *Application) RunAppRouters()
+func (e *Application) RunBefore()
 func (e *Application) SetApp(app interface{})
 func (e *Application) SetAppByTenant(key string, app interface{})
 func (e *Application) SetAppRouters(appRouters func())
+func (e *Application) SetAppRoutersWith(appRouters func(), opts ...CallbackOption)
 func (e *Application) SetBefore(f func())
+func (e *Application) SetBeforeWith(f func(), opts ...CallbackOption)
 func (e *Application) SetCacheAdapter(c storage.AdapterCache)
 func (e *Application) SetCasbin(enforcer *casbin.SyncedEnforcer)
 func (e *Application) SetCasbinByTenant(tenant string, enforcer *casbin.SyncedEnforcer)
@@ -1184,6 +1190,9 @@ func (e Cache) Set(key string, val interface{}, expire int) error
 func (e *Cache) SetPrefix(prefix string)
 func (e *Cache) String() string
 func (e Cache) Token() (token *oauth2.Token, err error)
+type CallbackOption func(*callbackConfig)
+func WithFatal() CallbackOption
+func WithName(name string) CallbackOption
 type Config map[string]interface{}
 type Queue struct {
 func (e *Queue) Append(message storage.Messager) error
@@ -1202,7 +1211,10 @@ type Runtime interface {
 	GetDb() *gorm.DB
 	GetAllDb() map[string]*gorm.DB
 	SetBefore(f func())
+	SetBeforeWith(f func(), opts ...CallbackOption)
 	GetBefore() []func()
+	RunBefore()
+	BeforeSealed() bool
 	SetAppByTenant(tenant string, app interface{})
 	SetApp(app interface{})
 	GetApp() map[string]interface{}
@@ -1252,7 +1264,10 @@ type Runtime interface {
 	GetConfig() map[string]interface{}
 	GetConfigValue(key string) interface{}
 	SetAppRouters(appRouters func())
+	SetAppRoutersWith(appRouters func(), opts ...CallbackOption)
 	GetAppRouters() []func()
+	RunAppRouters()
+	AppRoutersSealed() bool
 
 ## github.com/go-admin-team/go-admin-core/v2/sdk/service
 type Service struct {
