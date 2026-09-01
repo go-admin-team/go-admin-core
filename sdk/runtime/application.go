@@ -35,9 +35,9 @@ type Application struct {
 	handler       map[string][]func(r *gin.RouterGroup, hand ...*gin.HandlerFunc) // 路由处理器
 	routers       []Router                                                        // 路由表
 	configs       map[string]Config                                               // 系统参数
-	appRouters    []func()                                                        // app路由
+	appRouters    registry                                                        // app router registry
 	casbinExclude map[string]interface{}                                          // casbin排除
-	before        []func()                                                        // 启动前执行
+	before        registry                                                        // startup callback registry
 	defaultTenant string                                                          // 默认租户标识符
 	app           map[string]interface{}                                          // app
 }
@@ -98,14 +98,6 @@ func (e *Application) GetAllDb() map[string]*gorm.DB {
 	e.mux.RLock()
 	defer e.mux.RUnlock()
 	return maps.Clone(e.dbs)
-}
-
-func (e *Application) SetBefore(f func()) {
-	e.before = append(e.before, f)
-}
-
-func (e *Application) GetBefore() []func() {
-	return e.before
 }
 
 // SetAppByTenant 设置对应租户的app
@@ -201,12 +193,20 @@ func (e *Application) GetCasbinByTenant(tenant string) *casbin.SyncedEnforcer {
 }
 
 // SetEngine 设置路由引擎
+//
+// An app router callback is allowed to call this - the demo module does, on
+// the path where no engine has been set yet - so the field is written after
+// the server has started reading it elsewhere, and needs the lock.
 func (e *Application) SetEngine(engine http.Handler) {
+	e.mux.Lock()
+	defer e.mux.Unlock()
 	e.engine = engine
 }
 
 // GetEngine 获取路由引擎
 func (e *Application) GetEngine() http.Handler {
+	e.mux.RLock()
+	defer e.mux.RUnlock()
 	return e.engine
 }
 
@@ -217,31 +217,45 @@ func (e *Application) GetRouter() []Router {
 
 // setRouter 设置路由表（并发安全）
 func (e *Application) setRouter() []Router {
-	switch e.engine.(type) {
-	case *gin.Engine:
-		// 每次按当前 engine 路由全量重建，避免重复 append 累积：
-		// GetRouter 会被多次调用（启动 -a 同步 + 运行时手动「同步接口」），原写法把全量路由
-		// 反复追加进 e.routers，使路由表成倍膨胀、含大量重复项（下游 SaveSysApi 因此处理冗余、
-		// 消息体膨胀，FirstOrCreate 幂等故不影响正确性，但每次同步成本随调用次数线性增长）。
-		//
-		// 并发安全：engine.Routes() 遍历与 list 构建在锁外完成（gin 路由注册完成后 Routes() 只读、
-		// 本身并发安全），仅 e.routers 赋值瞬间持写锁，避免长时间占用 e.mux 阻塞 config 等读路径。
-		// 返回本次构建的局部快照（而非 e.routers 字段），即便随后被其他 goroutine 覆盖，调用方
-		// 持有的快照底层数组也不会被改写，可在锁外安全遍历——消除原先「写 e.routers 与读返回值」
-		// 之间的 data race。
-		routers := e.engine.(*gin.Engine).Routes()
-		list := make([]Router, 0, len(routers))
-		for _, router := range routers {
-			list = append(list, Router{RelativePath: router.Path, Handler: router.Handler, HttpMethod: router.Method})
-		}
-		e.mux.Lock()
-		e.routers = list
-		e.mux.Unlock()
-		return list
-	}
+	// The engine is read once, under the lock, and used from the local copy.
+	// The three bare reads this replaces raced with SetEngine, and this is the
+	// one engine access that really does happen at run time: GetRouter is
+	// reachable from the manual "sync API" endpoint, not just from startup.
 	e.mux.RLock()
-	defer e.mux.RUnlock()
-	return e.routers
+	engine := e.engine
+	e.mux.RUnlock()
+
+	ge, ok := engine.(*gin.Engine)
+	if !ok {
+		e.mux.RLock()
+		defer e.mux.RUnlock()
+		// Clone: returning the field itself lets the caller range over it once
+		// the lock is gone, which is the race the lock looks like it prevents.
+		return slices.Clone(e.routers)
+	}
+
+	// The table is rebuilt from the engine every time rather than appended to.
+	// GetRouter is called more than once - the -a sync at startup, and the
+	// manual sync endpoint at run time - and the original appended the full
+	// route set to e.routers on each call, so the table grew by a multiple
+	// every time. FirstOrCreate downstream kept that correct, but the cost of
+	// a sync grew linearly with the number of syncs already done.
+	//
+	// Routes() and the loop run with no lock held: gin's route table is
+	// read-only once registration is over, and holding e.mux across them would
+	// block the config read path for as long as it takes. Only the assignment
+	// takes the write lock, and the local snapshot is what is returned - the
+	// caller can range over it after another goroutine has replaced the field,
+	// which is the race that returning e.routers used to create.
+	routers := ge.Routes()
+	list := make([]Router, 0, len(routers))
+	for _, router := range routers {
+		list = append(list, Router{RelativePath: router.Path, Handler: router.Handler, HttpMethod: router.Method})
+	}
+	e.mux.Lock()
+	e.routers = list
+	e.mux.Unlock()
+	return list
 }
 
 // SetLogger 设置日志组件
@@ -520,14 +534,4 @@ func (e *Application) GetConfigValue(key string) interface{} {
 // SetConfigValue 设置默认租户的配置值
 func (e *Application) SetConfigValue(key string, value interface{}) {
 	e.SetConfigValueByTenant(e.GetDefaultTenant(), key, value)
-}
-
-// SetAppRouters 设置app的路由
-func (e *Application) SetAppRouters(appRouters func()) {
-	e.appRouters = append(e.appRouters, appRouters)
-}
-
-// GetAppRouters 获取app的路由
-func (e *Application) GetAppRouters() []func() {
-	return e.appRouters
 }
