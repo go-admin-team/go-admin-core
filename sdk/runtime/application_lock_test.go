@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -69,5 +70,61 @@ func TestSingleTenantSettersUseDefaultTenant(t *testing.T) {
 	app.SetConfigValue("key", "value")
 	if got := app.GetConfigValueByTenant(DefaultTenant, "key"); got != "value" {
 		t.Errorf("SetConfigValue did not store under %q, got %v", DefaultTenant, got)
+	}
+}
+
+// Acceptance 14: the same guard applied to everything this batch put behind
+// the mutex. The failure mode is identical - a method that takes the lock and
+// then calls another one that takes it hangs forever - and it is invisible
+// until the one call order that triggers it happens in production.
+func TestRegistryAccessorsDoNotDeadlock(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	noop := func() {}
+
+	cases := []struct {
+		name string
+		fn   func()
+	}{
+		{"SetBefore", func() { NewConfig().SetBefore(noop) }},
+		{"SetBeforeWith", func() { NewConfig().SetBeforeWith(noop, WithName("x"), WithFatal()) }},
+		{"GetBefore", func() { NewConfig().GetBefore() }},
+		{"RunBefore", func() { NewConfig().RunBefore() }},
+		{"BeforeSealed", func() { NewConfig().BeforeSealed() }},
+		{"SetAppRouters", func() { NewConfig().SetAppRouters(noop) }},
+		{"SetAppRoutersWith", func() { NewConfig().SetAppRoutersWith(noop, WithName("x")) }},
+		{"GetAppRouters", func() { NewConfig().GetAppRouters() }},
+		{"RunAppRouters", func() { NewConfig().RunAppRouters() }},
+		{"AppRoutersSealed", func() { NewConfig().AppRoutersSealed() }},
+		{"SetEngine", func() { NewConfig().SetEngine(gin.New()) }},
+		{"GetEngine", func() { NewConfig().GetEngine() }},
+		{"GetRouter", func() { NewConfig().GetRouter() }},
+		{"GetRouter with a gin engine", func() {
+			app := NewConfig()
+			app.SetEngine(gin.New())
+			app.GetRouter()
+		}},
+		// The one that is not hypothetical: app/demo/router/router.go reads and
+		// writes the engine from inside the very callback RunAppRouters
+		// executes. Running callbacks under the lock hangs right here.
+		{"RunAppRouters with a callback that takes the lock", func() {
+			app := NewConfig()
+			app.SetAppRouters(func() {
+				if app.GetEngine() == nil {
+					app.SetEngine(gin.New())
+				}
+			})
+			app.RunAppRouters()
+		}},
+		{"RunBefore with a callback that takes the lock", func() {
+			app := NewConfig()
+			app.SetBefore(func() { app.SetConfigValue("k", "v") })
+			app.RunBefore()
+		}},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			mustReturn(t, c.name, c.fn)
+		})
 	}
 }
