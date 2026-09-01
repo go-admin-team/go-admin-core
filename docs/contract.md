@@ -1,9 +1,9 @@
 # The Runtime contract
 
 This document is for anyone who registers something into `sdk.Runtime`: an
-application module in go-admin, a fork, or a downstream framework such as
-go-admin-pro. It states what the runtime registries promise, when they stop
-accepting registrations, and what the panic guard does and does not cover.
+application module, a fork, or a framework built on top of this one. It states
+what the runtime registries promise, when they stop accepting registrations,
+and what the panic guard does and does not cover.
 
 `sdk.Runtime` is a package-level singleton (`sdk/application.go`) of type
 `runtime.Runtime`, implemented by `*runtime.Application`.
@@ -41,9 +41,9 @@ not the same as not protected.
 
 `init()` is the easiest place to satisfy that - the Go specification runs all
 package initialisation on one goroutine before `main`, so there is no
-concurrency to think about - but it is not the only legal one. go-admin-pro
-registers from `run()`, and that is fine: `run()` happens before anything calls
-`RunAppRouters()`.
+concurrency to think about - but it is not the only legal one. Registering from
+a `run()` that executes before `RunAppRouters()` is equally fine. The rule is
+about ordering, not about which function you use.
 
 The older wording, "registration is only allowed in `init()`", is not used here
 because nothing can check it and real code already violates it.
@@ -120,9 +120,9 @@ variants: same registration path, same guard, same defaults.
 > anything it calls directly. A panic on a goroutine the callback starts is
 > outside it, and always will be.
 
-`recover()` only works on the goroutine that is panicking. This shape - which
-is how go-admin-pro registers its jobs - gets no protection from the framework
-at all:
+`recover()` only works on the goroutine that is panicking. This shape - common
+when a callback kicks off background work - gets no protection from the
+framework at all:
 
 ```go
 sdk.Runtime.SetBefore(func() {
@@ -273,5 +273,5 @@ downstream.
 
 Adding a method is still a source-breaking change for anyone who wrote their
 own implementation of `runtime.Runtime` - a mock, typically. There are none in
-go-admin, go-admin-pro or core itself, where the only implementation is
-`*Application`; if you have one, add the new methods listed in section 2 and 4.
+this repository, where `*Application` is the only implementation; if you have
+one, add the new methods listed in section 2 and 4.

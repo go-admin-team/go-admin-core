@@ -128,9 +128,9 @@ func TestCallbackThatRecoversForItselfIsNotReportedAgain(t *testing.T) {
 
 // Acceptance 8b: the boundary of the promise. recover only works on the
 // goroutine that is panicking, so a callback whose real work is `go func()`
-// - which is how go-admin-pro registers its jobs - is outside the guard
-// entirely. Here the goroutine recovers for itself, as pro's does. Without
-// that recover the process dies, and no amount of framework code changes it;
+// - a common shape for background startup work - is outside the guard
+// entirely. Here the goroutine recovers for itself. Without that recover the
+// process dies, and no amount of framework code changes it;
 // TestGoroutinePanicEscapesTheGuard runs that case in a subprocess.
 func TestGuardDoesNotReachIntoASpawnedGoroutine(t *testing.T) {
 	app := NewConfig()

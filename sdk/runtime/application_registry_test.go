@@ -109,8 +109,8 @@ func TestRunAppRoutersRunsInRegistrationOrder(t *testing.T) {
 }
 
 // Acceptance 3: the pre-existing way of using the registry - ask for the
-// callbacks and run them yourself - keeps working unchanged. go-admin-pro does
-// exactly this, and it is not being changed in this batch.
+// callbacks and run them yourself - keeps working unchanged. Consumers on that
+// pattern are not required to move to Run*().
 func TestSelfWrittenLoopStillWorks(t *testing.T) {
 	app := NewConfig()
 	var ran []string
