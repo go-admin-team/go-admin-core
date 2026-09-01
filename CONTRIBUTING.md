@@ -40,11 +40,32 @@ Comments are for intent that the code cannot express. Prefer none over noise.
   belong in `docs/`, with at most a one-line pointer from the source.
 - Public API needs a doc comment; internal helpers usually do not.
 
+## Locking in sdk/runtime
+
+`Application` guards every field with one `sync.RWMutex`, and `sync.RWMutex` is
+not reentrant. Four rules, each of which has already been paid for once:
+
+- **Take `e.mux` exactly once per exported method.** Inside a locked section
+  call only `xxxLocked` helpers.
+- **A `xxxLocked` helper never takes the lock and never calls an exported
+  method.** The suffix is the whole contract; keep it in the name.
+- **Never run a user callback while holding the lock.** `Run*()` takes a
+  snapshot, releases, and then executes. Callbacks routinely call back into
+  `Application` - an app router asks for the engine and then sets it - and
+  under the lock that deadlocks on the first one.
+- **Never log while holding the lock.** `SetLogger` accepts any implementation,
+  so logging runs code the application supplied. Decide inside the lock, print
+  outside it.
+
+`sdk/runtime/application_lock_test.go` guards the first two with a two-second
+timeout per accessor; the deadlock it was written for hung thirteen of them.
+
 ## Documentation
 
 | Content | Location |
 |---|---|
 | Defects CI tolerates, with reproduction steps | `docs/known-issues.md` |
+| What the runtime registries promise downstream | `docs/contract.md` |
 | Architecture decisions and migration plans | `docs/` |
 | Usage and getting started | `README.md`, `README.zh-CN.md` |
 
