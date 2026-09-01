@@ -135,7 +135,7 @@ func TestFatalExitDoesNotDependOnTheLogLevel(t *testing.T) {
 // The other half of acceptance 8: proof that the guard's boundary is real. A
 // panic on a goroutine the callback started kills the process, and the guard
 // never gets a word in. This is why the contract says the protection covers
-// synchronous panics only - a module that copies pro's `go func()` shape is
+// synchronous panics only - a module that starts its own goroutine is
 // responsible for its own recover.
 func TestGoroutinePanicEscapesTheGuard(t *testing.T) {
 	out, code := runGuardChild(t, "goroutine")
