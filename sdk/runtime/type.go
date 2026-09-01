@@ -22,8 +22,21 @@ type Runtime interface {
 	GetDb() *gorm.DB
 	GetAllDb() map[string]*gorm.DB
 
+	// SetBefore registers a callback to run when RunBefore is called.
 	SetBefore(f func())
+	// SetBeforeWith registers a before callback and says how a panic in it is
+	// treated. With no options it is identical to SetBefore.
+	SetBeforeWith(f func(), opts ...CallbackOption)
+	// GetBefore returns the registered before callbacks.
+	//
+	// Deprecated: use RunBefore.
 	GetBefore() []func()
+	// RunBefore executes the before callbacks that have not run yet, in
+	// registration order, and closes the registry.
+	RunBefore()
+	// BeforeSealed reports whether RunBefore has run, i.e. whether a further
+	// SetBefore would be dropped.
+	BeforeSealed() bool
 
 	SetAppByTenant(tenant string, app interface{})
 	SetApp(app interface{})
@@ -94,7 +107,20 @@ type Runtime interface {
 	GetConfig() map[string]interface{}
 	GetConfigValue(key string) interface{}
 
-	// SetAppRouters set AppRouter
+	// SetAppRouters registers a router initialiser to run when RunAppRouters
+	// is called.
 	SetAppRouters(appRouters func())
+	// SetAppRoutersWith registers a router initialiser and says how a panic in
+	// it is treated. With no options it is identical to SetAppRouters.
+	SetAppRoutersWith(appRouters func(), opts ...CallbackOption)
+	// GetAppRouters returns the registered router initialisers.
+	//
+	// Deprecated: use RunAppRouters.
 	GetAppRouters() []func()
+	// RunAppRouters executes the router initialisers that have not run yet, in
+	// registration order, and closes the registry.
+	RunAppRouters()
+	// AppRoutersSealed reports whether RunAppRouters has run, i.e. whether a
+	// further SetAppRouters would be dropped.
+	AppRoutersSealed() bool
 }
