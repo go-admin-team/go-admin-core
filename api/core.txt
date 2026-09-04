@@ -827,6 +827,7 @@ var JwtConfig = new(Jwt)
 var LoggerConfig = new(Logger)
 var QueueConfig = new(Queue)
 var SslConfig = new(Ssl)
+func RegisterExtend[T any](key string) func() *T
 func Setup(s source.Source,
 	fs ...func())
 type Application struct {
@@ -934,6 +935,196 @@ type Tls struct {
 	Cert string `yaml:"cert" json:"cert"`
 	Key  string `yaml:"key" json:"key"`
 	Ca   string `yaml:"ca" json:"ca"`
+
+## github.com/go-admin-team/go-admin-core/v2/sdk/contract/dto
+func MakeCondition(q interface{}) func(db *gorm.DB) *gorm.DB
+func OrderDest(sort string, bl bool) func(db *gorm.DB) *gorm.DB
+func Paginate(pageSize, pageIndex int) func(db *gorm.DB) *gorm.DB
+type AutoForm struct {
+	Fields        []Field `json:"fields"`
+	FormRef       string  `json:"formRef"`
+	FormModel     string  `json:"formModel"`
+	Size          string  `json:"size"`
+	LabelPosition string  `json:"labelPosition"`
+	LabelWidth    int     `json:"labelWidth"`
+	FormRules     string  `json:"formRules"`
+	Gutter        int     `json:"gutter"`
+	Disabled      bool    `json:"disabled"`
+	Span          int     `json:"span"`
+	FormBtns      bool    `json:"formBtns"`
+type Config struct {
+	Label        string        `json:"label"`
+	LabelWidth   interface{}   `json:"labelWidth"`
+	ShowLabel    bool          `json:"showLabel"`
+	ChangeTag    bool          `json:"changeTag"`
+	Tag          string        `json:"tag"`
+	TagIcon      string        `json:"tagIcon"`
+	Required     bool          `json:"required"`
+	Layout       string        `json:"layout"`
+	Span         int           `json:"span"`
+	Document     string        `json:"document"`
+	RegList      []interface{} `json:"regList"`
+	FormId       int           `json:"formId"`
+	RenderKey    int64         `json:"renderKey"`
+	DefaultValue interface{}   `json:"defaultValue"`
+	ShowTip      bool          `json:"showTip,omitempty"`
+	ButtonText   string        `json:"buttonText,omitempty"`
+	FileSize     int           `json:"fileSize,omitempty"`
+	SizeUnit     string        `json:"sizeUnit,omitempty"`
+type Control interface {
+	Generate() Control
+	Bind(ctx *gin.Context) error
+	GenerateM() (models.ActiveRecord, error)
+	GetId() interface{}
+type Field struct {
+	Config        Config      `json:"__config__"`
+	Slot          Slot        `json:"__slot__"`
+	Placeholder   string      `json:"placeholder,omitempty"`
+	Style         Style       `json:"style,omitempty"`
+	Clearable     bool        `json:"clearable,omitempty"`
+	PrefixIcon    string      `json:"prefix-icon,omitempty"`
+	SuffixIcon    string      `json:"suffix-icon,omitempty"`
+	Maxlength     interface{} `json:"maxlength"`
+	ShowWordLimit bool        `json:"show-word-limit,omitempty"`
+	Readonly      bool        `json:"readonly,omitempty"`
+	Disabled      bool        `json:"disabled"`
+	VModel        string      `json:"__vModel__"`
+	Action        string      `json:"action,omitempty"`
+	Accept        string      `json:"accept,omitempty"`
+	Name          string      `json:"name,omitempty"`
+	AutoUpload    bool        `json:"auto-upload,omitempty"`
+	ListType      string      `json:"list-type,omitempty"`
+	Multiple      bool        `json:"multiple,omitempty"`
+	Filterable    bool        `json:"filterable,omitempty"`
+type GeneralDelDto struct {
+	Id  int   `uri:"id" json:"id" validate:"required"`
+	Ids []int `json:"ids"`
+func (g GeneralDelDto) GetIds() []int
+type GeneralGetDto struct {
+	Id int `uri:"id" json:"id" validate:"required"`
+type Index interface {
+	Generate() Index
+	Bind(ctx *gin.Context) error
+	GetPageIndex() int
+	GetPageSize() int
+	GetNeedSearch() interface{}
+type ObjectById struct {
+	Id  int   `uri:"id"`
+	Ids []int `json:"ids"`
+func (s *ObjectById) Bind(ctx *gin.Context) error
+func (s *ObjectById) GetId() interface{}
+type ObjectDeleteReq struct {
+	Ids []int `json:"ids"`
+func (s *ObjectDeleteReq) Bind(ctx *gin.Context) error
+func (s *ObjectDeleteReq) GetId() interface{}
+type ObjectGetReq struct {
+	Id int `uri:"id"`
+func (s *ObjectGetReq) Bind(ctx *gin.Context) error
+func (s *ObjectGetReq) GetId() interface{}
+type Option struct {
+	Label string `json:"label"`
+	Value string `json:"value"`
+type Pagination struct {
+	PageIndex int `form:"pageIndex"`
+	PageSize  int `form:"pageSize"`
+func (m *Pagination) GetPageIndex() int
+func (m *Pagination) GetPageSize() int
+type Slot struct {
+	Prepend  string   `json:"prepend,omitempty"`
+	Append   string   `json:"append,omitempty"`
+	ListType bool     `json:"list-type,omitempty"`
+	Options  []Option `json:"options,omitempty"`
+type Style struct {
+	Width string `json:"width"`
+
+## github.com/go-admin-team/go-admin-core/v2/sdk/contract/migration
+const FrameworkAppCode = "core"
+func GetFilename(s string) string
+func NormalizeAppCode(code string) string
+type AppMigrationFunc func(db *gorm.DB, version, appCode string) error
+type AppRegistrar struct {
+func (a *AppRegistrar) AppCode() string
+func (a *AppRegistrar) SetVersion(k string, f AppMigrationFunc)
+type Entry struct {
+	AppCode string
+	Fn      func(db *gorm.DB, version string) error
+type Registry struct {
+func NewRegistry() *Registry
+func (r *Registry) ForApp(code string) *AppRegistrar
+func (r *Registry) SetVersion(k string, f func(db *gorm.DB, version string) error)
+func (r *Registry) Snapshot() map[string]Entry
+
+## github.com/go-admin-team/go-admin-core/v2/sdk/contract/models
+const (
+	Directory string = "M"
+	Menu string = "C"
+	Button string = "F"
+type ActiveRecord interface {
+	schema.Tabler
+	SetCreateBy(createBy int)
+	SetUpdateBy(updateBy int)
+	Generate() ActiveRecord
+	GetId() interface{}
+type BaseUser struct {
+	Username     string `json:"username" gorm:"type:varchar(100);comment:username"`
+	Salt         string `json:"-" gorm:"type:varchar(255);comment:salt;<-"`
+	PasswordHash string `json:"-" gorm:"type:varchar(128);comment:password hash;<-"`
+	Password     string `json:"password" gorm:"-"`
+func (u *BaseUser) GetPasswordHash() string
+func (u *BaseUser) SetPassword(value string)
+func (u *BaseUser) Verify(db *gorm.DB, tableName string) bool
+type ControlBy struct {
+	CreateBy int `json:"createBy" gorm:"index;comment:creator"`
+	UpdateBy int `json:"updateBy" gorm:"index;comment:updater"`
+func (e *ControlBy) SetCreateBy(createBy int)
+func (e *ControlBy) SetUpdateBy(updateBy int)
+type Migration struct {
+	Version   string    `gorm:"primaryKey"`
+	ApplyTime time.Time `gorm:"autoCreateTime"`
+	AppCode string `gorm:"type:varchar(64);not null;default:'';index:idx_sys_migration_app_code;comment:AppCode"`
+func (Migration) TableName() string
+type Model struct {
+	Id int `json:"id" gorm:"primaryKey;autoIncrement;comment:primary key"`
+type ModelTime struct {
+	CreatedAt time.Time `json:"createdAt" gorm:"comment:creation time"`
+	UpdatedAt time.Time `json:"updatedAt" gorm:"comment:last updated time"`
+	DeletedAt soft_delete.DeletedAt `json:"-" gorm:"softDelete:milli;index;comment:deletion time"`
+type Page struct {
+	List      interface{} `json:"list"`
+	Count     int         `json:"count"`
+	PageIndex int         `json:"pageIndex"`
+	PageSize  int         `json:"pageSize"`
+type Response struct {
+	Code int `json:"code" example:"200"`
+	Data interface{} `json:"data"`
+	Msg       string `json:"msg"`
+	RequestId string `json:"requestId"`
+func (res *Response) ReturnError(code int) *Response
+func (res *Response) ReturnOK() *Response
+
+## github.com/go-admin-team/go-admin-core/v2/sdk/contract/seed
+var ErrNoSeeder = errors.New("seed: no Seeder registered; the host must call seed.RegisterSeeder before any application migration calls SeedMenus")
+func RegisterSeeder(s Seeder)
+func SeedMenus(tx *gorm.DB, appCode string, menus []MenuSpec, apis []ApiSpec) error
+type ApiSpec struct {
+	Code   string
+	Title  string
+	Path   string
+	Method string
+	Handle string
+type MenuSpec struct {
+	Code string
+	Parent string
+	Kind  string
+	Title string
+	Path string
+	Component string
+	Icon string
+	Permission string
+	Sort int
+	ApiCodes []string
+type Seeder interface {
+	SeedMenus(tx *gorm.DB, appCode string, menus []MenuSpec, apis []ApiSpec) error
 
 ## github.com/go-admin-team/go-admin-core/v2/sdk/pkg
 const (
@@ -1107,6 +1298,10 @@ type MessageData struct {
 	Message   []byte
 
 ## github.com/go-admin-team/go-admin-core/v2/sdk/runtime
+const (
+	JwtTokenCheck   = "JwtToken"
+	RoleCheck       = "AuthCheckRole"
+	PermissionCheck = "PermissionAction"
 const DefaultTenant = "default"
 func NewCache(prefix string, store storage.AdapterCache, wxTokenStoreKey string) storage.AdapterCache
 func NewQueue(prefix string, q storage.AdapterQueue) storage.AdapterQueue
@@ -1141,6 +1336,7 @@ func (e *Application) GetDefaultTenant() string
 func (e *Application) GetEngine() http.Handler
 func (e *Application) GetHandler() []func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)
 func (e *Application) GetHandlerByTenant(tenant string) []func(r *gin.RouterGroup, hand ...*gin.HandlerFunc)
+func (e *Application) GetHandlerFunc(key string) (gin.HandlerFunc, bool)
 func (e *Application) GetLogger() logger.Logger
 func (e *Application) GetMemoryQueue(prefix string) storage.AdapterQueue
 func (e *Application) GetMiddleware(key string) interface{}
@@ -1243,6 +1439,7 @@ type Runtime interface {
 	SetMiddleware(string, interface{})
 	GetAllMiddleware() map[string]interface{}
 	GetMiddleware(string) interface{}
+	GetHandlerFunc(key string) (gin.HandlerFunc, bool)
 	SetCacheAdapter(storage.AdapterCache)
 	GetCacheAdapter() storage.AdapterCache
 	GetCacheAdapterPrefix(string) storage.AdapterCache
