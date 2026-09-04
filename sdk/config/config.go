@@ -96,7 +96,12 @@ func Setup(s source.Source,
 			Gen:         GenConfig,
 			Cache:       CacheConfig,
 			Queue:       QueueConfig,
-			Extend:      ExtendConfig,
+			// extendDispatcher, not ExtendConfig directly: it decodes the
+			// extend: tree once per RegisterExtend-claimed key, and still
+			// falls back to feeding ExtendConfig the whole section for
+			// callers that have not migrated to RegisterExtend. See
+			// sdk/config/extend.go.
+			Extend: &extendDispatcher{},
 		},
 		callbacks: fs,
 	}
