@@ -275,3 +275,190 @@ Adding a method is still a source-breaking change for anyone who wrote their
 own implementation of `runtime.Runtime` - a mock, typically. There are none in
 this repository, where `*Application` is the only implementation; if you have
 one, add the new methods listed in section 2 and 4.
+
+---
+
+## 9. Reusing the host's authentication and authorization middleware
+
+An application that wants the same JWT and role checks the host itself uses
+does not need to build its own or import the host package that built them.
+The host registers three well-known keys with `SetMiddleware`
+(`runtime.JwtTokenCheck`, `runtime.RoleCheck`, `runtime.PermissionCheck`), and
+an application reads them back with `GetHandlerFunc`:
+
+```go
+jwtCheck, ok := sdk.Runtime.GetHandlerFunc(runtime.JwtTokenCheck)
+if !ok {
+    log.Fatal("JwtTokenCheck is not registered; is the host started via cmd/api?")
+}
+roleCheck, _ := sdk.Runtime.GetHandlerFunc(runtime.RoleCheck)
+permCheck, _ := sdk.Runtime.GetHandlerFunc(runtime.PermissionCheck)
+
+g := v1.Group("/order").Use(jwtCheck).Use(roleCheck).Use(permCheck)
+```
+
+`GetHandlerFunc` reports `ok=false` instead of panicking both when the key was
+never registered and when it was registered with something other than a
+`gin.HandlerFunc`. **Check `ok` and fail loudly if enforcement is not
+optional** - a router that continues past a missing check, the way a bare type
+assertion's panic tends to get swallowed by this framework's own panic guard
+(section 4), turns a wiring mistake into silently unauthenticated routes.
+
+**Requirement on the host**: all three keys must be registered as bound
+`gin.HandlerFunc` closures (for example `authMiddleware.MiddlewareFunc()`),
+never as an unbound method expression (`(*jwt.GinJWTMiddleware).MiddlewareFunc`)
+- the latter has no receiver bound to it and cannot be turned into a working
+handler no matter how a caller asserts its type. If the host builds a
+separate JWT instance per module rather than one shared instance, this also
+means the shared instance an application reads back is whichever one the host
+happened to register last; a host that wants applications to get a
+meaningful, single shared instance should construct it once, before
+registering routes, rather than once per module.
+
+---
+
+## 10. Application-supplied menu and API entries
+
+Package `sdk/contract/seed` lets an application ask to appear in the admin
+UI - a sidebar entry, a button-level permission, an authorized API route -
+without knowing what table any of that lives in. It defines `MenuSpec` and
+`ApiSpec` (what an application can ask for) and `Seeder` (what the host
+implements to turn those into rows), and nothing else: no `SysMenu`, no
+`SysApi`, no table name, anywhere in core.
+
+That is a deliberate, narrow boundary. Two versions of a menu row already
+exist in this framework's typical host (one frozen at migration time, one
+live), disagreeing on soft-delete shape, and the difference has caused real
+bugs before a repository-local tool was built to catch it. A third copy in
+core - the one package with no such tool watching it, because it ships to
+every fork and every third-party application before any of their code even
+exists - would recreate the same class of bug in the one place it is hardest
+to fix later. So core carries the shape of the request (`MenuSpec`/`ApiSpec`)
+and the host, through `RegisterSeeder`, keeps the schema knowledge.
+`MenuSpec.Kind` takes the same `models.Directory`/`models.Menu`/`models.Button`
+values `sdk/contract/models` already defines for `sys_menu.menu_type`, rather
+than a second, identically-valued set of constants local to this package.
+
+```go
+func init() {
+    // the host, once, e.g. from app/admin's own init()
+    seed.RegisterSeeder(adminSeeder{})
+}
+
+// the application, from inside its own migration, inside its own transaction
+err := seed.SeedMenus(tx, "order", []seed.MenuSpec{
+    {Code: "root", Kind: models.Directory, Title: "Order"},
+    {Code: "list", Parent: "root", Kind: models.Menu, Title: "Order list",
+        Path: "/order", Component: "/order/index", ApiCodes: []string{"list"}},
+}, []seed.ApiSpec{
+    {Code: "list", Title: "order list", Path: "/api/v1/order", Method: "GET"},
+})
+```
+
+**Read the security note on `Seeder` before assuming this is a sandbox - it is
+not one.** `SeedMenus` runs with the same `*gorm.DB` the application's
+migration already holds outside the call, so an application that wanted to
+write `sys_menu`, `sys_api`, or `casbin_rule` directly, bypassing `Seeder`
+entirely, always could - nothing in this package or in Go's type system stops
+it. There is also an indirect route that never touches `casbin_rule` at all:
+linking a menu to another application's (or the host's own) API through
+`ApiCodes`, then waiting for an administrator to grant that menu to a role
+through the ordinary admin UI, which generates the matching Casbin policy on
+its own, attributed to the administrator's action rather than to the
+application. **Installing an application means trusting it with the host's
+database connection, at the same level of trust as importing any other Go
+package into the binary.** `Seeder` exists so a well-behaved application does
+not need to know the host's schema, not so a malicious one is contained.
+
+**Requirements on the host implementing `Seeder`**:
+
+- Populate all four tables a visible, working menu entry needs - `sys_api`,
+  `sys_menu`, `sys_menu_api_rule`, and however role grants and Casbin
+  policies get attached (`sys_role_menu`, `casbin_rule`) - not just the first
+  two. A `Seeder` that only writes `sys_menu`/`sys_api` produces a menu no
+  role can see and an API nothing authorizes, silently.
+- Tag every row the `Seeder` writes with the `appCode` it was called with (for
+  example an `app_code` column on `sys_menu` and `sys_api`), so that
+  installing, auditing, or removing one application's contribution does not
+  require guessing which rows are whose.
+- Decide, and document, how ids are assigned across applications that did not
+  coordinate with each other - `MenuSpec`/`ApiSpec` carry no id, on purpose;
+  the host is the only party in a position to detect or prevent a collision.
+
+---
+
+## 11. Application configuration sections
+
+`sdk/config.RegisterExtend[T any](key string) func() *T` lets a caller claim
+one section of the `extend:` configuration tree and get back a function that
+returns that section's most recently loaded value. Whatever the loaded
+configuration has under `extend.<key>` is decoded into a fresh `*T`
+independently of every other registered key, on every load and on every
+reload triggered by the file watcher (section 7) - so the host and any number
+of applications can each keep their own configuration without one
+overwriting another's.
+
+```go
+type orderConfig struct {
+    PaymentEndpoint string
+    Timeout         int
+}
+
+var getOrderConfig = config.RegisterExtend[orderConfig]("order") // call from init(), same convention as SetAppRouters
+
+func handler(c *gin.Context) {
+    cfg := getOrderConfig() // safe from a request handler; see Concurrency below
+    _ = cfg.PaymentEndpoint
+}
+```
+
+```yaml
+extend:
+  order:
+    PaymentEndpoint: https://payment.internal
+    Timeout: 30
+```
+
+**Call `RegisterExtend` only from `init()`, before `Setup` runs** - the same
+convention as `SetAppRouters` and `migration.ForApp`: registration relies on
+Go's package-init ordering to be free of concurrent writers, not on a runtime
+lock. **Registering the same key twice panics immediately** rather than
+letting the second caller silently take over the first's section - unlike the
+runtime registries in sections 1-8, there is no sealing moment here to refuse
+a late registration against, so a duplicate key is caught the only way left:
+at registration time, loudly. There is no `target` argument to pass `nil`
+for: `RegisterExtend` allocates its own `T`, so that failure mode from an
+earlier version of this API cannot occur any more.
+
+**Concurrency, and why the accessor is safe without a lock of its own**: every
+reload runs from the config watcher's own goroutine, for as long as the
+process is running - a request handler reading the same section is
+inherently concurrent with that. `RegisterExtend` closes that gap itself, by
+never handing out a value it might later mutate: each reload decodes into a
+brand-new `T` and atomically swaps a pointer to publish it, so the accessor
+always returns a complete, self-consistent snapshot - never a half-old,
+half-new value - and the caller's own struct never needs to implement
+`json.Unmarshaler` or guard its fields with a mutex to be read safely from a
+request path. It also never returns `nil`, even before the first load
+completes: `T`'s zero value is published as soon as `RegisterExtend` returns,
+so there is no nil check to forget on the one code path that runs before
+`Setup` does its first `Scan`. What the caller must still get right is not
+holding on to one snapshot across a call to the accessor - reading two
+fields off the same returned `*T` is consistent; calling the accessor twice
+and reading one field from each result is not, if a reload lands in between.
+
+**Back-compat, not a replacement**: before `RegisterExtend` existed, the only
+mechanism was pointing the package-level `config.ExtendConfig` at a struct and
+letting the *entire* `extend:` section decode into it. That keeps working
+completely unchanged for a host that has not adopted `RegisterExtend` at all -
+including the fact that reading it concurrently with a reload is the host's
+own problem to solve, exactly as before. It also keeps working *alongside*
+`RegisterExtend` - a host that has not migrated still gets its data even
+while an application registers its own section - with one caveat: an
+unmigrated host's struct is handed the whole `extend:` tree, including every
+application's section as unrecognised fields, which `encoding/json` silently
+ignores unless a field name happens to collide. A host that wants a clean
+separation, immune to that collision, should migrate to calling
+`RegisterExtend` itself under a reserved key (for example `"__host__"`) for
+its own section, and update its configuration files to nest its existing
+`extend:` fields one level deeper under that key.
