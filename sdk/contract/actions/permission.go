@@ -22,7 +22,7 @@
 package actions
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -97,7 +97,7 @@ func PermissionAction() gin.HandlerFunc {
 			// used to fall into Permission()'s fail-open default - a
 			// database hiccup silently turning into "see everything". PRD
 			// 006 F14/H1.
-			response.Error(c, 500, err, "权限范围鉴定错误")
+			response.Error(c, 500, err, "could not determine the data permission scope")
 			c.Abort()
 			return
 		}
@@ -105,7 +105,7 @@ func PermissionAction() gin.HandlerFunc {
 		p, err := newDataPermission(db, userId)
 		if err != nil {
 			log.Errorf("MsgID[%s] PermissionAction error: %s", msgID, err)
-			response.Error(c, 500, err, "权限范围鉴定错误")
+			response.Error(c, 500, err, "could not determine the data permission scope")
 			c.Abort()
 			return
 		}
@@ -144,16 +144,16 @@ func newDataPermission(tx *gorm.DB, userId interface{}) (*DataPermission, error)
 		Where("sys_user.user_id = ?", userId).
 		Scan(p).Error
 	if err != nil {
-		err = errors.New("获取用户数据出错 msg:" + err.Error())
+		err = fmt.Errorf("look up the user's data permission scope: %w", err)
 		return nil, err
 	}
 	return p, nil
 }
 
-// The five values sys_role.data_scope can hold. Front end's role editor
-// calls them by the same names (go-admin-ui's sys-role/index.vue): "1" is
-// 全部数据权限, "2" 自定义数据权限, "3" 本部门数据权限, "4" 本部门及以下数据权限,
-// "5" 仅本人数据权限.
+// The five values sys_role.data_scope can hold, in the order the role
+// editor lists them (go-admin-ui's sys-role/index.vue): "1" every row,
+// "2" the departments the role names, "3" the user's own department,
+// "4" that department and everything under it, "5" the user's own rows.
 //
 // DataScopeAll has to be a named, explicit case in Permission below rather
 // than falling into default: it is a real, intentional configuration, not an
@@ -230,9 +230,8 @@ func Permission(tableName string, p *DataPermission) func(db *gorm.DB) *gorm.DB 
 func getPermissionFromContext(c *gin.Context) *DataPermission {
 	p := new(DataPermission)
 	if pm, ok := c.Get(PermissionKey); ok {
-		switch pm.(type) {
-		case *DataPermission:
-			p = pm.(*DataPermission)
+		if v, ok := pm.(*DataPermission); ok {
+			p = v
 		}
 	}
 	return p
