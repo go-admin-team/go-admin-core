@@ -154,3 +154,44 @@ func GetFilename(s string) string {
 	s = filepath.Base(s)
 	return s[:13]
 }
+
+// defaultRegistry is the process-wide registry: the one every application's
+// init() registers against, through the package-level ForApp and SetVersion
+// below, and the one the host's execution engine reads through the
+// package-level Snapshot.
+//
+// Registry existed before this without a singleton, and that was the actual
+// gap in F9 (PRD 006): an application that only imports this package - not
+// go-admin/cmd/migrate/migration - has no way to construct or reach the
+// host's own *Registry, since NewRegistry always returns a fresh, private
+// instance. A shared, mutable global would need its own synchronisation on
+// top of Registry's; here there is none to add, because the variable itself
+// is assigned exactly once, at package initialisation, and never
+// reassigned - every access after that is a method call against the same
+// pointer, and Registry's own mutex (see setVersion and Snapshot above)
+// already makes those calls concurrency-safe. This mirrors how sdk.Runtime
+// is exposed: one package-level instance of a type that is itself safe for
+// concurrent use, not a second layer of locking around it.
+var defaultRegistry = NewRegistry()
+
+// ForApp is the package-level entry point an application's init() calls:
+// migration.ForApp("crm").SetVersion(...). It is the same call an app makes
+// against its own *Registry in a unit test, now reaching the registry the
+// host's execution engine actually reads.
+func ForApp(code string) *AppRegistrar {
+	return defaultRegistry.ForApp(code)
+}
+
+// SetVersion is the package-level entry point for a migration owned by the
+// framework itself, under the empty app code - the path go-admin's own
+// cmd/migrate/migration/version files use.
+func SetVersion(k string, f func(db *gorm.DB, version string) error) {
+	defaultRegistry.SetVersion(k, f)
+}
+
+// Snapshot returns a copy of every migration registered in the process-wide
+// registry, exactly as Registry.Snapshot does. This is what the host's
+// execution engine reads.
+func Snapshot() map[string]Entry {
+	return defaultRegistry.Snapshot()
+}
