@@ -53,10 +53,10 @@ func TestActiveRecordSelfReference(t *testing.T) {
 // in this repository. After the F1/F5 move, go-admin/common/models becomes a
 // pure alias of this package — comparing this package's schema against that
 // alias would compare a type against itself, which stays green no matter how
-// the shape drifts (PRD 006 评审 B1). The literals below are what
-// go-admin/common/models produced before the move, computed once via
-// gorm/schema.Parse on the same embed combination as probeRow, and are not
-// regenerated from this package's own types.
+// the shape drifts, defeating the point of a regression test. The literals
+// below are what go-admin/common/models produced before the move, computed
+// once via gorm/schema.Parse on the same embed combination as probeRow, and
+// are not regenerated from this package's own types.
 var wantSchema = []string{
 	"create_by|int|pk=false|size=64",
 	"created_at|time|pk=false|size=0",

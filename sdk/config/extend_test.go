@@ -141,7 +141,8 @@ func TestExtendDispatcherIgnoresAnUnclaimedOrMissingSection(t *testing.T) {
 // Before RegisterExtend existed, the only mechanism was pointing the
 // package-level ExtendConfig at a struct and letting the whole extend:
 // section decode into it. RegisterExtend must not break that for a caller
-// that has not adopted it - this is what "只加不减" means operationally.
+// that has not adopted it - the new mechanism is additive only, so nothing
+// that already worked is taken away.
 func TestExtendDispatcherKeepsLegacyExtendConfigWorking(t *testing.T) {
 	resetExtend(t)
 
