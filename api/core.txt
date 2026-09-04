@@ -938,7 +938,7 @@ type Tls struct {
 
 ## github.com/go-admin-team/go-admin-core/v2/sdk/contract/dto
 func MakeCondition(q interface{}) func(db *gorm.DB) *gorm.DB
-func OrderDest(sort string, bl bool) func(db *gorm.DB) *gorm.DB
+func OrderDest(sort string, desc bool) func(db *gorm.DB) *gorm.DB
 func Paginate(pageSize, pageIndex int) func(db *gorm.DB) *gorm.DB
 type AutoForm struct {
 	Fields        []Field `json:"fields"`
