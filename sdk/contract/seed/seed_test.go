@@ -77,7 +77,7 @@ func TestSeedMenusForwardsToRegisteredSeeder(t *testing.T) {
 
 	menus := []MenuSpec{
 		{Code: "root", Kind: models.Directory, Title: "Order"},
-		{Code: "list", Parent: "root", Kind: models.Menu, Title: "Order list", Path: "/order", Component: "/order/index", ApiCodes: []string{"list"}},
+		{Code: "list", Parent: "root", Kind: models.Menu, Title: "Order list", Path: "/order", Component: "apps/order/index", ApiCodes: []string{"list"}},
 		{Code: "add", Parent: "list", Kind: models.Button, Permission: "order:add"},
 	}
 	apis := []ApiSpec{

@@ -349,7 +349,7 @@ func init() {
 err := seed.SeedMenus(tx, "order", []seed.MenuSpec{
     {Code: "root", Kind: models.Directory, Title: "Order"},
     {Code: "list", Parent: "root", Kind: models.Menu, Title: "Order list",
-        Path: "/order", Component: "/order/index", ApiCodes: []string{"list"}},
+        Path: "/order", Component: "apps/order/index", ApiCodes: []string{"list"}},
 }, []seed.ApiSpec{
     {Code: "list", Title: "order list", Path: "/api/v1/order", Method: "GET"},
 })

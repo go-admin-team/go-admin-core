@@ -55,6 +55,16 @@ type MenuSpec struct {
 	Path string
 	// Component is the frontend component path. Meaningless for
 	// models.Directory (conventionally a bare layout) and models.Button.
+	//
+	// For a packaged application this must start with "apps/<code>/" - the
+	// frontend tells a packaged view from a view built into the host by that
+	// prefix alone, and anything else is read as the latter. A path that
+	// looks like a host view but is not one does not error: the frontend
+	// goes looking for it, does not find it, and falls back to its
+	// not-installed placeholder, which reports nothing about a bad
+	// Component value. core does not enforce the prefix - Component is an
+	// opaque string here - so this convention only holds if callers follow
+	// it; see docs/contract.md's example.
 	Component string
 	// Icon is the sidebar icon name. Meaningless for models.Button.
 	Icon string
