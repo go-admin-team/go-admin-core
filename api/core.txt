@@ -936,6 +936,24 @@ type Tls struct {
 	Key  string `yaml:"key" json:"key"`
 	Ca   string `yaml:"ca" json:"ca"`
 
+## github.com/go-admin-team/go-admin-core/v2/sdk/contract/actions
+const (
+	DataScopeAll      = "1"
+	DataScopeCustom   = "2"
+	DataScopeDept     = "3"
+	DataScopeDeptTree = "4"
+	DataScopeSelf     = "5"
+const PermissionKey = "dataPermission"
+func IsValidDataScope(s string) bool
+func Permission(tableName string, p *DataPermission) func(db *gorm.DB) *gorm.DB
+func PermissionAction() gin.HandlerFunc
+type DataPermission struct {
+	DataScope string
+	UserId    int
+	DeptId    int
+	RoleId    int
+func GetPermissionFromContext(c *gin.Context) *DataPermission
+
 ## github.com/go-admin-team/go-admin-core/v2/sdk/contract/dto
 func MakeCondition(q interface{}) func(db *gorm.DB) *gorm.DB
 func OrderDest(sort string, desc bool) func(db *gorm.DB) *gorm.DB
