@@ -1059,8 +1059,11 @@ type Style struct {
 const FrameworkAppCode = "core"
 func GetFilename(s string) string
 func NormalizeAppCode(code string) string
+func SetVersion(k string, f func(db *gorm.DB, version string) error)
+func Snapshot() map[string]Entry
 type AppMigrationFunc func(db *gorm.DB, version, appCode string) error
 type AppRegistrar struct {
+func ForApp(code string) *AppRegistrar
 func (a *AppRegistrar) AppCode() string
 func (a *AppRegistrar) SetVersion(k string, f AppMigrationFunc)
 type Entry struct {
