@@ -16,7 +16,7 @@ import (
 // comparable.
 type probeRow struct {
 	Model
-	Name string `json:"name" gorm:"size:64;comment:名称"`
+	Name string `json:"name" gorm:"size:64;comment:name"`
 	ControlBy
 	ModelTime
 }

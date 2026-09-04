@@ -11,8 +11,8 @@ import (
 // Services: actions.Permission's data-scope SQL joins on CreateBy, so a model
 // without this embed makes every data-scope rule silently match nothing.
 type ControlBy struct {
-	CreateBy int `json:"createBy" gorm:"index;comment:创建者"`
-	UpdateBy int `json:"updateBy" gorm:"index;comment:更新者"`
+	CreateBy int `json:"createBy" gorm:"index;comment:creator"`
+	UpdateBy int `json:"updateBy" gorm:"index;comment:updater"`
 }
 
 // SetCreateBy sets the id of the user who created the row.
@@ -27,14 +27,14 @@ func (e *ControlBy) SetUpdateBy(updateBy int) {
 
 // Model is the primary key embed shared by every framework-managed table.
 type Model struct {
-	Id int `json:"id" gorm:"primaryKey;autoIncrement;comment:主键编码"`
+	Id int `json:"id" gorm:"primaryKey;autoIncrement;comment:primary key"`
 }
 
 // ModelTime holds the created/updated/deleted timestamps every framework
 // table carries.
 type ModelTime struct {
-	CreatedAt time.Time `json:"createdAt" gorm:"comment:创建时间"`
-	UpdatedAt time.Time `json:"updatedAt" gorm:"comment:最后更新时间"`
+	CreatedAt time.Time `json:"createdAt" gorm:"comment:creation time"`
+	UpdatedAt time.Time `json:"updatedAt" gorm:"comment:last updated time"`
 
 	// DeletedAt is milliseconds since the epoch, zero while the row is live,
 	// and never null.
@@ -44,5 +44,5 @@ type ModelTime struct {
 	// index permits both — it looks like a constraint and enforces nothing.
 	// With zero for live rows the pair collides, while two deletions of the
 	// same name differ by their timestamps and both remain.
-	DeletedAt soft_delete.DeletedAt `json:"-" gorm:"softDelete:milli;index;comment:删除时间"`
+	DeletedAt soft_delete.DeletedAt `json:"-" gorm:"softDelete:milli;index;comment:deletion time"`
 }
