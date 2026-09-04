@@ -9,6 +9,14 @@ import (
 // GeneralDelDto binds either a single :id or a JSON body of ids for a batch
 // delete, matching what ObjectById does for the request shapes that predate
 // it.
+//
+// Deprecated: prefer ObjectById (single-or-batch) or ObjectDeleteReq
+// (batch only). GeneralDelDto binds through both a `uri:"id"` and a
+// `json:"id"` tag with `validate:"required"`, and relies on the caller's own
+// binder plus that tag to reject a missing id; the newer types bind through
+// `uri` alone and implement their own Bind method. GeneralDelDto is not
+// being removed - the host has callers depending on this exact shape - but
+// new code should not add to them.
 type GeneralDelDto struct {
 	Id  int   `uri:"id" json:"id" validate:"required"`
 	Ids []int `json:"ids"`
@@ -34,6 +42,10 @@ func (g GeneralDelDto) GetIds() []int {
 }
 
 // GeneralGetDto binds a single :id for a detail lookup.
+//
+// Deprecated: prefer ObjectGetReq, which binds the same :id through `uri`
+// alone and implements its own Bind method instead of relying on the
+// caller's own binder plus a `validate:"required"` tag.
 type GeneralGetDto struct {
 	Id int `uri:"id" json:"id" validate:"required"`
 }
