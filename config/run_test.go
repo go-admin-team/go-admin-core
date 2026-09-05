@@ -52,10 +52,16 @@ func TestCloseStopsARunThatCannotWatch(t *testing.T) {
 		t.Fatal("run never attempted a watch")
 	}
 
-	at := l.attempts.Load()
 	if err := c.Close(); err != nil {
 		t.Fatalf("Close: %v", err)
 	}
+
+	// Read after Close, not before it. Taken before, a test goroutine that
+	// happened to be descheduled for a second between the two would have the
+	// retry that ran while it was away counted as one that ran after Close -
+	// a red run for a loop that had in fact stopped, which is the failure
+	// this test was rewritten to stop producing.
+	at := l.attempts.Load()
 
 	// The retry is one attempt a second, so what the assertion is made of is
 	// silence: a loop that ignored Close would ask twice in this window. One
