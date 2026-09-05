@@ -78,6 +78,11 @@ type Runtime interface {
 	SetMiddleware(string, interface{})
 	GetAllMiddleware() map[string]interface{}
 	GetMiddleware(string) interface{}
+	// GetHandlerFunc is GetMiddleware plus the gin.HandlerFunc assertion every
+	// caller otherwise repeats, and false instead of a panic when the key is
+	// unregistered or holds something else. See the well-known keys
+	// JwtTokenCheck, RoleCheck and PermissionCheck.
+	GetHandlerFunc(key string) (gin.HandlerFunc, bool)
 
 	// SetCacheAdapter cache
 	SetCacheAdapter(storage.AdapterCache)
