@@ -462,3 +462,107 @@ separation, immune to that collision, should migrate to calling
 `RegisterExtend` itself under a reserved key (for example `"__host__"`) for
 its own section, and update its configuration files to nest its existing
 `extend:` fields one level deeper under that key.
+
+---
+
+## 12. Life-cycle phases
+
+A phase names a moment in the process's life that an application can hang
+work on. There are four, and each is a permanent promise about what has
+happened by the time it runs:
+
+| Phase | Runs when | Available |
+|---|---|---|
+| `AfterResource` | the database, cache, queue and casbin are built | configuration, every resource |
+| `BeforeRouter` | before the host installs its routes | the above, plus the engine |
+| `AfterListen` | the socket is accepting connections | everything |
+| `BeforeExit` | on the way out, after the server stopped serving | everything, while it is being taken down |
+
+```go
+sdk.Runtime.SetPhase(runtime.AfterResource, func() { /* ... */ })
+sdk.Runtime.SetShutdown(func(ctx context.Context) { /* ... */ })
+```
+
+The numeric values are **not** part of the contract. They are spaced so a
+phase can be added between two existing ones without moving what is already
+there; do not persist them, transmit them, or compare them with `<`.
+
+### `AfterResource` runs again, and its callbacks must tolerate that
+
+Every other phase runs once and then refuses further registration.
+`AfterResource` is different: it runs again after **every** configuration
+reload, because a reload rebuilds the resources it is named for. A queue
+consumer registered against the adapter that existed at startup is attached
+to an adapter nobody publishes to any more; re-running is what re-attaches
+it.
+
+So a callback here has to be **idempotent with respect to the same
+resource** - not "does nothing the second time". The queue example is the
+reason for that wording: `Register` unconditionally starts a consumer
+goroutine, and after a reload it *must*, because the adapter is new. What it
+must not do is start a second consumer on an adapter it already handled. The
+implementable rule is to remember the instance you last saw and return early
+when it has not changed.
+
+Two consequences worth stating plainly:
+
+- **`RunPhase(AfterResource)` is not synchronous.** Rounds are serialised: a
+  call arriving while a round is running marks the phase as owing another
+  round and returns immediately, without waiting. Only the once-only phases
+  give the caller "your callbacks have finished" on return. A trigger is
+  never dropped, because the reload that produced it may have swapped in a
+  resource after the running round took its snapshot.
+- **Do not call `RunPhase(AfterResource)` from inside an `AfterResource`
+  callback.** It marks another round owing, from within the round, forever.
+  There is no guard against it, deliberately: a guard would have to tell
+  self-recursion apart from a genuine reload on another goroutine, and
+  dropping the latter is exactly the bug this mechanism exists to prevent.
+
+The registry is never closed, so it only ever grows. A callback count that
+increases between rounds is reported as a warning - that is the one automatic
+signal that something is registering on every reload instead of being
+idempotent.
+
+### `BeforeExit` runs in reverse, and is the one phase shutdown does not close
+
+Cleanup runs **last-registered-first**. That is the right default for a chain
+of hooks that built on one another; it says nothing about resources the host
+created for itself, which this chain did not build and does not unwind.
+
+`SetShutdown` is the context-taking half of the same phase - both register
+into it, and one pass runs both. The context carries the host's shutdown
+budget so a callback that can cut its work short has something to consult.
+
+**What the context bounds is the wait, not the work.** When the budget is
+gone `RunShutdown` stops waiting and returns `ctx.Err()`; the callback that
+was running carries on until the process exits, possibly leaving a partial
+write behind. Go cannot cancel a function that does not check for
+cancellation, which is why callbacks are handed a context at all.
+
+`WithFatal` is not honoured here. Exiting from inside cleanup skips every
+callback after it, which is the opposite of what the option is for. The
+callback is kept and the option is reported - refusing the registration
+outright would mean one mistyped option silently costs you the cleanup.
+
+### Once shutdown starts, the other phases stop
+
+`BeginShutdown` marks the process as stopping. From then on `SetPhase` and
+`RunPhase` do nothing for every phase except `BeforeExit`, and say so at
+warning level. Without it, a configuration reload arriving in the shutdown
+window re-runs `AfterResource` - rebuilding the pool and the adapter, and
+re-registering consumers - undoing cleanup that has already run.
+
+`BeforeExit` is exempt because it is the shutdown. Gating it would make the
+flag skip the very work it was added to protect.
+
+### What these phases cannot do
+
+- **They cannot drain the queue.** `Memory.Shutdown` does not deliver what is
+  still buffered, so a `BeforeExit` callback has nothing to call that would
+  flush the log queue. See `known-issues.md`. A deployment that cannot lose
+  audit rows must not rely on this phase for that.
+- **They cannot take the process out of a load balancer.** The only hook here
+  runs *after* the HTTP server stopped accepting, and Kubernetes expects
+  readiness to start failing *before* that so endpoints are withdrawn first.
+  There is no pre-shutdown hook yet; without one, a rolling update can still
+  produce connection refused.
