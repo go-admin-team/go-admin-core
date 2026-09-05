@@ -111,16 +111,35 @@ func (c *config) run() {
 				log.Errorf("failed to read values: %v", err)
 				continue
 			}
+			// Whether the entity was refreshed and therefore owes a
+			// notification. The early returns above leave it false, so a
+			// reload that never reached the entity never reports one.
+			changed := false
 			if c.opts.Entity != nil {
 				if err := c.vals.Scan(c.opts.Entity); err != nil {
 					c.Unlock()
 					log.Errorf("failed to scan entity: %v", err)
 					continue
 				}
-				c.opts.Entity.OnChange()
+				changed = true
 			}
 
 			c.Unlock()
+
+			// Outside the write lock, deliberately. OnChange is arbitrary
+			// caller code and the first thing a reload hook does is read the
+			// configuration it was told changed - Get, Map and Scan all take
+			// RLock, and sync.RWMutex is not reentrant, so calling this while
+			// still holding the write lock deadlocks the hook against a lock
+			// its own goroutine holds. That hangs this watcher for good and
+			// every later change is silently dropped.
+			//
+			// Ordering is not lost by the move: this closure is one
+			// goroutine running one loop, so the next w.Next() is not reached
+			// until this hook returns.
+			if changed {
+				c.opts.Entity.OnChange()
+			}
 		}
 	}
 
