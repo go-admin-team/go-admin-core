@@ -47,12 +47,24 @@ func (s *ObjectById) Bind(ctx *gin.Context) error {
 	return err
 }
 
+// GetId returns the ids this request addresses: the batch from the body when
+// there is one, otherwise the single id from the URI.
+//
+// It must not write back to the receiver. Appending to s.Ids in place made
+// GetId non-idempotent - a second call returned the URI id twice - and an
+// unconditional append put a 0 into the slice on any route that carries no
+// :id, which is a dangerous value to hand to a caller that treats 0 as a
+// sentinel.
 func (s *ObjectById) GetId() interface{} {
-	if len(s.Ids) > 0 {
-		s.Ids = append(s.Ids, s.Id)
+	if len(s.Ids) == 0 {
+		return s.Id
+	}
+	if s.Id == 0 {
 		return s.Ids
 	}
-	return s.Id
+	ids := make([]int, 0, len(s.Ids)+1)
+	ids = append(ids, s.Ids...)
+	return append(ids, s.Id)
 }
 
 // ObjectGetReq binds a single :id from the URI for a detail lookup.

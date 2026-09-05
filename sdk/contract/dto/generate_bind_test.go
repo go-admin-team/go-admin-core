@@ -64,3 +64,35 @@ func TestObjectByIdBindFoldsTheUriIdIntoIdsWhenTheBodyCarriesNone(t *testing.T) 
 		t.Fatalf("Ids = %v, want [7]", s.Ids)
 	}
 }
+
+// GetId used to append to s.Ids in place, so calling it twice returned the
+// URI id twice - and every caller that reads a request twice, or retries,
+// widened the delete each time.
+func TestGetIdIsIdempotent(t *testing.T) {
+	s := &ObjectById{Id: 7, Ids: []int{2, 3}}
+	first := s.GetId()
+	second := s.GetId()
+	if !reflect.DeepEqual(first, second) {
+		t.Fatalf("GetId returned %v then %v", first, second)
+	}
+	if !reflect.DeepEqual(s.Ids, []int{2, 3}) {
+		t.Fatalf("GetId wrote back to the receiver: Ids = %v, want [2 3]", s.Ids)
+	}
+}
+
+// A route with no :id leaves Id at 0. Appending it put a 0 in the slice,
+// which a caller treating 0 as "unset" can read as something else entirely.
+func TestGetIdOmitsAZeroUriId(t *testing.T) {
+	s := &ObjectById{Id: 0, Ids: []int{2, 3}}
+	got := s.GetId()
+	if !reflect.DeepEqual(got, []int{2, 3}) {
+		t.Fatalf("GetId = %v, want [2 3]", got)
+	}
+}
+
+func TestGetIdReturnsTheSingleIdWhenTheBodyCarriesNone(t *testing.T) {
+	s := &ObjectById{Id: 7}
+	if got := s.GetId(); got != 7 {
+		t.Fatalf("GetId = %v, want 7", got)
+	}
+}
