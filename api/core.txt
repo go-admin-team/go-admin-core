@@ -816,6 +816,9 @@ func (e *Api) OK(data interface{}, msg string)
 func (e *Api) PageOK(result interface{}, count int, pageIndex int, pageSize int, msg string)
 func (e Api) Translate(form, to interface{})
 
+## github.com/go-admin-team/go-admin-core/v2/sdk/bootstrap
+func SetupConfig(s source.Source, fs ...func())
+
 ## github.com/go-admin-team/go-admin-core/v2/sdk/config
 var (
 	DatabaseConfig  = new(Database)
