@@ -483,9 +483,17 @@ sdk.Runtime.SetPhase(runtime.AfterResource, func() { /* ... */ })
 sdk.Runtime.SetShutdown(func(ctx context.Context) { /* ... */ })
 ```
 
-The numeric values are **not** part of the contract. They are spaced so a
-phase can be added between two existing ones without moving what is already
-there; do not persist them, transmit them, or compare them with `<`.
+The numeric values are **not** part of the contract: do not persist them,
+transmit them, or write them into configuration - name the constant instead.
+Their *order* is, and stays that way by construction. The values are spaced,
+so a phase added later takes a number in a gap rather than renumbering the
+ones already compiled into somebody else's binary, and `p1 < p2` keeps
+meaning "`p1` is reached first".
+
+It orders the first pass and nothing else. `AfterResource` runs again on
+every configuration reload, so for the rest of the process's life it happens
+*after* `AfterListen` while still holding the smaller number - `<` cannot
+tell you whether a phase is behind you. `PhaseSealed` can.
 
 ### `AfterResource` runs again, and its callbacks must tolerate that
 

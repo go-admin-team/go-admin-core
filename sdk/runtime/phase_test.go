@@ -37,8 +37,10 @@ func TestPhaseStringOfAnUnknownValueIsNotAName(t *testing.T) {
 	}
 }
 
-// The phases are ordered as the application runs, and comparing them with <
-// is meant to keep meaning "happens earlier".
+// The phases are numbered in the order they are first reached, and comparing
+// them with < is meant to keep meaning "reached first". It says nothing about
+// later rounds: AfterResource holds the smallest number and runs again after
+// all of them on every configuration reload.
 func TestPhasesAreOrderedByWhenTheyHappen(t *testing.T) {
 	ordered := []Phase{AfterResource, BeforeRouter, AfterListen, BeforeExit}
 	for i := 1; i < len(ordered); i++ {

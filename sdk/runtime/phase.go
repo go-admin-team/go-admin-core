@@ -10,10 +10,17 @@ import (
 //
 // The values are assigned explicitly rather than with iota, and with gaps: a
 // phase inserted later takes a number in a gap instead of moving the numbers
-// already compiled into somebody else's binary, and comparing two phases with
-// < keeps meaning "happens earlier". The numbers are an implementation
-// detail. They are not part of the contract, and must not be persisted, sent
-// over the wire, or written into configuration - name the constant instead.
+// already compiled into somebody else's binary, so p1 < p2 keeps meaning "p1
+// is reached first".
+//
+// That orders the first pass and nothing else. AfterResource runs again on
+// every configuration reload, so for the rest of the process's life it
+// happens after AfterListen while still holding the smaller number: < cannot
+// answer "has that phase already run". PhaseSealed can.
+//
+// The numbers themselves are an implementation detail. They are not part of
+// the contract, and must not be persisted, sent over the wire, or written
+// into configuration - name the constant instead.
 type Phase int
 
 const (
