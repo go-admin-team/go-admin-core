@@ -11,6 +11,7 @@
 package migration
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -147,12 +148,42 @@ func NormalizeAppCode(code string) string {
 	return strings.ToLower(strings.TrimSpace(code))
 }
 
-// GetFilename extracts a migration's version from its file name: the
-// leading 13 characters, which is the millisecond-timestamp convention every
-// migration file name follows.
+// versionPrefixLen is the width of the millisecond timestamp every migration
+// file name starts with.
+const versionPrefixLen = 13
+
+// GetFilename extracts a migration's version from its file name: the leading
+// 13 digits, which is the millisecond-timestamp convention every migration
+// file name follows.
+//
+// The prefix has to be checked, not just sliced. Every caller is an init(),
+// and a name that carries no timestamp would otherwise register under a key
+// that is not a version at all - sys_migration would record it, ordering
+// against real versions would be meaningless, and nothing would ever say so.
+// Length alone is not enough of a check either: "add_orders.go" is exactly
+// 13 characters, so it passed a bounds check and became its own version.
+// Panic with the offending name, so the author sees which file to rename.
 func GetFilename(s string) string {
 	s = filepath.Base(s)
-	return s[:13]
+	if !hasVersionPrefix(s) {
+		panic(fmt.Sprintf(
+			"migration: file name %q does not start with a version: "+
+				"a migration file must be named <%d-digit millisecond timestamp>_<description>.go",
+			s, versionPrefixLen))
+	}
+	return s[:versionPrefixLen]
+}
+
+func hasVersionPrefix(s string) bool {
+	if len(s) < versionPrefixLen {
+		return false
+	}
+	for _, c := range s[:versionPrefixLen] {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 // defaultRegistry is the process-wide registry: the one every application's

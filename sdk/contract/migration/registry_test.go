@@ -1,6 +1,7 @@
 package migration
 
 import (
+	"strings"
 	"testing"
 
 	"gorm.io/gorm"
@@ -133,4 +134,36 @@ func TestGetFilename(t *testing.T) {
 			t.Errorf("GetFilename(%q) = %q, want %q", in, got, want)
 		}
 	}
+}
+
+// Every caller of GetFilename is an init(), so a name that carries no version
+// has to stop the process rather than register under a key that is not a
+// version at all. A bounds check alone was not enough: this name is exactly
+// 13 characters, so it passed and became its own version.
+func TestGetFilenamePanicsWhenTheNameCarriesNoTimestamp(t *testing.T) {
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Fatal("a file name with no version prefix did not panic")
+		}
+		msg, ok := r.(string)
+		if !ok {
+			t.Fatalf("panic value %v (%T), want a string", r, r)
+		}
+		if !strings.Contains(msg, "add_orders.go") {
+			t.Fatalf("panic %q does not name the offending file", msg)
+		}
+	}()
+	// Exactly 13 characters, so a bounds check alone lets it through and it
+	// becomes its own "version".
+	GetFilename("/app/migration/add_orders.go")
+}
+
+func TestGetFilenamePanicsWhenTheNameIsShorterThanAVersion(t *testing.T) {
+	defer func() {
+		if recover() == nil {
+			t.Fatal("a file name shorter than a version did not panic")
+		}
+	}()
+	GetFilename("x.go")
 }
