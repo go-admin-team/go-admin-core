@@ -1411,6 +1411,13 @@ type CallbackOption func(*callbackConfig)
 func WithFatal() CallbackOption
 func WithName(name string) CallbackOption
 type Config map[string]interface{}
+type Phase int
+const (
+	AfterResource Phase = 10
+	BeforeRouter Phase = 20
+	AfterListen Phase = 30
+	BeforeExit Phase = 40
+func (p Phase) String() string
 type Queue struct {
 func (e *Queue) Append(message storage.Messager) error
 func (e *Queue) Register(name string, f storage.ConsumerFunc)
