@@ -128,4 +128,14 @@ type Runtime interface {
 	// AppRoutersSealed reports whether RunAppRouters has run, i.e. whether a
 	// further SetAppRouters would be dropped.
 	AppRoutersSealed() bool
+
+	// SetPhase registers a callback to run when the application reaches the
+	// given life-cycle phase.
+	SetPhase(p Phase, f func(), opts ...CallbackOption)
+	// RunPhase executes the callbacks registered for a phase that have not
+	// run yet, in registration order.
+	RunPhase(p Phase)
+	// PhaseSealed reports whether a phase has already run, i.e. whether a
+	// further SetPhase for it would be dropped.
+	PhaseSealed(p Phase) bool
 }

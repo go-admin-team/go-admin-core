@@ -38,6 +38,7 @@ type Application struct {
 	appRouters    registry                                                        // app router registry
 	casbinExclude map[string]interface{}                                          // casbin排除
 	before        registry                                                        // startup callback registry
+	phases        [phaseCount]registry                                            // life-cycle phase registries, indexed by Phase.index
 	defaultTenant string                                                          // 默认租户标识符
 	app           map[string]interface{}                                          // app
 }

@@ -1366,8 +1366,10 @@ func (e *Application) GetQueueAdapter() storage.AdapterQueue
 func (e *Application) GetQueuePrefix(key string) storage.AdapterQueue
 func (e *Application) GetRouter() []Router
 func (e *Application) GetStreamMessage(id, stream string, value map[string]interface{}) (storage.Messager, error)
+func (e *Application) PhaseSealed(p Phase) bool
 func (e *Application) RunAppRouters()
 func (e *Application) RunBefore()
+func (e *Application) RunPhase(p Phase)
 func (e *Application) SetApp(app interface{})
 func (e *Application) SetAppByTenant(key string, app interface{})
 func (e *Application) SetAppRouters(appRouters func())
@@ -1392,6 +1394,7 @@ func (e *Application) SetHandler(routerGroup func(r *gin.RouterGroup, hand ...*g
 func (e *Application) SetHandlerByTenant(tenant string, routerGroup func(r *gin.RouterGroup, hand ...*gin.HandlerFunc))
 func (e *Application) SetLogger(l logger.Logger)
 func (e *Application) SetMiddleware(key string, middleware interface{})
+func (e *Application) SetPhase(p Phase, f func(), opts ...CallbackOption)
 func (e *Application) SetQueueAdapter(c storage.AdapterQueue)
 type Cache struct {
 func (e Cache) Connect() error
@@ -1493,6 +1496,9 @@ type Runtime interface {
 	GetAppRouters() []func()
 	RunAppRouters()
 	AppRoutersSealed() bool
+	SetPhase(p Phase, f func(), opts ...CallbackOption)
+	RunPhase(p Phase)
+	PhaseSealed(p Phase) bool
 
 ## github.com/go-admin-team/go-admin-core/v2/sdk/service
 type Service struct {
