@@ -40,11 +40,21 @@ func (cb callback) label() string {
 //
 // Every method here assumes the caller already holds Application.mux.
 // sync.RWMutex is not reentrant, so none of them may take it.
+//
+// A re-entrant phase uses none of cursor and sealed - it runs every entry
+// again on every round - and uses running, pending, rounds and lastCount
+// instead. Those four are described where the rounds are actually driven, in
+// runReentrant.
 type registry struct {
 	entries []callback
 	cursor  int
 	sealed  bool
 	handed  bool // Get* handed the entries out for a loop core cannot see
+
+	running   bool // a round is in flight
+	pending   bool // a trigger arrived during that round and owes another one
+	rounds    int  // rounds completed, so the first one has nothing to compare against
+	lastCount int  // len(entries) at the start of the previous round
 }
 
 // appendLocked records a callback, reporting false when the registry is closed.
@@ -85,6 +95,86 @@ func (r *registry) takePendingLocked() []callback {
 	r.cursor = len(r.entries)
 	r.sealed = true
 	return pending
+}
+
+// takeAllLocked returns every registered callback, without sealing the
+// registry and without moving the cursor.
+//
+// That is the difference between a phase that happens once and one that
+// happens again after a configuration reload: the hooks worth running the
+// second time are precisely the ones that already ran the first time. They
+// are the code that attaches itself to the database, the cache and the queue,
+// and those have just been rebuilt.
+func (r *registry) takeAllLocked() []callback {
+	return slices.Clone(r.entries)
+}
+
+// runReentrant runs every registered callback, and keeps running rounds for
+// as long as triggers keep arriving, never two rounds at once.
+//
+//	in flight? -> record that another round is owed, and return
+//	otherwise  -> take the entries under the lock, run them without it,
+//	              then take the lock again and go round once more if one
+//	              is owed
+//
+// Dropping the second trigger instead would be the cheaper thing to write and
+// the wrong thing to ship: the resource that the second reload built may have
+// been installed after the first round took its snapshot, so dropping it
+// leaves that resource with none of the consumers that were supposed to
+// attach to it - a queue nobody reads, which is the defect this whole
+// mechanism exists to close.
+//
+// A caller whose trigger only set the flag returns before the work is done.
+// Waiting instead would block the single goroutine that drives configuration
+// reloads behind hooks of unknown duration, so a re-entrant phase is the one
+// phase whose RunPhase is not always synchronous.
+//
+// Callbacks registered while a round is running are not picked up by that
+// round; the next one takes them. Sweeping them up at the end instead would
+// never terminate for a hook that registers a hook.
+func (e *Application) runReentrant(r *registry, kind string) {
+	e.mux.Lock()
+	if r.running {
+		r.pending = true
+		e.mux.Unlock()
+		return
+	}
+	r.running = true
+	e.mux.Unlock()
+
+	for {
+		e.mux.Lock()
+		batch := r.takeAllLocked()
+		grew := r.rounds > 0 && len(batch) > r.lastCount
+		previous := r.lastCount
+		r.lastCount = len(batch)
+		r.rounds++
+		e.mux.Unlock()
+
+		log := e.log()
+		if grew {
+			// The registry of a re-entrant phase only ever grows, and every
+			// entry runs on every round. A hook that registers a hook
+			// therefore costs one more callback per reload for the life of
+			// the process, and nothing else in this package can notice it:
+			// there is no failure, only a number going up.
+			log.Warnf("runtime: %s has %d callbacks, up from %d since the last round - "+
+				"a hook that registers a hook grows this registry on every configuration reload; "+
+				"if this number keeps climbing, find the hook that is not idempotent", kind, len(batch), previous)
+		}
+		for i := range batch {
+			e.invoke(kind, batch[i], log)
+		}
+
+		e.mux.Lock()
+		if !r.pending {
+			r.running = false
+			e.mux.Unlock()
+			return
+		}
+		r.pending = false
+		e.mux.Unlock()
+	}
 }
 
 // CallbackOption configures a callback registered through SetBeforeWith or

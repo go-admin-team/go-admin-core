@@ -14,6 +14,12 @@ import (
 // go untested, which is the point of deriving nothing from it.
 var allPhases = []Phase{AfterResource, BeforeRouter, AfterListen, BeforeExit}
 
+// onceOnlyPhases is every phase that happens exactly once. AfterResource is
+// not one of them: it runs again on every configuration reload, so the
+// promises about sealing and about not running twice are not made for it. Its
+// own promises are in phase_reentrant_test.go.
+var onceOnlyPhases = []Phase{BeforeRouter, AfterListen, BeforeExit}
+
 // Each phase runs its own callbacks, in the order they were registered, and
 // nobody else's. Order is what lets one hook rely on an earlier one having
 // run, so it is asserted rather than assumed.
@@ -61,7 +67,7 @@ func TestRunPhaseDoesNotRunAnotherPhase(t *testing.T) {
 // twice. Cleanup registered in BeforeExit is the case that makes this matter
 // - closing a pool twice is worse than not closing it.
 func TestRunPhaseTwiceDoesNotRunAnythingTwice(t *testing.T) {
-	for _, p := range allPhases {
+	for _, p := range onceOnlyPhases {
 		app := NewConfig()
 		captureLogs(t, app)
 
@@ -81,7 +87,7 @@ func TestRunPhaseTwiceDoesNotRunAnythingTwice(t *testing.T) {
 // alternative is a callback sitting in a slice nobody will walk again, which
 // is the silent failure this registry exists to remove.
 func TestSetPhaseAfterTheRunIsRefusedAndReported(t *testing.T) {
-	for _, p := range allPhases {
+	for _, p := range onceOnlyPhases {
 		app := NewConfig()
 		rec := captureLogs(t, app)
 

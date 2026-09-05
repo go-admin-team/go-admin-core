@@ -95,6 +95,14 @@ func (p Phase) index() (int, bool) {
 	return 0, false
 }
 
+// reentrant reports whether the phase can happen more than once.
+//
+// It is derived from the phase rather than stored on the registry because the
+// registries are an array on a struct that has to work as its zero value: a
+// flag would have to be set from somewhere, and there is no constructor every
+// path goes through. See phaseCount.
+func (p Phase) reentrant() bool { return p == AfterResource }
+
 // SetPhase registers a callback to run when the application reaches p.
 //
 // The callback runs when RunPhase(p) is called, in registration order, behind
@@ -114,23 +122,46 @@ func (e *Application) SetPhase(p Phase, f func(), opts ...CallbackOption) {
 			"use AfterResource, BeforeRouter, AfterListen or BeforeExit (registered at %s)", p, site)
 		return
 	}
-	e.register(&e.phases[i], newCallback(f, site, opts),
-		"SetPhase("+p.String()+")", "RunPhase("+p.String()+")")
+	cb := newCallback(f, site, opts)
+	if p.reentrant() && cb.fatal {
+		// Kept, not stripped: "the database is unreachable, do not start"
+		// is a fair thing to say, and quietly downgrading it to a log line
+		// would be its own silent failure. The warning is here because the
+		// same option means something different on the second run - the
+		// process it exits is one that is already serving traffic.
+		e.log().Warnf("runtime: %v callback %s is marked WithFatal - reasonable on the first start, "+
+			"but this phase runs again after a configuration reload, where exiting kills a process "+
+			"that is already serving requests", p, cb.label())
+	}
+	e.register(&e.phases[i], cb, "SetPhase("+p.String()+")", "RunPhase("+p.String()+")")
 }
 
-// RunPhase executes every callback registered for p that has not run yet, in
-// registration order, and closes the phase to further registration.
+// RunPhase executes the callbacks registered for p, in registration order.
 //
-// Calling it again is a no-op: the callbacks that already ran do not run
-// twice. The callbacks run with no lock held, because they routinely call
-// back into Application and sync.RWMutex is not reentrant.
+// The callbacks run with no lock held, because they routinely call back into
+// Application and sync.RWMutex is not reentrant. A p that is not one of the
+// four constants is reported and does nothing.
 //
-// A p that is not one of the four constants is reported and does nothing.
+// For every phase but AfterResource this happens once: the phase is closed to
+// further registration afterwards, and calling RunPhase again is a no-op, so
+// cleanup registered in BeforeExit cannot run twice.
+//
+// AfterResource is the exception, because the resources it announces are
+// rebuilt on every configuration reload. It never closes, every registered
+// callback runs again on every round, and a callback that arrives while a
+// round is running is picked up by the next one. Two rounds never overlap: a
+// trigger that arrives during a round records that another round is owed and
+// returns without waiting for it, which makes RunPhase(AfterResource) the one
+// case that can return before the work is done. See runReentrant.
 func (e *Application) RunPhase(p Phase) {
 	i, ok := p.index()
 	if !ok {
 		e.log().Errorf("runtime: RunPhase(%v) did nothing - that is not a life-cycle phase; "+
 			"use AfterResource, BeforeRouter, AfterListen or BeforeExit", p)
+		return
+	}
+	if p.reentrant() {
+		e.runReentrant(&e.phases[i], p.String())
 		return
 	}
 	// The getter argument is empty because no method hands phase callbacks
@@ -142,6 +173,10 @@ func (e *Application) RunPhase(p Phase) {
 
 // PhaseSealed reports whether p has already run, i.e. whether a further
 // SetPhase for it would be dropped.
+//
+// AfterResource always reports false: it is re-entrant, so registering into
+// it is never too late - though a callback that arrives after the last reload
+// of the process will not run until the next one.
 //
 // A phase that is not one of the four constants reports true: "your callback
 // will not run in that phase" is the answer that keeps a caller from
