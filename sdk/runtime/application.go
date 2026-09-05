@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"slices"
 	"sync"
+	"sync/atomic"
 
 	"github.com/casbin/casbin/v3"
 	"github.com/go-admin-team/go-admin-core/v2/logger"
@@ -39,6 +40,7 @@ type Application struct {
 	casbinExclude map[string]interface{}                                          // casbin排除
 	before        registry                                                        // startup callback registry
 	phases        [phaseCount]registry                                            // life-cycle phase registries, indexed by Phase.index
+	shuttingDown  atomic.Bool                                                     // set by BeginShutdown; see the gate in SetPhase
 	defaultTenant string                                                          // 默认租户标识符
 	app           map[string]interface{}                                          // app
 }

@@ -139,6 +139,9 @@ type Runtime interface {
 	// PhaseSealed reports whether a phase has already run, i.e. whether a
 	// further SetPhase for it would be dropped.
 	PhaseSealed(p Phase) bool
+	// BeginShutdown says the application is on its way out: SetPhase and
+	// RunPhase stop doing anything for every phase but BeforeExit.
+	BeginShutdown()
 	// SetShutdown registers a cleanup callback for the BeforeExit phase,
 	// taking the context that carries the shutdown budget.
 	SetShutdown(f func(context.Context), opts ...CallbackOption)

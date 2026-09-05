@@ -1330,6 +1330,7 @@ type Application struct {
 func NewConfig() *Application
 func (e *Application) AppRoutersSealed() bool
 func (e *Application) BeforeSealed() bool
+func (e *Application) BeginShutdown()
 func (e *Application) GetAllCasbin() map[string]*casbin.SyncedEnforcer
 func (e *Application) GetAllCrontab() map[string]*cron.Cron
 func (e *Application) GetAllDb() map[string]*gorm.DB
@@ -1501,6 +1502,7 @@ type Runtime interface {
 	SetPhase(p Phase, f func(), opts ...CallbackOption)
 	RunPhase(p Phase)
 	PhaseSealed(p Phase) bool
+	BeginShutdown()
 	SetShutdown(f func(context.Context), opts ...CallbackOption)
 	RunShutdown(ctx context.Context) error
 

@@ -6,6 +6,34 @@ import (
 	"sync/atomic"
 )
 
+// BeginShutdown says that the application is on its way out, and closes the
+// phases that only make sense on the way in.
+//
+// It exists because the last configuration reload can outlive the decision to
+// stop. Closing the config watcher does not wait for a reload already in
+// flight, and that reload finishes by rebuilding the database, the cache and
+// the queue and announcing them - which, in the middle of a shutdown, undoes
+// the cleanup that has just run and starts consumers on a process that is
+// being taken apart. AfterResource is also the one phase that never closes,
+// so without this there is nothing to stop code registering into it while the
+// process is going down.
+//
+// After this call SetPhase and RunPhase do nothing for every phase but
+// BeforeExit, and say so. BeforeExit keeps working: it is the phase this call
+// is on the way to. There is no way back - a process does not un-shut-down -
+// and calling it twice is harmless.
+//
+// It does not interrupt a phase already running. It closes the door; it does
+// not reach into the room.
+//
+// RunShutdown calls it, so a host that only calls RunShutdown is covered from
+// that moment on. Calling it as the first step of the shutdown path is what
+// covers the window before then, which is the wider one: it spans the whole
+// of the HTTP server's own graceful shutdown.
+func (e *Application) BeginShutdown() {
+	e.shuttingDown.Store(true)
+}
+
 // SetShutdown registers a callback to run on the way out, once the server has
 // stopped serving.
 //
@@ -62,6 +90,7 @@ func (e *Application) RunShutdown(ctx context.Context) error {
 		// cleanup: panicking here would skip all of them to report it.
 		ctx = context.Background()
 	}
+	e.BeginShutdown()
 	i, _ := BeforeExit.index()
 
 	e.mux.Lock()

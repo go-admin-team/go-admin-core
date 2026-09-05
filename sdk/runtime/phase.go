@@ -125,6 +125,15 @@ func (e *Application) SetPhase(p Phase, f func(), opts ...CallbackOption) {
 			"use AfterResource, BeforeRouter, AfterListen or BeforeExit (registered at %s)", p, site)
 		return
 	}
+	if e.shutDownFor(p) {
+		// Not an error: a module registering while the process happens to be
+		// going down has done nothing wrong, and there is nothing left to do
+		// with the callback either. Reporting it as a fault would teach the
+		// reader to skip the line that matters.
+		e.log().Warnf("runtime: SetPhase(%v) ignored - the application is shutting down and that phase "+
+			"will not run again (registered at %s)", p, site)
+		return
+	}
 	cb := newCallback(f, site, opts)
 	if p.reentrant() && cb.fatal {
 		// Kept, not stripped: "the database is unreachable, do not start"
@@ -172,6 +181,14 @@ func (e *Application) RunPhase(p Phase) {
 			"use AfterResource, BeforeRouter, AfterListen or BeforeExit", p)
 		return
 	}
+	if e.shutDownFor(p) {
+		// The reload that triggered this started before the shutdown did,
+		// and finishing it would rebuild resources the cleanup is taking
+		// apart. Losing it is the point.
+		e.log().Warnf("runtime: RunPhase(%v) did nothing - the application is shutting down; "+
+			"a configuration reload that arrives now must not rebuild what is being torn down", p)
+		return
+	}
 	if p.reentrant() {
 		e.runReentrant(&e.phases[i], p.String())
 		return
@@ -188,6 +205,15 @@ func (e *Application) RunPhase(p Phase) {
 	// unreachable here. That omission is deliberate: GetBefore and
 	// GetAppRouters showed what handing them out costs.
 	e.runRegistry(&e.phases[i], p.String(), "", "RunPhase("+p.String()+")")
+}
+
+// shutDownFor reports whether p is closed by a shutdown in progress.
+//
+// BeforeExit is exempt: it is the phase the shutdown exists to run, and
+// RunPhase(BeforeExit) is a legitimate call after BeginShutdown - gating it
+// would make the flag skip the cleanup it was added to protect.
+func (e *Application) shutDownFor(p Phase) bool {
+	return p != BeforeExit && e.shuttingDown.Load()
 }
 
 // PhaseSealed reports whether p has already run, i.e. whether a further
