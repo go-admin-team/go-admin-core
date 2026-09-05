@@ -20,10 +20,13 @@ var allPhases = []Phase{AfterResource, BeforeRouter, AfterListen, BeforeExit}
 // own promises are in phase_reentrant_test.go.
 var onceOnlyPhases = []Phase{BeforeRouter, AfterListen, BeforeExit}
 
-// Each phase runs its own callbacks, in the order they were registered, and
-// nobody else's. Order is what lets one hook rely on an earlier one having
-// run, so it is asserted rather than assumed.
-func TestRunPhaseRunsItsOwnCallbacksInRegistrationOrder(t *testing.T) {
+// Each phase runs its own callbacks, in a defined order, and nobody else's.
+// Order is what lets one hook rely on an earlier one having run, so it is
+// asserted rather than assumed.
+//
+// BeforeExit is the phase that unwinds, so it goes the other way: see
+// shutdown_test.go for why, and for the rest of what it promises.
+func TestRunPhaseRunsItsOwnCallbacksInADefinedOrder(t *testing.T) {
 	app := NewConfig()
 	captureLogs(t, app)
 
@@ -35,9 +38,13 @@ func TestRunPhaseRunsItsOwnCallbacksInRegistrationOrder(t *testing.T) {
 	}
 
 	for _, p := range allPhases {
+		want := "first,second,third"
+		if p == BeforeExit {
+			want = "third,second,first"
+		}
 		app.RunPhase(p)
-		if got := strings.Join(ran[p], ","); got != "first,second,third" {
-			t.Errorf("%v ran %q, want first,second,third", p, got)
+		if got := strings.Join(ran[p], ","); got != want {
+			t.Errorf("%v ran %q, want %s", p, got, want)
 		}
 	}
 }

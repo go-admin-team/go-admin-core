@@ -3,10 +3,11 @@
 package runtime
 
 import (
-	"github.com/gin-gonic/gin"
+	"context"
 	"net/http"
 
 	"github.com/casbin/casbin/v3"
+	"github.com/gin-gonic/gin"
 	"github.com/go-admin-team/go-admin-core/v2/logger"
 	"github.com/go-admin-team/go-admin-core/v2/storage"
 	"github.com/robfig/cron/v3"
@@ -138,4 +139,10 @@ type Runtime interface {
 	// PhaseSealed reports whether a phase has already run, i.e. whether a
 	// further SetPhase for it would be dropped.
 	PhaseSealed(p Phase) bool
+	// SetShutdown registers a cleanup callback for the BeforeExit phase,
+	// taking the context that carries the shutdown budget.
+	SetShutdown(f func(context.Context), opts ...CallbackOption)
+	// RunShutdown runs the BeforeExit callbacks in reverse registration
+	// order, returning ctx.Err() if the context ends first.
+	RunShutdown(ctx context.Context) error
 }

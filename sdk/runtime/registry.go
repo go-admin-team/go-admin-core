@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"context"
 	"os"
 	goruntime "runtime" // aliased: this package is itself called runtime
 	"runtime/debug"
@@ -18,9 +19,24 @@ import (
 // still has to find out who registered the thing that failed.
 type callback struct {
 	fn    func()
-	name  string // caller-supplied label; empty unless WithName was used
-	site  string // "file:line" of the SetXxx call that registered it
+	ctxFn func(context.Context) // set instead of fn by SetShutdown; see bound
+	name  string                // caller-supplied label; empty unless WithName was used
+	site  string                // "file:line" of the SetXxx call that registered it
 	fatal bool
+}
+
+// bound gives a context-taking callback its context.
+//
+// The shutdown callbacks are the only ones that take one, and this is how
+// they reach the same guard, the same registry and the same reporting as
+// every other kind rather than getting a second copy of all three.
+func (cb callback) bound(ctx context.Context) callback {
+	if cb.ctxFn == nil {
+		return cb
+	}
+	fn := cb.ctxFn
+	cb.fn = func() { fn(ctx) }
+	return cb
 }
 
 // label is "name (file:line)", or "(file:line)" when the callback is unnamed.

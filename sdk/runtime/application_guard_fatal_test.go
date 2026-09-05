@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -61,6 +62,19 @@ func TestGuardChild(t *testing.T) {
 		app.SetBeforeWith(func() { panic("boom") }, WithFatal())
 		app.RunBefore()
 		fmt.Println("MUST-NOT-REACH")
+
+	case "shutdown-fatal":
+		// The counterpart of "fatal", one phase later: the same option, on a
+		// cleanup callback, must not exit. Exiting here would skip the
+		// cleanup behind it, which is what the option was meant to protect.
+		app.SetLogger(stdoutLogger{level: logger.TraceLevel})
+		app.SetShutdown(func(context.Context) { fmt.Println("CLEANUP-AFTER-THE-PANIC") })
+		app.SetShutdown(func(context.Context) { panic("the pool is already closed") },
+			WithFatal(), WithName("pool-close"))
+		if err := app.RunShutdown(context.Background()); err != nil {
+			fmt.Println("UNEXPECTED-ERROR", err)
+		}
+		fmt.Println("REACHED-THE-END")
 
 	case "goroutine":
 		// The boundary of the guard, played out for real: the callback returns

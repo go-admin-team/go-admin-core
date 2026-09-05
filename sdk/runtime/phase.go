@@ -1,6 +1,9 @@
 package runtime
 
-import "strconv"
+import (
+	"context"
+	"strconv"
+)
 
 // Phase names a point in the life of the application that a module can attach
 // work to.
@@ -133,7 +136,11 @@ func (e *Application) SetPhase(p Phase, f func(), opts ...CallbackOption) {
 			"but this phase runs again after a configuration reload, where exiting kills a process "+
 			"that is already serving requests", p, cb.label())
 	}
-	e.register(&e.phases[i], cb, "SetPhase("+p.String()+")", "RunPhase("+p.String()+")")
+	runner := "RunPhase(" + p.String() + ")"
+	if p == BeforeExit {
+		runner = "RunShutdown or " + runner
+	}
+	e.register(&e.phases[i], cb, "SetPhase("+p.String()+")", runner)
 }
 
 // RunPhase executes the callbacks registered for p, in registration order.
@@ -145,6 +152,11 @@ func (e *Application) SetPhase(p Phase, f func(), opts ...CallbackOption) {
 // For every phase but AfterResource this happens once: the phase is closed to
 // further registration afterwards, and calling RunPhase again is a no-op, so
 // cleanup registered in BeforeExit cannot run twice.
+//
+// BeforeExit is the other exception, in the other direction: it runs in
+// reverse registration order, because it is the phase that unwinds. See
+// SetShutdown, which registers into the same phase and is how a callback that
+// wants the remaining budget asks for it.
 //
 // AfterResource is the exception, because the resources it announces are
 // rebuilt on every configuration reload. It never closes, every registered
@@ -162,6 +174,13 @@ func (e *Application) RunPhase(p Phase) {
 	}
 	if p.reentrant() {
 		e.runReentrant(&e.phases[i], p.String())
+		return
+	}
+	if p == BeforeExit {
+		// Same registry and same reverse order as RunShutdown, which is
+		// what a caller with no budget to give is asking for. A context
+		// that never ends makes the two the same call.
+		_ = e.RunShutdown(context.Background())
 		return
 	}
 	// The getter argument is empty because no method hands phase callbacks
