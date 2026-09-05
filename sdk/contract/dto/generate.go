@@ -25,7 +25,7 @@ func (s *ObjectById) Bind(ctx *gin.Context) error {
 		return err
 	}
 	if ctx.Request.Method == http.MethodDelete {
-		err = ctx.ShouldBind(&s)
+		err = ctx.ShouldBind(s)
 		if err != nil {
 			log.Warnf("ShouldBind error: %s", err.Error())
 			return err
@@ -87,7 +87,7 @@ type ObjectDeleteReq struct {
 func (s *ObjectDeleteReq) Bind(ctx *gin.Context) error {
 	var err error
 	log := api.GetRequestLogger(ctx)
-	err = ctx.ShouldBind(&s)
+	err = ctx.ShouldBind(s)
 	if err != nil {
 		log.Warnf("ShouldBind error: %s", err.Error())
 		return err
