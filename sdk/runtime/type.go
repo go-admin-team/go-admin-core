@@ -3,10 +3,11 @@
 package runtime
 
 import (
-	"github.com/gin-gonic/gin"
+	"context"
 	"net/http"
 
 	"github.com/casbin/casbin/v3"
+	"github.com/gin-gonic/gin"
 	"github.com/go-admin-team/go-admin-core/v2/logger"
 	"github.com/go-admin-team/go-admin-core/v2/storage"
 	"github.com/robfig/cron/v3"
@@ -128,4 +129,23 @@ type Runtime interface {
 	// AppRoutersSealed reports whether RunAppRouters has run, i.e. whether a
 	// further SetAppRouters would be dropped.
 	AppRoutersSealed() bool
+
+	// SetPhase registers a callback to run when the application reaches the
+	// given life-cycle phase.
+	SetPhase(p Phase, f func(), opts ...CallbackOption)
+	// RunPhase executes the callbacks registered for a phase that have not
+	// run yet, in registration order.
+	RunPhase(p Phase)
+	// PhaseSealed reports whether a phase has already run, i.e. whether a
+	// further SetPhase for it would be dropped.
+	PhaseSealed(p Phase) bool
+	// BeginShutdown says the application is on its way out: SetPhase and
+	// RunPhase stop doing anything for every phase but BeforeExit.
+	BeginShutdown()
+	// SetShutdown registers a cleanup callback for the BeforeExit phase,
+	// taking the context that carries the shutdown budget.
+	SetShutdown(f func(context.Context), opts ...CallbackOption)
+	// RunShutdown runs the BeforeExit callbacks in reverse registration
+	// order, returning ctx.Err() if the context ends first.
+	RunShutdown(ctx context.Context) error
 }

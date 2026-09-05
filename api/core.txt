@@ -816,6 +816,9 @@ func (e *Api) OK(data interface{}, msg string)
 func (e *Api) PageOK(result interface{}, count int, pageIndex int, pageSize int, msg string)
 func (e Api) Translate(form, to interface{})
 
+## github.com/go-admin-team/go-admin-core/v2/sdk/bootstrap
+func SetupConfig(s source.Source, fs ...func())
+
 ## github.com/go-admin-team/go-admin-core/v2/sdk/config
 var (
 	DatabaseConfig  = new(Database)
@@ -1330,6 +1333,7 @@ type Application struct {
 func NewConfig() *Application
 func (e *Application) AppRoutersSealed() bool
 func (e *Application) BeforeSealed() bool
+func (e *Application) BeginShutdown()
 func (e *Application) GetAllCasbin() map[string]*casbin.SyncedEnforcer
 func (e *Application) GetAllCrontab() map[string]*cron.Cron
 func (e *Application) GetAllDb() map[string]*gorm.DB
@@ -1366,8 +1370,11 @@ func (e *Application) GetQueueAdapter() storage.AdapterQueue
 func (e *Application) GetQueuePrefix(key string) storage.AdapterQueue
 func (e *Application) GetRouter() []Router
 func (e *Application) GetStreamMessage(id, stream string, value map[string]interface{}) (storage.Messager, error)
+func (e *Application) PhaseSealed(p Phase) bool
 func (e *Application) RunAppRouters()
 func (e *Application) RunBefore()
+func (e *Application) RunPhase(p Phase)
+func (e *Application) RunShutdown(ctx context.Context) error
 func (e *Application) SetApp(app interface{})
 func (e *Application) SetAppByTenant(key string, app interface{})
 func (e *Application) SetAppRouters(appRouters func())
@@ -1392,7 +1399,9 @@ func (e *Application) SetHandler(routerGroup func(r *gin.RouterGroup, hand ...*g
 func (e *Application) SetHandlerByTenant(tenant string, routerGroup func(r *gin.RouterGroup, hand ...*gin.HandlerFunc))
 func (e *Application) SetLogger(l logger.Logger)
 func (e *Application) SetMiddleware(key string, middleware interface{})
+func (e *Application) SetPhase(p Phase, f func(), opts ...CallbackOption)
 func (e *Application) SetQueueAdapter(c storage.AdapterQueue)
+func (e *Application) SetShutdown(f func(context.Context), opts ...CallbackOption)
 type Cache struct {
 func (e Cache) Connect() error
 func (e Cache) Decrease(key string) error
@@ -1411,6 +1420,13 @@ type CallbackOption func(*callbackConfig)
 func WithFatal() CallbackOption
 func WithName(name string) CallbackOption
 type Config map[string]interface{}
+type Phase int
+const (
+	AfterResource Phase = 10
+	BeforeRouter Phase = 20
+	AfterListen Phase = 30
+	BeforeExit Phase = 40
+func (p Phase) String() string
 type Queue struct {
 func (e *Queue) Append(message storage.Messager) error
 func (e *Queue) Register(name string, f storage.ConsumerFunc)
@@ -1486,6 +1502,12 @@ type Runtime interface {
 	GetAppRouters() []func()
 	RunAppRouters()
 	AppRoutersSealed() bool
+	SetPhase(p Phase, f func(), opts ...CallbackOption)
+	RunPhase(p Phase)
+	PhaseSealed(p Phase) bool
+	BeginShutdown()
+	SetShutdown(f func(context.Context), opts ...CallbackOption)
+	RunShutdown(ctx context.Context) error
 
 ## github.com/go-admin-team/go-admin-core/v2/sdk/service
 type Service struct {
