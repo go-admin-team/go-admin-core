@@ -500,9 +500,15 @@ So a callback here has to be **idempotent with respect to the same
 resource** - not "does nothing the second time". The queue example is the
 reason for that wording: `Register` unconditionally starts a consumer
 goroutine, and after a reload it *must*, because the adapter is new. What it
-must not do is start a second consumer on an adapter it already handled. The
-implementable rule is to remember the instance you last saw and return early
-when it has not changed.
+must not do is start a second consumer on an adapter it already handled.
+
+The rule is therefore to remember the resource you last acted on and return
+early when it has not changed - but **the getter is not where you get that
+identity from**. `GetQueueAdapter` and `GetQueuePrefix` build a fresh `*Queue`
+wrapper on every call, so comparing what they return compares two wrappers and
+never matches; the same is true of any accessor that decorates what it hands
+back. Record the resource where it is *created* - the setup callback that
+built it knows which instance it installed - and compare against that.
 
 Two consequences worth stating plainly:
 
