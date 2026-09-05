@@ -39,7 +39,15 @@ func (u *BaseUser) generateSalt() {
 // Verify loads the row matching u.Username from tableName and reports
 // whether u.Password (already hashed into PasswordHash via SetPassword)
 // matches what is stored.
+//
+// A failed lookup must return false, never fall through to the comparison.
+// First leaves the receiver untouched when it finds no row, so a caller that
+// reuses a receiver already loaded from an earlier successful login would
+// otherwise compare that stale Salt and PasswordHash against themselves and
+// verify true for a username that does not exist.
 func (u *BaseUser) Verify(db *gorm.DB, tableName string) bool {
-	db.Table(tableName).Where("username = ?", u.Username).First(u)
+	if err := db.Table(tableName).Where("username = ?", u.Username).First(u).Error; err != nil {
+		return false
+	}
 	return u.GetPasswordHash() == u.PasswordHash
 }
