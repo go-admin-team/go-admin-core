@@ -30,10 +30,15 @@ type MemQueue struct {
 	started  bool
 	stopOnce sync.Once
 	stop     chan struct{}
-	// drained is closed by Start when it returns, which is after it has
-	// emptied the buffer. Close waits on it, because inFlight alone cannot
-	// say whether the drain has begun: a Wait taken before the first delivery
-	// of the drain sees a count of zero and returns.
+	// drained is closed by Start when it returns. Close waits on it, because
+	// inFlight alone cannot say whether the drain has begun: a Wait taken
+	// before the drain's first delivery sees a count of zero and returns.
+	//
+	// It means "Start is finished", not "the buffer is empty". Start reached
+	// through Close does drain first, but a Start that returns because its own
+	// context was cancelled leaves whatever is buffered where it is - the
+	// contract calls that cancellation rather than an error, and a caller who
+	// cancels is asking to stop now.
 	drained chan struct{}
 }
 
@@ -159,8 +164,11 @@ func (q *MemQueue) deliver(ctx context.Context, msg storage.Message) {
 		q.mu.RUnlock()
 		return
 	}
-	// Registered while holding the lock Close uses to publish q.closed, so a
-	// counter increment can never race with Close's Wait.
+	// What keeps this increment from racing Close's Wait is that Close waits
+	// on q.drained first, and Start closes that only after its drain has
+	// returned - so every deliver this queue will ever make has already
+	// happened by then. It is no longer the lock: deliver stopped consulting
+	// q.closed when that check turned out to be what discarded the drain.
 	q.inFlight.Add(1)
 	q.mu.RUnlock()
 	defer q.inFlight.Done()
