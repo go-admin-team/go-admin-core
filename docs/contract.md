@@ -571,12 +571,18 @@ flag skip the very work it was added to protect.
 
 ### What these phases cannot do
 
-- **They cannot drain the queue.** `Memory.Shutdown` does not deliver what is
-  still buffered, so a `BeforeExit` callback has nothing to call that would
-  flush the log queue. See `known-issues.md`. A deployment that cannot lose
-  audit rows must not rely on this phase for that.
+- **They do not drain the queue on their own.** Since v2.7.0 `Memory.Shutdown`
+  delivers what is still buffered rather than discarding it, so a `BeforeExit`
+  callback now has something to call - but nothing calls it. A host that
+  rebuilds its adapter on reload shuts down the *previous* one; at exit the
+  installed adapter is simply abandoned. A deployment that cannot lose audit
+  rows has to register that shutdown itself. See `known-issues.md`.
 - **They cannot take the process out of a load balancer.** The only hook here
-  runs *after* the HTTP server stopped accepting, and Kubernetes expects
-  readiness to start failing *before* that so endpoints are withdrawn first.
-  There is no pre-shutdown hook yet; without one, a rolling update can still
-  produce connection refused.
+  runs *after* the HTTP server stopped accepting, so nothing an application
+  registers can be observed by a balancer while the instance is still serving.
+  Failing readiness earlier is the host's job, and on its own it is not
+  enough: Kubernetes withdraws an endpoint when the Pod receives a
+  `deletionTimestamp`, concurrently with SIGTERM and independent of the probe
+  result, and any balancer that does poll needs a delay long enough to see the
+  change. Without a configured delay a rolling update can still produce
+  connection refused.
