@@ -571,10 +571,12 @@ flag skip the very work it was added to protect.
 
 ### What these phases cannot do
 
-- **They cannot drain the queue.** `Memory.Shutdown` does not deliver what is
-  still buffered, so a `BeforeExit` callback has nothing to call that would
-  flush the log queue. See `known-issues.md`. A deployment that cannot lose
-  audit rows must not rely on this phase for that.
+- **They do not drain the queue on their own.** Since v2.7.0 `Memory.Shutdown`
+  delivers what is still buffered rather than discarding it, so a `BeforeExit`
+  callback now has something to call - but nothing calls it. A host that
+  rebuilds its adapter on reload shuts down the *previous* one; at exit the
+  installed adapter is simply abandoned. A deployment that cannot lose audit
+  rows has to register that shutdown itself. See `known-issues.md`.
 - **They cannot take the process out of a load balancer.** The only hook here
   runs *after* the HTTP server stopped accepting, and Kubernetes expects
   readiness to start failing *before* that so endpoints are withdrawn first.
