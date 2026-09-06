@@ -17,7 +17,7 @@ instance matching the hard-coded DSN is reachable.
 **Plan:** move the DSN behind an environment variable so the test can run
 against a CI service container instead of being skipped.
 
-## 2. A hot reload leaks the previous queue's consumers
+## 2. A hot reload leaks the previous queue's consumers - fixed
 
 `storage/queue/memory.go`'s `Shutdown` sets a flag and releases its wait
 group. It does not close the per-stream channels, and every consumer started
@@ -36,7 +36,20 @@ during shutdown - worse than the leak. It needs a per-consumer stop channel,
 and the re-publish path has to stop first. **Order: stop publishing, drain,
 then close.**
 
-## 3. Nothing can drain a queue on the way out
+Fixed in
+[go-admin-team/go-admin-core#150](https://github.com/go-admin-team/go-admin-core/pull/150),
+released in v2.7.0. `Memory` gained a `stop` channel and a `consumers` wait
+group: `Shutdown` closes `stop`, each consumer leaves its `range` after
+draining what is buffered, and `Shutdown` returns only once they have all
+returned.
+
+The last step of the order above was dropped rather than implemented. The
+per-stream channels are never closed - a producer holding the adapter across
+the swap would panic on a send, and there is no cheap way to exclude one.
+Leaving them to the garbage collector costs nothing once no consumer is
+reading.
+
+## 3. Nothing can drain a queue on the way out - fixed in core, unused by the host
 
 Neither `Memory.Shutdown` nor `MemQueue.Close` delivers what is still
 buffered. `MemQueue.Close` sets `closed` before it signals its drain loop, and
@@ -49,8 +62,16 @@ Measured: with a consumer blocked and twenty messages published,
 End to end, 227 requests produced zero `sys_opera_log` rows across a shutdown
 that exited 0 and logged "Server exiting" - the successful path.
 
-This is why section 12 of `contract.md` says a `BeforeExit` callback cannot
-flush the queue: today there is nothing for it to call.
+Fixed in
+[go-admin-team/go-admin-core#150](https://github.com/go-admin-team/go-admin-core/pull/150),
+released in v2.7.0. `MemQueue.Close` waits for its drain loop to finish and
+delivers what it holds instead of discarding it; `Memory.Shutdown` waits for
+every consumer to drain its own channel.
+
+**The call still has to come from somewhere.** Nothing shuts the adapter down
+when the process exits - go-admin calls `Shutdown` only on the previous adapter
+during a reload - so the messages buffered at SIGTERM are still lost. Section
+12 of `contract.md` records what changed and what did not.
 
 ## 4. A reload can rebuild resources while the process is shutting down
 
