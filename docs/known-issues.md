@@ -68,10 +68,18 @@ watcher goroutine on each reload, while every log call in the process reads it
 without a lock. An interface value is two words; a torn read is a crash, not a
 stale line. It is a bare exported variable, so the fix is not local.
 
-## 6. Only the first tenant gets a cron scheduler
+## 6. Only the first tenant gets a cron scheduler - fixed
 
-`app/jobs`'s `Setup` loops over the tenant databases calling `setup`, and
-`setup` ends in `select {}` and never returns. With more than one entry under
-`databases:`, the loop never reaches the second one. The same `select {}` also
-makes the `defer crontab.Stop()` above it unreachable, so the scheduler has
-never been stopped on the way out either.
+Kept as a record rather than deleted: this one was filed against go-admin from
+here because the phase work exposed it, and a reader who met the symptom before
+the fix should be able to find out what happened to it.
+
+`app/jobs`'s `Setup` looped over the tenant databases calling `setup`, and
+`setup` ended in `select {}` and never returned. With more than one entry under
+`databases:`, the loop never reached the second one. The same `select {}` also
+made the `defer crontab.Stop()` above it unreachable, so the scheduler was never
+stopped on the way out either.
+
+Fixed in go-admin by deleting the `select {}`, which was blocking for nothing -
+`cron.Start` is itself `go c.run()`. The stop became a `BeforeExit` callback
+that waits on the context `cron.Stop()` returns, bounded by the shutdown budget.
