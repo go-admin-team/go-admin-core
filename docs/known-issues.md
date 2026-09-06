@@ -80,6 +80,8 @@ the fix should be able to find out what happened to it.
 made the `defer crontab.Stop()` above it unreachable, so the scheduler was never
 stopped on the way out either.
 
-Fixed in go-admin by deleting the `select {}`, which was blocking for nothing -
-`cron.Start` is itself `go c.run()`. The stop became a `BeforeExit` callback
-that waits on the context `cron.Stop()` returns, bounded by the shutdown budget.
+Fixed in
+[go-admin-team/go-admin#906](https://github.com/go-admin-team/go-admin/pull/906)
+by deleting the `select {}`, which was blocking for nothing - `cron.Start` is
+itself `go c.run()`. The stop became a `BeforeExit` callback that waits on the
+context `cron.Stop()` returns, bounded by the shutdown budget.
