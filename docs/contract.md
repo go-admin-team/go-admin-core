@@ -578,7 +578,11 @@ flag skip the very work it was added to protect.
   installed adapter is simply abandoned. A deployment that cannot lose audit
   rows has to register that shutdown itself. See `known-issues.md`.
 - **They cannot take the process out of a load balancer.** The only hook here
-  runs *after* the HTTP server stopped accepting, and Kubernetes expects
-  readiness to start failing *before* that so endpoints are withdrawn first.
-  There is no pre-shutdown hook yet; without one, a rolling update can still
-  produce connection refused.
+  runs *after* the HTTP server stopped accepting, so nothing an application
+  registers can be observed by a balancer while the instance is still serving.
+  Failing readiness earlier is the host's job, and on its own it is not
+  enough: Kubernetes withdraws an endpoint when the Pod receives a
+  `deletionTimestamp`, concurrently with SIGTERM and independent of the probe
+  result, and any balancer that does poll needs a delay long enough to see the
+  change. Without a configured delay a rolling update can still produce
+  connection refused.
