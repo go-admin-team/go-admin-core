@@ -166,7 +166,7 @@ func (m *Memory) consume(out queue, gf storage.ConsumerFunc, message storage.Mes
 		return
 	}
 	message.SetErrorCount(message.GetErrorCount() + 1)
-	// 每次间隔时长放大
+	// The back-off widens with each attempt.
 	time.Sleep(time.Second * time.Duration(message.GetErrorCount()))
 	select {
 	case out <- message:
