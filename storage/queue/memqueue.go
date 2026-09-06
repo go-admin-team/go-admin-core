@@ -30,6 +30,11 @@ type MemQueue struct {
 	started  bool
 	stopOnce sync.Once
 	stop     chan struct{}
+	// drained is closed by Start when it returns, which is after it has
+	// emptied the buffer. Close waits on it, because inFlight alone cannot
+	// say whether the drain has begun: a Wait taken before the first delivery
+	// of the drain sees a count of zero and returns.
+	drained chan struct{}
 }
 
 var _ storage.Queue = (*MemQueue)(nil)
@@ -48,6 +53,7 @@ func NewMemQueue(size int) *MemQueue {
 		handlers: make(map[string]storage.Handler),
 		messages: make(chan storage.Message, size),
 		stop:     make(chan struct{}),
+		drained:  make(chan struct{}),
 	}
 }
 
@@ -105,12 +111,20 @@ func (q *MemQueue) Publish(ctx context.Context, msg storage.Message) error {
 
 func (q *MemQueue) Start(ctx context.Context) error {
 	q.mu.Lock()
+	if q.closed {
+		q.mu.Unlock()
+		return storage.ErrQueueClosed
+	}
 	if q.started {
 		q.mu.Unlock()
 		return storage.ErrQueueAlreadyStarted
 	}
 	q.started = true
 	q.mu.Unlock()
+
+	// Signals the drain below has finished, which is what Close waits for.
+	defer close(q.drained)
+
 	for {
 		select {
 		case msg := <-q.messages:
@@ -136,7 +150,12 @@ func (q *MemQueue) Start(ctx context.Context) error {
 func (q *MemQueue) deliver(ctx context.Context, msg storage.Message) {
 	q.mu.RLock()
 	h := q.handlers[msg.Topic]
-	if h == nil || q.closed {
+	// Deliberately not gated on q.closed. The drain in Start runs after Close
+	// has set that flag, so refusing here made the drain take every remaining
+	// message out of the buffer and throw it away - the opposite of what the
+	// comment above it promised. Publish is where a closed queue stops
+	// accepting; delivery of what it already accepted is what Close is for.
+	if h == nil {
 		q.mu.RUnlock()
 		return
 	}
@@ -155,8 +174,16 @@ func (q *MemQueue) Close() error {
 	q.stopOnce.Do(func() {
 		q.mu.Lock()
 		q.closed = true
+		started := q.started
 		q.mu.Unlock()
 		close(q.stop)
+
+		// Only if something is consuming. Waiting on a queue nobody started
+		// would block for ever, and there is nothing to drain in that case
+		// anyway - no handler has ever seen a message.
+		if started {
+			<-q.drained
+		}
 	})
 
 	// Start observes q.stop, drains what is already queued and returns on its
