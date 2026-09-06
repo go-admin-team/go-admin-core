@@ -19,6 +19,10 @@ against a CI service container instead of being skipped.
 
 ## 2. A hot reload leaks the previous queue's consumers - fixed
 
+The description below is what the code did before the fix, kept as a record.
+What it says is no longer current behaviour; the fix is at the end of the
+entry.
+
 `storage/queue/memory.go`'s `Shutdown` sets a flag and releases its wait
 group. It does not close the per-stream channels, and every consumer started
 by `Register` is blocked in `for message := range q` on one of them, so none
@@ -50,6 +54,10 @@ Leaving them to the garbage collector costs nothing once no consumer is
 reading.
 
 ## 3. Nothing can drain a queue on the way out - fixed in core, unused by the host
+
+The description below is what the code did before the fix, kept as a record.
+Core no longer behaves this way; what has not changed is that nothing calls
+the drain at exit, which is why this entry is not simply "fixed".
 
 Neither `Memory.Shutdown` nor `MemQueue.Close` delivers what is still
 buffered. `MemQueue.Close` sets `closed` before it signals its drain loop, and
