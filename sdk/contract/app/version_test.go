@@ -63,15 +63,51 @@ func TestCompareRejectsMalformedVersions(t *testing.T) {
 		"1..0",
 		"v1.0.0",
 		// A negative component parses as a valid integer on its own
-		// (strconv.Atoi("-1") succeeds), so only the "-"/"+" guard for
-		// pre-release/build-metadata suffixes stops it from being read as
-		// a valid, if unusual, version.
+		// (strconv.Atoi("-1") succeeds; nothing about Atoi inspects sign),
+		// so only parseComponent's dedicated leading-"-" check stops it
+		// from being read as a valid, if unusual, version. See
+		// TestCompareDistinguishesNegativeFromSuffix for why that check
+		// has to report a reason different from a pre-release/build-
+		// metadata suffix.
 		"-1.0.0",
 		"1.-2.0",
 		"1.0.-3",
 	} {
 		if _, err := Compare(v, "1.0.0"); err == nil {
 			t.Errorf("Compare(%q, \"1.0.0\") did not error", v)
+		}
+	}
+}
+
+// A negative component ("-1.0.0") and a pre-release/build-metadata suffix
+// ("1.0.0-rc1") are both rejected, but for genuinely different reasons, and
+// the error must say which one actually applied - not the same message for
+// both. Reporting a suffix to a caller who wrote a negative number points
+// them at something that is not in their version string.
+func TestCompareDistinguishesNegativeFromSuffix(t *testing.T) {
+	for _, v := range []string{"-1.0.0", "1.-2.0", "1.0.-3"} {
+		_, err := Compare(v, "1.0.0")
+		if err == nil {
+			t.Fatalf("Compare(%q, ...) did not error", v)
+		}
+		if !strings.Contains(err.Error(), "negative component") {
+			t.Errorf("Compare(%q, ...) error = %q, want it to name a negative component", v, err.Error())
+		}
+		if strings.Contains(err.Error(), "suffix") {
+			t.Errorf("Compare(%q, ...) error = %q, wrongly blames a pre-release/build-metadata suffix", v, err.Error())
+		}
+	}
+
+	for _, v := range []string{"1.0.0-rc1", "1.0.0+build5"} {
+		_, err := Compare(v, "1.0.0")
+		if err == nil {
+			t.Fatalf("Compare(%q, ...) did not error", v)
+		}
+		if !strings.Contains(err.Error(), "suffix") {
+			t.Errorf("Compare(%q, ...) error = %q, want it to name a pre-release/build-metadata suffix", v, err.Error())
+		}
+		if strings.Contains(err.Error(), "negative") {
+			t.Errorf("Compare(%q, ...) error = %q, wrongly blames a negative component", v, err.Error())
 		}
 	}
 }

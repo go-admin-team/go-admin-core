@@ -15,11 +15,14 @@ import (
 //
 // Only MAJOR.MINOR.PATCH is accepted: three dot-separated, non-negative
 // decimal integers, none with a leading zero. Pre-release and
-// build-metadata suffixes ("-rc1", "+build5") are not parsed - a version
-// carrying one is rejected rather than guessed at. An application's version
-// is written by the application's own author; ordering a guess against a
-// real version the way go-version-style permissive parsers do would risk
-// installing the wrong one with no error to show for it.
+// build-metadata suffixes ("-rc1", "+build5") are not parsed, and neither is
+// a negative component ("-1.0.0") - either one is rejected, with an error
+// that names which of the two it was, rather than guessed at. An
+// application's version is written by the application's own author;
+// ordering a guess against a real version the way go-version-style
+// permissive parsers do would risk installing the wrong one with no error
+// to show for it, and telling an operator the wrong one of these two
+// reasons would send them looking for a suffix that was never there.
 func Compare(a, b string) (int, error) {
 	va, err := parseVersion(a)
 	if err != nil {
@@ -42,38 +45,59 @@ func Compare(a, b string) (int, error) {
 
 // parseVersion accepts exactly MAJOR.MINOR.PATCH: three dot-separated,
 // non-negative decimal integers, none with a leading zero unless the
-// component is exactly "0". Anything else - a pre-release/build suffix, a
-// missing or extra component, a non-numeric component, an empty component -
-// is an error rather than a best-effort guess.
+// component is exactly "0". Anything else is an error rather than a
+// best-effort guess; parseComponent reports which of the specific reasons
+// applies to whichever component is at fault.
 func parseVersion(v string) ([3]int, error) {
 	var out [3]int
-	// This check's one load-bearing job is rejecting a negative component:
-	// "-1.0.0" or "1.-2.0" would otherwise parse cleanly, because
-	// strconv.Atoi("-1") is a perfectly valid integer, and nothing below
-	// this check inspects sign. Everything else this check also happens to
-	// catch - "1.0.0-rc1", "1.0.0+build5" - is caught a second time anyway,
-	// by the loop below failing to strconv.Atoi a component like "0-rc1" or
-	// "0+build5". Do not delete this thinking it is redundant with that
-	// loop: a counterproof that only tries pre-release/build-metadata
-	// suffixes stays green with this check removed, and only a negative
-	// component turns it red - see TestCompareRejectsMalformedVersions's
-	// "-1.0.0"/"1.-2.0"/"1.0.-3" cases.
-	if strings.ContainsAny(v, "-+") {
-		return out, fmt.Errorf("app: version %q carries a pre-release or build-metadata suffix, which Compare does not parse", v)
-	}
 	parts := strings.Split(v, ".")
 	if len(parts) != 3 {
 		return out, fmt.Errorf("app: version %q is not MAJOR.MINOR.PATCH", v)
 	}
 	for i, p := range parts {
-		if p == "" || (len(p) > 1 && p[0] == '0') {
-			return out, fmt.Errorf("app: version %q is not MAJOR.MINOR.PATCH", v)
-		}
-		n, err := strconv.Atoi(p)
+		n, err := parseComponent(v, p)
 		if err != nil {
-			return out, fmt.Errorf("app: version %q is not MAJOR.MINOR.PATCH", v)
+			return out, err
 		}
 		out[i] = n
 	}
 	return out, nil
+}
+
+// parseComponent parses one dot-separated component p of version v (v is
+// only kept to quote in an error), distinguishing two reasons Compare does
+// not parse it that must not share one error message:
+//
+//   - a '+' anywhere in p, or a '-' anywhere in p other than as its very
+//     first character, means p carries build metadata or a pre-release
+//     identifier ("0-rc1", "0+build5") - the version is not bare
+//     MAJOR.MINOR.PATCH;
+//   - a '-' as the first character of p is a negative number ("-1"), which
+//     strconv.Atoi parses without complaint on its own - nothing else here
+//     inspects sign, so this needs its own check, and its own, accurate
+//     error. Reporting this case with the pre-release/build-metadata
+//     message above would be actively wrong: a caller who wrote "-1.0.0"
+//     and is told about a suffix is being pointed at something that is not
+//     in their version string.
+//
+// Everything else - an empty component, a leading zero, a non-numeric
+// component - falls through to the generic "not MAJOR.MINOR.PATCH" error.
+func parseComponent(v, p string) (int, error) {
+	if p == "" {
+		return 0, fmt.Errorf("app: version %q is not MAJOR.MINOR.PATCH", v)
+	}
+	if strings.Contains(p, "+") || strings.Contains(p[1:], "-") {
+		return 0, fmt.Errorf("app: version %q carries a pre-release or build-metadata suffix, which Compare does not parse", v)
+	}
+	if strings.HasPrefix(p, "-") {
+		return 0, fmt.Errorf("app: version %q has a negative component, which is not a valid MAJOR.MINOR.PATCH version", v)
+	}
+	if len(p) > 1 && p[0] == '0' {
+		return 0, fmt.Errorf("app: version %q is not MAJOR.MINOR.PATCH", v)
+	}
+	n, err := strconv.Atoi(p)
+	if err != nil {
+		return 0, fmt.Errorf("app: version %q is not MAJOR.MINOR.PATCH", v)
+	}
+	return n, nil
 }
