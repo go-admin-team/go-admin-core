@@ -48,6 +48,13 @@ type Manifest struct {
 	// depends on. core neither validates nor orders installation by this
 	// field in this batch; it only carries it for a host's installer to
 	// read.
+	//
+	// Unlike every other field on Manifest, this one is a reference type:
+	// both Register and Snapshot copy it (see cloneRequires) rather than
+	// storing or returning the caller's slice header, so that mutating a
+	// slice you passed to Register, or one Snapshot handed back, can never
+	// reach the registry. A nil Requires stays nil through both copies,
+	// rather than becoming an empty non-nil slice.
 	Requires []string
 
 	// Pricing and License are reserved for a later authorization stage
@@ -104,6 +111,13 @@ func Register(m Manifest) {
 		panic("app: Register called twice for code " + code)
 	}
 	m.Code = code
+	// Requires is the one field on Manifest that is a reference type: if it
+	// were stored as-is, the caller would still be holding the same slice
+	// header, and mutating it after Register returns would silently rewrite
+	// an already-registered application's dependency list. Clone it into a
+	// slice this package alone holds a reference to, the same reasoning
+	// Snapshot's copy of Requires below documents for the read side.
+	m.Requires = cloneRequires(m.Requires)
 	registry[code] = m
 }
 
@@ -114,12 +128,40 @@ func Register(m Manifest) {
 // database call, mutating what it received cannot corrupt the registry,
 // and a Register call made after a Snapshot was taken cannot retroactively
 // appear in it.
+//
+// Copying the map is not enough on its own: a map holding Manifest values
+// by value still leaves every value's Requires slice pointing at the same
+// backing array the registry itself uses, because copying a struct copies
+// a slice's header, not what the header points to. Without also cloning
+// Requires per entry, a caller mutating one element of a returned
+// snapshot's Requires would reach through to the registry's own copy -
+// and, from there, into every other snapshot ever taken, since they would
+// all still be aliasing that one array. Each returned Manifest gets its
+// own Requires clone below for the same reason Register clones the
+// caller's slice on the write side.
 func Snapshot() map[string]Manifest {
 	mu.Lock()
 	defer mu.Unlock()
 	out := make(map[string]Manifest, len(registry))
 	for k, v := range registry {
+		v.Requires = cloneRequires(v.Requires)
 		out[k] = v
 	}
+	return out
+}
+
+// cloneRequires returns an independent copy of req: a new slice with its
+// own backing array, so neither Register nor Snapshot ever hands out, or
+// stores, a slice header that still aliases a caller's own slice or the
+// registry's. A nil req returns nil rather than an empty non-nil slice, so
+// a Manifest that never set Requires round-trips through Register and
+// Snapshot exactly as the zero value - nil, not []string{} - rather than
+// this package inventing a distinction the caller never made.
+func cloneRequires(req []string) []string {
+	if req == nil {
+		return nil
+	}
+	out := make([]string, len(req))
+	copy(out, req)
 	return out
 }

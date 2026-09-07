@@ -150,3 +150,41 @@ func TestSnapshotIsACopy(t *testing.T) {
 		t.Error("mutating a returned snapshot leaked into the registry")
 	}
 }
+
+// TestSnapshotIsACopy only proves the map itself is a copy - Requires is a
+// reference type, so a Manifest value copied into that map can still alias
+// the registry's own backing array underneath it. Register must clone the
+// caller's slice before storing it, or mutating the slice you passed in,
+// after Register has already returned, would silently rewrite an
+// already-registered application's dependency list.
+func TestRegisterCopiesRequires(t *testing.T) {
+	resetRegistry(t)
+	requires := []string{"crm"}
+	Register(Manifest{Code: "order", Name: "Order", Version: "1.0.0", Requires: requires})
+
+	requires[0] = "tampered"
+
+	entries := Snapshot()
+	if got := entries["order"].Requires[0]; got != "crm" {
+		t.Errorf("Requires[0] = %q after mutating the caller's own slice post-Register, want %q", got, "crm")
+	}
+}
+
+// The same aliasing risk exists on the read side: copying the map's
+// Manifest values (what TestSnapshotIsACopy checks) does not copy what
+// each value's Requires slice points to, so two Snapshot calls would
+// otherwise both be looking at the registry's own backing array. Mutating
+// one snapshot's Requires must not be visible through a later, independent
+// Snapshot call.
+func TestSnapshotCopiesRequires(t *testing.T) {
+	resetRegistry(t)
+	Register(Manifest{Code: "order", Name: "Order", Version: "1.0.0", Requires: []string{"crm"}})
+
+	first := Snapshot()
+	first["order"].Requires[0] = "tampered"
+
+	second := Snapshot()
+	if got := second["order"].Requires[0]; got != "crm" {
+		t.Errorf("Requires[0] = %q after mutating a previously taken snapshot, want %q", got, "crm")
+	}
+}
