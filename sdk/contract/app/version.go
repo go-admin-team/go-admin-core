@@ -47,6 +47,17 @@ func Compare(a, b string) (int, error) {
 // is an error rather than a best-effort guess.
 func parseVersion(v string) ([3]int, error) {
 	var out [3]int
+	// This check's one load-bearing job is rejecting a negative component:
+	// "-1.0.0" or "1.-2.0" would otherwise parse cleanly, because
+	// strconv.Atoi("-1") is a perfectly valid integer, and nothing below
+	// this check inspects sign. Everything else this check also happens to
+	// catch - "1.0.0-rc1", "1.0.0+build5" - is caught a second time anyway,
+	// by the loop below failing to strconv.Atoi a component like "0-rc1" or
+	// "0+build5". Do not delete this thinking it is redundant with that
+	// loop: a counterproof that only tries pre-release/build-metadata
+	// suffixes stays green with this check removed, and only a negative
+	// component turns it red - see TestCompareRejectsMalformedVersions's
+	// "-1.0.0"/"1.-2.0"/"1.0.-3" cases.
 	if strings.ContainsAny(v, "-+") {
 		return out, fmt.Errorf("app: version %q carries a pre-release or build-metadata suffix, which Compare does not parse", v)
 	}
