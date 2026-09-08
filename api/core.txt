@@ -957,6 +957,20 @@ type DataPermission struct {
 	RoleId    int
 func GetPermissionFromContext(c *gin.Context) *DataPermission
 
+## github.com/go-admin-team/go-admin-core/v2/sdk/contract/app
+func Compare(a, b string) (int, error)
+func Register(m Manifest)
+func Snapshot() map[string]Manifest
+type Manifest struct {
+	Code string
+	Name string
+	Version string
+	Description string
+	Author      string
+	Requires []string
+	Pricing string
+	License string
+
 ## github.com/go-admin-team/go-admin-core/v2/sdk/contract/dto
 func MakeCondition(q interface{}) func(db *gorm.DB) *gorm.DB
 func OrderDest(sort string, desc bool) func(db *gorm.DB) *gorm.DB
