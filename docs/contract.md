@@ -573,10 +573,15 @@ flag skip the very work it was added to protect.
 
 - **They do not drain the queue on their own.** Since v2.7.0 `Memory.Shutdown`
   delivers what is still buffered rather than discarding it, so a `BeforeExit`
-  callback now has something to call - but nothing calls it. A host that
-  rebuilds its adapter on reload shuts down the *previous* one; at exit the
-  installed adapter is simply abandoned. A deployment that cannot lose audit
-  rows has to register that shutdown itself. See `known-issues.md`.
+  callback has something to call - but the callback is the host's to register.
+  Rebuilding the adapter on reload shuts down the *previous* one; the installed
+  one is abandoned at exit unless something asks for it.
+
+  go-admin registers that callback, so a deployment of it does not have to.
+  A host written from scratch does: shut down the adapter *it* installed rather
+  than whatever `GetQueueAdapter` returns, because that accessor never returns
+  nil and with nothing configured it wraps this module's own fallback queue -
+  closing a queue the host neither built nor started. See `known-issues.md`.
 - **They cannot take the process out of a load balancer.** The only hook here
   runs *after* the HTTP server stopped accepting, so nothing an application
   registers can be observed by a balancer while the instance is still serving.

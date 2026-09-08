@@ -76,10 +76,17 @@ released in v2.7.0. `MemQueue.Close` waits for its drain loop to finish and
 delivers what it holds instead of discarding it; `Memory.Shutdown` waits for
 every consumer to drain its own channel.
 
-**The call still has to come from somewhere.** Nothing shuts the adapter down
-when the process exits - go-admin calls `Shutdown` only on the previous adapter
-during a reload - so the messages buffered at SIGTERM are still lost. Section
-12 of `contract.md` records what changed and what did not.
+**The call has to come from the host, and now does.** This module provides the
+drain; it does not decide when a process exits. Until
+[go-admin-team/go-admin#918](https://github.com/go-admin-team/go-admin/pull/918)
+the installed adapter was simply abandoned at exit - `Shutdown` ran only on the
+*previous* adapter during a reload - and what was buffered at SIGTERM was lost.
+go-admin now registers a `BeforeExit` callback that shuts down the adapter it
+installed, so on that host the drain runs.
+
+A host that registers nothing still loses the backlog, and this module cannot
+tell it so: there is no point at which it could notice the absence. Section 12
+of `contract.md` says what a host has to do.
 
 ## 4. A reload can rebuild resources while the process is shutting down
 
