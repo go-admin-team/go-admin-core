@@ -72,6 +72,13 @@ func TestCompareRejectsMalformedVersions(t *testing.T) {
 		"-1.0.0",
 		"1.-2.0",
 		"1.0.-3",
+		// The same hole on the other sign: strconv.Atoi("+1") succeeds and
+		// returns 1, so without parseComponent's leading-"+" check "+1.0.0"
+		// would compare equal to "1.0.0" with nothing to say it had been
+		// rewritten.
+		"+1.0.0",
+		"1.+2.0",
+		"1.0.+3",
 	} {
 		if _, err := Compare(v, "1.0.0"); err == nil {
 			t.Errorf("Compare(%q, \"1.0.0\") did not error", v)
@@ -109,6 +116,37 @@ func TestCompareDistinguishesNegativeFromSuffix(t *testing.T) {
 		if strings.Contains(err.Error(), "negative") {
 			t.Errorf("Compare(%q, ...) error = %q, wrongly blames a negative component", v, err.Error())
 		}
+	}
+}
+
+// Mirror image of TestCompareDistinguishesNegativeFromSuffix. A '+' as a
+// component's first character is a sign, not build metadata, and saying
+// "suffix" sends the author looking for a "+build5" they never wrote. The
+// '+' inside "0+build5" is a suffix and must still be reported as one.
+func TestCompareDistinguishesAnExplicitPlusFromSuffix(t *testing.T) {
+	for _, v := range []string{"+1.0.0", "1.+2.0", "1.0.+3"} {
+		_, err := Compare(v, "1.0.0")
+		if err == nil {
+			t.Fatalf("Compare(%q, ...) did not error", v)
+		}
+		if !strings.Contains(err.Error(), "explicitly signed component") {
+			t.Errorf("Compare(%q, ...) error = %q, want it to name an explicitly signed component", v, err.Error())
+		}
+		if strings.Contains(err.Error(), "suffix") {
+			t.Errorf("Compare(%q, ...) error = %q, wrongly blames a pre-release/build-metadata suffix", v, err.Error())
+		}
+	}
+
+	// A '+' that is not the first character is still build metadata.
+	_, err := Compare("1.0.0+build5", "1.0.0")
+	if err == nil {
+		t.Fatal(`Compare("1.0.0+build5", ...) did not error`)
+	}
+	if !strings.Contains(err.Error(), "suffix") {
+		t.Errorf(`Compare("1.0.0+build5", ...) error = %q, want it to name a suffix`, err.Error())
+	}
+	if strings.Contains(err.Error(), "signed") {
+		t.Errorf(`Compare("1.0.0+build5", ...) error = %q, wrongly blames a signed component`, err.Error())
 	}
 }
 
