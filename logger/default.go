@@ -92,22 +92,37 @@ func logCallerfilePath(loggingFilePath string) string {
 // Log 记录日志条目
 // Log logs a log entry
 func (l *defaultLogger) Log(level Level, v ...interface{}) {
-	l.logf(level, "", v...)
+	if !l.opts.Level.Enabled(level) {
+		return
+	}
+	l.emit(level, fmt.Sprint(v...))
 }
 
 // Logf 记录格式化的日志条目
 // Logf logs a formatted log entry
 func (l *defaultLogger) Logf(level Level, format string, v ...interface{}) {
-	l.logf(level, format, v...)
-}
-
-// logf 记录日志条目
-// logf logs a log entry
-func (l *defaultLogger) logf(level Level, format string, v ...interface{}) {
 	if !l.opts.Level.Enabled(level) {
 		return
 	}
+	l.emit(level, fmt.Sprintf(format, v...))
+}
 
+// emit writes one already-rendered message.
+//
+// The two callers above render the message themselves rather than handing a
+// format string and its arguments down here, for two reasons. go vet reads any
+// function that forwards both to fmt.Sprintf as a printf wrapper, and then
+// reports Log's empty format string as a call "with arguments but no
+// formatting directives" - which is precisely what Log is, deliberately, being
+// the unformatted entry point. And rendering at the caller keeps that work
+// behind the caller's Enabled check, which is where it was before.
+//
+// emit must stay exactly one frame below Log and Logf. Options.CallerSkipCount
+// is counted outwards from the runtime.Caller call below, so adding or removing
+// a frame here silently moves every file:line this logger computes.
+//
+// Callers are responsible for the Enabled check; emit does not repeat it.
+func (l *defaultLogger) emit(level Level, message string) {
 	l.RLock()
 	fields := copyFields(l.opts.Fields)
 	l.RUnlock()
@@ -119,11 +134,7 @@ func (l *defaultLogger) logf(level Level, format string, v ...interface{}) {
 	rec := dlog.Record{
 		Timestamp: time.Now(),
 		Metadata:  make(map[string]string, len(fields)),
-	}
-	if format == "" {
-		rec.Message = fmt.Sprint(v...)
-	} else {
-		rec.Message = fmt.Sprintf(format, v...)
+		Message:   message,
 	}
 
 	for k, v := range fields {
