@@ -188,3 +188,55 @@ func TestSnapshotCopiesRequires(t *testing.T) {
 		t.Errorf("Requires[0] = %q after mutating a previously taken snapshot, want %q", got, "crm")
 	}
 }
+
+// Code is normalized on the way into the registry, so a dependency naming
+// that same application has to be spelled the same way by the time anything
+// compares the two. A host reads Requires and looks each entry up against
+// Snapshot's keys - go-admin's installer does exactly this to refuse an
+// install that runs ahead of its dependencies - and would otherwise report
+// "PayMent " as not installed while payment sat registered beside it.
+func TestRegisterNormalizesRequires(t *testing.T) {
+	resetRegistry(t)
+	Register(Manifest{Code: "payment", Name: "Payment", Version: "1.0.0"})
+	Register(Manifest{
+		Code:     "shop",
+		Name:     "Shop",
+		Version:  "1.0.0",
+		Requires: []string{"  PayMent ", "SMS"},
+	})
+
+	entries := Snapshot()
+	got := entries["shop"].Requires
+	want := []string{"payment", "sms"}
+	if len(got) != len(want) {
+		t.Fatalf("Requires = %q, want %q", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("Requires[%d] = %q, want %q", i, got[i], want[i])
+		}
+	}
+
+	// The point of normalizing: the entry now finds what it names.
+	if _, ok := entries[got[0]]; !ok {
+		t.Errorf("Requires[0] = %q does not match any registered code %v", got[0], keysOf(entries))
+	}
+}
+
+// Normalization must not turn "this manifest declared no dependencies" into
+// an empty list, the same distinction cloneRequires preserves.
+func TestRegisterLeavesNilRequiresNil(t *testing.T) {
+	resetRegistry(t)
+	Register(Manifest{Code: "order", Name: "Order", Version: "1.0.0"})
+	if got := Snapshot()["order"].Requires; got != nil {
+		t.Errorf("Requires = %#v, want nil for a manifest that never set it", got)
+	}
+}
+
+func keysOf(m map[string]Manifest) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	return out
+}

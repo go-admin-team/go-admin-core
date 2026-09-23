@@ -16,8 +16,8 @@ import (
 // Only MAJOR.MINOR.PATCH is accepted: three dot-separated, non-negative
 // decimal integers, none with a leading zero. Pre-release and
 // build-metadata suffixes ("-rc1", "+build5") are not parsed, and neither is
-// a negative component ("-1.0.0") - either one is rejected, with an error
-// that names which of the two it was, rather than guessed at. An
+// a signed component ("-1.0.0", "+1.0.0") - each is rejected, with an error
+// that names which of the three it was, rather than guessed at. An
 // application's version is written by the application's own author;
 // ordering a guess against a real version the way go-version-style
 // permissive parsers do would risk installing the wrong one with no error
@@ -65,20 +65,23 @@ func parseVersion(v string) ([3]int, error) {
 }
 
 // parseComponent parses one dot-separated component p of version v (v is
-// only kept to quote in an error), distinguishing two reasons Compare does
-// not parse it that must not share one error message:
+// only kept to quote in an error), distinguishing three reasons Compare
+// does not parse it that must not share one error message:
 //
-//   - a '+' anywhere in p, or a '-' anywhere in p other than as its very
-//     first character, means p carries build metadata or a pre-release
-//     identifier ("0-rc1", "0+build5") - the version is not bare
-//     MAJOR.MINOR.PATCH;
-//   - a '-' as the first character of p is a negative number ("-1"), which
-//     strconv.Atoi parses without complaint on its own - nothing else here
-//     inspects sign, so this needs its own check, and its own, accurate
-//     error. Reporting this case with the pre-release/build-metadata
-//     message above would be actively wrong: a caller who wrote "-1.0.0"
-//     and is told about a suffix is being pointed at something that is not
-//     in their version string.
+//   - a '+' or a '-' anywhere in p other than as its very first character
+//     means p carries build metadata or a pre-release identifier ("0-rc1",
+//     "0+build5") - the version is not bare MAJOR.MINOR.PATCH;
+//   - a '-' as the first character of p is a negative number ("-1");
+//   - a '+' as the first character of p is an explicitly signed number
+//     ("+1").
+//
+// The last two both need their own check for the same reason: strconv.Atoi
+// accepts either sign without complaint ("+1" parses as 1, "-1" as -1) and
+// nothing else here inspects sign, so without these two checks "+1.0.0"
+// would be read as 1.0.0 and compared as if the author had written it that
+// way. They also need their own, accurate errors: telling a caller who
+// wrote "-1.0.0" or "+1.0.0" about a pre-release or build-metadata suffix
+// points them at something that is not in their version string.
 //
 // Everything else - an empty component, a leading zero, a non-numeric
 // component - falls through to the generic "not MAJOR.MINOR.PATCH" error.
@@ -86,11 +89,14 @@ func parseComponent(v, p string) (int, error) {
 	if p == "" {
 		return 0, fmt.Errorf("app: version %q is not MAJOR.MINOR.PATCH", v)
 	}
-	if strings.Contains(p, "+") || strings.Contains(p[1:], "-") {
+	if strings.Contains(p[1:], "+") || strings.Contains(p[1:], "-") {
 		return 0, fmt.Errorf("app: version %q carries a pre-release or build-metadata suffix, which Compare does not parse", v)
 	}
 	if strings.HasPrefix(p, "-") {
 		return 0, fmt.Errorf("app: version %q has a negative component, which is not a valid MAJOR.MINOR.PATCH version", v)
+	}
+	if strings.HasPrefix(p, "+") {
+		return 0, fmt.Errorf("app: version %q has an explicitly signed component, which is not a valid MAJOR.MINOR.PATCH version", v)
 	}
 	if len(p) > 1 && p[0] == '0' {
 		return 0, fmt.Errorf("app: version %q is not MAJOR.MINOR.PATCH", v)

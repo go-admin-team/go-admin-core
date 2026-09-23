@@ -49,6 +49,14 @@ type Manifest struct {
 	// field in this batch; it only carries it for a host's installer to
 	// read.
 	//
+	// Each entry is normalized through migration.NormalizeAppCode, the
+	// same way Code is, so that a dependency written "PayMent " and the
+	// manifest that registered itself as "payment" are the same string by
+	// the time a host compares them. Without this, every consumer would
+	// have to remember to normalize on the read side - and the one that
+	// forgot would report a dependency as missing while it sat installed
+	// under its normalized code.
+	//
 	// Unlike every other field on Manifest, this one is a reference type:
 	// both Register and Snapshot copy it (see cloneRequires) rather than
 	// storing or returning the caller's slice header, so that mutating a
@@ -116,8 +124,10 @@ func Register(m Manifest) {
 	// header, and mutating it after Register returns would silently rewrite
 	// an already-registered application's dependency list. Clone it into a
 	// slice this package alone holds a reference to, the same reasoning
-	// Snapshot's copy of Requires below documents for the read side.
-	m.Requires = cloneRequires(m.Requires)
+	// Snapshot's copy of Requires below documents for the read side - and
+	// normalize each entry on the way in, so the registry holds dependency
+	// codes spelled the one way Code is spelled.
+	m.Requires = normalizeRequires(m.Requires)
 	registry[code] = m
 }
 
@@ -157,6 +167,23 @@ func Snapshot() map[string]Manifest {
 // a Manifest that never set Requires round-trips through Register and
 // Snapshot exactly as the zero value - nil, not []string{} - rather than
 // this package inventing a distinction the caller never made.
+// normalizeRequires is Register's write-side copy: every entry goes through
+// migration.NormalizeAppCode, so a dependency list is spelled the same way
+// Code is by the time anything reads it. Entries are not deduplicated and
+// empty ones are not dropped - that would change how many dependencies a
+// manifest declared, which is the author's statement to make, not this
+// package's. A nil req stays nil, exactly as cloneRequires leaves it.
+func normalizeRequires(req []string) []string {
+	if req == nil {
+		return nil
+	}
+	out := make([]string, len(req))
+	for i, r := range req {
+		out[i] = migration.NormalizeAppCode(r)
+	}
+	return out
+}
+
 func cloneRequires(req []string) []string {
 	if req == nil {
 		return nil
