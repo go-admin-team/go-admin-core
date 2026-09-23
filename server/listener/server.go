@@ -120,7 +120,7 @@ func (e *Server) Start(ctx context.Context) error {
 		<-ctx.Done()
 		err = e.Shutdown(ctx)
 		if err != nil {
-			log.Errorf("%S Server shutdown error: %s", e.name, err.Error())
+			log.Errorf("%s Server shutdown error: %s", e.name, err.Error())
 		}
 	}()
 	if e.opts.startedHook != nil {
