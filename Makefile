@@ -24,7 +24,7 @@ test-race:
 # a gate. Analysed for the host and for linux: a file behind a build tag is
 # invisible to a run on another platform, which is how a finding in
 # watcher_linux.go stayed hidden from every local run and failed in CI.
-STATICCHECK ?= honnef.co/go/tools/cmd/staticcheck@v0.7.0
+STATICCHECK ?= honnef.co/go/tools/cmd/staticcheck@v0.8.1
 
 # bench runs every benchmark once, briefly. It is a smoke test that the
 # benchmarks still compile and run - not a measurement. For numbers worth
