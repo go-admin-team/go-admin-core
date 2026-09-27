@@ -1182,7 +1182,7 @@ func Black(msg string) string
 func Blue(msg string) string
 func CompareHashAndPassword(e string, p string) (bool, error)
 func Cyan(msg string) string
-func FileCreate(content bytes.Buffer, name string)
+func FileCreate(content bytes.Buffer, name string) error
 func FileMonitoringById(ctx context.Context, filePth string, id string, group string, hookfn func(context.Context, string, string, []byte))
 func GenerateMsgIDFromContext(c *gin.Context) string
 func GenerateRandomKey16() string
